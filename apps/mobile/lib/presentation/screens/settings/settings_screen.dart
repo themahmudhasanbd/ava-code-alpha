@@ -9,9 +9,11 @@ import '../../components/shadcn_card.dart';
 import '../../components/shadcn_input.dart';
 import '../../state/app_state.dart';
 
-/// Settings, server endpoint config, and user session management
+/// Settings, server endpoint config, active AI model, and user session management
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
+  final ValueChanged<int>? onNavigateTab;
+
+  const SettingsScreen({super.key, this.onNavigateTab});
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -31,6 +33,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final scope = AppStateScope.of(context);
     final auth = scope.authController;
     final themeCtrl = scope.themeController;
+    final providerCtrl = scope.providerController;
     final isDark = AppColors.isDark(context);
 
     return Scaffold(
@@ -89,6 +92,92 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ],
             ),
+          ),
+          const SizedBox(height: 20),
+
+          // Active AI Model & Provider Card
+          Text('ACTIVE AI MODEL & PROVIDER', style: AppTypography.codeSmall.copyWith(color: AppColors.muted(context))),
+          const SizedBox(height: 10),
+
+          ListenableBuilder(
+            listenable: providerCtrl,
+            builder: (context, _) {
+              final activeModel = providerCtrl.activeModelId;
+              final activeProvider = providerCtrl.activeProviderId;
+
+              return ShadcnCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 34,
+                          height: 34,
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: AppColors.accentPrimary.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(9),
+                          ),
+                          child: const Icon(LucideIcons.cpu, size: 18, color: AppColors.accentPrimary),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                activeModel.isNotEmpty ? activeModel : 'gemini-3.7-flash',
+                                style: AppTypography.titleMedium.copyWith(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.text(context),
+                                ),
+                              ),
+                              Text(
+                                'Provider: ${activeProvider.toUpperCase()}',
+                                style: AppTypography.codeSmall.copyWith(
+                                  color: AppColors.subtext(context),
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const ShadcnBadge(
+                          label: 'Active',
+                          variant: ShadcnBadgeVariant.success,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Divider(color: AppColors.line(context)),
+                    const SizedBox(height: 10),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Configure providers, API keys & custom endpoints',
+                          style: AppTypography.bodySmall.copyWith(
+                            fontSize: 11.5,
+                            color: AppColors.subtext(context),
+                          ),
+                        ),
+                        ShadcnButton(
+                          text: 'Manage',
+                          icon: LucideIcons.arrowRight,
+                          size: ShadcnButtonSize.sm,
+                          variant: ShadcnButtonVariant.outline,
+                          onPressed: () {
+                            widget.onNavigateTab?.call(4);
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
           const SizedBox(height: 20),
 
@@ -310,6 +399,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const SizedBox(height: 20),
+
+          // Reconfigure / Onboarding Setup Action
+          ShadcnButton(
+            text: 'Reconfigure Setup (Model Wizard)',
+            icon: LucideIcons.slidersHorizontal,
+            variant: ShadcnButtonVariant.outline,
+            isFullWidth: true,
+            onPressed: () => auth.restartOnboarding(),
+          ),
+          const SizedBox(height: 10),
 
           // Sign Out Button
           ShadcnButton(

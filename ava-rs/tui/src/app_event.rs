@@ -1165,6 +1165,12 @@ pub(crate) enum AppEvent {
         effort: Option<ReasoningEffort>,
     },
 
+    /// Persist the selected AI provider to user config.
+    PersistProviderSelection {
+        provider: String,
+        model: Option<String>,
+    },
+
     /// Apply a model and effort only to the active session, preserving saved defaults.
     SelectSessionModel {
         model: String,

@@ -1,9 +1,7 @@
 //! Authentication step UI and state transitions used by onboarding.
 //!
-//! This module owns the auth-step state machine (ChatGPT login/device-code/API
-//! key), renders the corresponding UI, and handles auth-scoped keyboard input.
-//! It intentionally does not decide onboarding flow completion; the enclosing
-//! onboarding screen coordinates step progression.
+//! This module owns the auth-step state machine (Google Antigravity & Custom Provider),
+//! renders the corresponding UI, and handles auth-scoped keyboard input.
 
 #![allow(clippy::unwrap_used)]
 
@@ -13,10 +11,7 @@ use codex_app_server_protocol::AccountUpdatedNotification;
 use codex_app_server_protocol::AuthMode as ApiAuthMode;
 use codex_app_server_protocol::CancelLoginAccountParams;
 use codex_app_server_protocol::ClientRequest;
-use codex_app_server_protocol::LoginAccountParams;
-use codex_app_server_protocol::LoginAccountResponse;
 use codex_login::AuthConfig;
-use codex_login::read_openai_api_key_from_env;
 use codex_protocol::auth::AuthMode;
 use crossterm::event::KeyCode;
 use crossterm::event::KeyEvent;
@@ -39,7 +34,6 @@ use ratatui::widgets::Paragraph;
 use ratatui::widgets::WidgetRef;
 use ratatui::widgets::Wrap;
 
-use codex_protocol::config_types::ForcedLoginMethod;
 use std::cell::Cell;
 use std::sync::Arc;
 use std::sync::RwLock;
@@ -54,18 +48,17 @@ use crate::onboarding::bedrock::BedrockState;
 use crate::onboarding::keys;
 use crate::onboarding::onboarding_screen::KeyboardHandler;
 use crate::onboarding::onboarding_screen::StepStateProvider;
-use crate::terminal_hyperlinks::HyperlinkLine;
-use crate::terminal_hyperlinks::mark_buffer_hyperlinks;
-use crate::terminal_hyperlinks::visible_lines;
 use crate::tui::FrameRequester;
 
+use super::onboarding_screen::StepState;
+
+pub(crate) const ANTIGRAVITY_CLIENT_ID: &str =
+    "1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com";
+pub(crate) const ANTIGRAVITY_CLIENT_SECRET: &str = "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";
+pub(crate) const ANTIGRAVITY_CALLBACK_PORT: u16 = 51121;
+pub(crate) const ANTIGRAVITY_REDIRECT_URI: &str = "http://localhost:51121/callback";
+
 /// Marks buffer cells that have cyan+underlined style as an OSC 8 hyperlink.
-///
-/// Terminal emulators recognise the OSC 8 escape sequence and treat the entire
-/// marked region as a single clickable link, regardless of row wrapping.  This
-/// is necessary because ratatui's cell-based rendering emits `MoveTo` at every
-/// row boundary, which breaks normal terminal URL detection for long URLs that
-/// wrap across multiple rows.
 pub(crate) fn mark_url_hyperlink(buf: &mut Buffer, area: Rect, url: &str) {
     crate::terminal_hyperlinks::mark_url_hyperlink(buf, area, url);
 }
@@ -75,15 +68,18 @@ pub(crate) fn mark_underlined_hyperlink(buf: &mut Buffer, area: Rect, url: &str)
     crate::terminal_hyperlinks::mark_underlined_hyperlink(buf, area, url);
 }
 
-use super::onboarding_screen::StepState;
-
-mod headless_chatgpt_login;
-
 #[derive(Clone)]
 pub(crate) enum SignInState {
     PickMode,
+    AntigravityOAuth(AntigravityOAuthState),
+    AntigravityModelSelection(AntigravityModelSelectionState),
+    CustomProviderEndpoint(CustomProviderEndpointState),
+    CustomProviderApiKey(CustomProviderApiKeyState),
+    CustomProviderModelSelection(CustomProviderModelSelectionState),
+    SuccessMessage(String),
+    Success,
+    // Backward compatibility variants if referenced elsewhere
     ChatGptContinueInBrowser(ContinueInBrowserState),
-    #[allow(dead_code)]
     ChatGptDeviceCode(ContinueWithDeviceCodeState),
     ChatGptSuccessMessage,
     ChatGptSuccess,
@@ -95,13 +91,18 @@ pub(crate) enum SignInState {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum SignInOption {
+    Antigravity,
+    CustomProvider,
+    #[allow(dead_code)]
     ChatGpt,
+    #[allow(dead_code)]
     DeviceCode,
+    #[allow(dead_code)]
     ApiKey,
+    #[allow(dead_code)]
     Bedrock,
 }
 
-const API_KEY_DISABLED_MESSAGE: &str = "API key login is disabled.";
 pub(super) fn onboarding_request_id() -> codex_app_server_protocol::RequestId {
     codex_app_server_protocol::RequestId::String(Uuid::new_v4().to_string())
 }
@@ -122,134 +123,69 @@ pub(super) async fn cancel_login_attempt(
 
 #[derive(Clone, Default)]
 pub(crate) struct ApiKeyInputState {
-    value: String,
-    prepopulated_from_env: bool,
+    pub value: String,
+    pub prepopulated_from_env: bool,
 }
 
 #[derive(Clone)]
-/// Used to manage the lifecycle of SpawnedLogin and ensure it gets cleaned up.
 pub(crate) struct ContinueInBrowserState {
-    login_id: String,
-    auth_url: String,
+    pub login_id: String,
+    pub auth_url: String,
 }
 
 #[derive(Clone)]
 pub(crate) struct ContinueWithDeviceCodeState {
-    request_id: String,
-    login_id: Option<String>,
-    verification_url: Option<String>,
-    user_code: Option<String>,
+    pub request_id: String,
+    pub login_id: Option<String>,
+    pub verification_url: Option<String>,
+    pub user_code: Option<String>,
 }
 
 impl ContinueWithDeviceCodeState {
-    pub(crate) fn pending(request_id: String) -> Self {
-        Self {
-            request_id,
-            login_id: None,
-            verification_url: None,
-            user_code: None,
-        }
-    }
-
-    pub(crate) fn ready(
-        request_id: String,
-        login_id: String,
-        verification_url: String,
-        user_code: String,
-    ) -> Self {
-        Self {
-            request_id,
-            login_id: Some(login_id),
-            verification_url: Some(verification_url),
-            user_code: Some(user_code),
-        }
-    }
-
     pub(crate) fn login_id(&self) -> Option<&str> {
         self.login_id.as_deref()
-    }
-
-    pub(crate) fn is_showing_copyable_auth(&self) -> bool {
-        self.verification_url
-            .as_deref()
-            .is_some_and(|url| !url.is_empty())
-            && self
-                .user_code
-                .as_deref()
-                .is_some_and(|user_code| !user_code.is_empty())
-    }
-}
-
-impl KeyboardHandler for AuthModeWidget {
-    fn handle_key_event(&mut self, key_event: KeyEvent) {
-        if self.handle_bedrock_key_event(&key_event) {
-            return;
-        }
-        if self.handle_api_key_entry_key_event(&key_event) {
-            return;
-        }
-
-        if keys::MOVE_UP.is_pressed(key_event) {
-            self.move_highlight(/*delta*/ -1);
-            return;
-        }
-        if keys::MOVE_DOWN.is_pressed(key_event) {
-            self.move_highlight(/*delta*/ 1);
-            return;
-        }
-        if keys::SELECT_FIRST.is_pressed(key_event) {
-            self.select_option_by_index(/*index*/ 0);
-            return;
-        }
-        if keys::SELECT_SECOND.is_pressed(key_event) {
-            self.select_option_by_index(/*index*/ 1);
-            return;
-        }
-        if keys::SELECT_THIRD.is_pressed(key_event) {
-            self.select_option_by_index(/*index*/ 2);
-            return;
-        }
-        if keys::SELECT_FOURTH.is_pressed(key_event) {
-            self.select_option_by_index(/*index*/ 3);
-            return;
-        }
-        if keys::CONFIRM.is_pressed(key_event) {
-            let sign_in_state = { (*self.sign_in_state.read().unwrap()).clone() };
-            match sign_in_state {
-                SignInState::PickMode => {
-                    self.handle_sign_in_option(self.highlighted_mode);
-                }
-                SignInState::ChatGptSuccessMessage => {
-                    *self.sign_in_state.write().unwrap() = SignInState::ChatGptSuccess;
-                }
-                _ => {}
-            }
-            return;
-        }
-        if keys::CANCEL.is_pressed(key_event) {
-            tracing::info!("Cancel onboarding auth step");
-            self.cancel_active_attempt();
-        }
-    }
-
-    fn handle_paste(&mut self, pasted: String) {
-        let sign_in_state = self.sign_in_state.read().unwrap();
-        match &*sign_in_state {
-            SignInState::Bedrock(_) => {
-                drop(sign_in_state);
-                let _ = self.handle_bedrock_paste(&pasted);
-            }
-            SignInState::ApiKeyEntry(_) => {
-                drop(sign_in_state);
-                let _ = self.handle_api_key_entry_paste(pasted);
-            }
-            _ => {}
-        }
     }
 }
 
 #[derive(Clone)]
-#[allow(dead_code)]
+pub(crate) struct AntigravityOAuthState {
+    pub auth_url: String,
+    pub state_token: String,
+    pub manual_code_input: String,
+    pub is_exchanging: bool,
+}
+
+#[derive(Clone)]
+pub(crate) struct AntigravityModelSelectionState {
+    pub models: Vec<String>,
+    pub selected_index: usize,
+    pub is_fetching: bool,
+    pub error_msg: Option<String>,
+}
+
+#[derive(Clone)]
+pub(crate) struct CustomProviderEndpointState {
+    pub endpoint: String,
+}
+
+#[derive(Clone)]
+pub(crate) struct CustomProviderApiKeyState {
+    pub endpoint: String,
+    pub api_key: String,
+}
+
+#[derive(Clone)]
+pub(crate) struct CustomProviderModelSelectionState {
+    pub endpoint: String,
+    pub api_key: String,
+    pub models: Vec<String>,
+    pub selected_index: usize,
+    pub custom_input: String,
+    pub is_fetching: bool,
+    pub error_msg: Option<String>,
+}
+
+#[derive(Clone)]
 pub(crate) struct AuthModeWidget {
     pub request_frame: FrameRequester,
     pub highlighted_mode: SignInOption,
@@ -271,33 +207,13 @@ impl AuthModeWidget {
     pub(crate) fn should_suppress_animations(&self) -> bool {
         matches!(
             &*self.sign_in_state.read().unwrap(),
-            SignInState::ChatGptContinueInBrowser(_) | SignInState::ChatGptDeviceCode(_)
+            SignInState::AntigravityOAuth(_) | SignInState::ChatGptContinueInBrowser(_)
         )
     }
 
     pub(crate) fn cancel_active_attempt(&self) {
-        let mut sign_in_state = self.sign_in_state.write().unwrap();
-        match &*sign_in_state {
-            SignInState::ChatGptContinueInBrowser(state) => {
-                let request_handle = self.app_server_request_handle.clone();
-                let login_id = state.login_id.clone();
-                tokio::spawn(async move {
-                    cancel_login_attempt(&request_handle, login_id).await;
-                });
-            }
-            SignInState::ChatGptDeviceCode(state) => {
-                if let Some(login_id) = state.login_id().map(str::to_owned) {
-                    let request_handle = self.app_server_request_handle.clone();
-                    tokio::spawn(async move {
-                        cancel_login_attempt(&request_handle, login_id).await;
-                    });
-                }
-            }
-            _ => return,
-        }
-        *sign_in_state = SignInState::PickMode;
-        drop(sign_in_state);
-        self.set_error(/*message*/ None);
+        *self.sign_in_state.write().unwrap() = SignInState::PickMode;
+        self.set_error(None);
         self.request_frame.schedule_frame();
     }
 
@@ -309,25 +225,19 @@ impl AuthModeWidget {
         self.error.read().unwrap().clone()
     }
 
-    /// Returns whether the auth flow is currently accepting text input.
     pub(crate) fn is_text_entry_active(&self) -> bool {
         self.sign_in_state.read().is_ok_and(|guard| match &*guard {
-            SignInState::ApiKeyEntry(_) => true,
-            SignInState::Bedrock(state) => state.is_text_entry_active(),
+            SignInState::AntigravityOAuth(_)
+            | SignInState::CustomProviderEndpoint(_)
+            | SignInState::CustomProviderApiKey(_)
+            | SignInState::CustomProviderModelSelection(_)
+            | SignInState::ApiKeyEntry(_) => true,
             _ => false,
         })
     }
 
-    /// Returns whether printable quit shortcuts must be treated as text input.
-    ///
-    /// OpenAI API-key entry keeps its existing empty-field quit behavior, while
-    /// Bedrock fields accept printable input from their first character.
     pub(crate) fn should_suppress_printable_quit(&self) -> bool {
-        self.sign_in_state.read().is_ok_and(|guard| match &*guard {
-            SignInState::ApiKeyEntry(state) => !state.value.is_empty(),
-            SignInState::Bedrock(state) => state.is_text_entry_active(),
-            _ => false,
-        })
+        self.is_text_entry_active()
     }
 
     fn confirm_binding(&self) -> KeyBinding {
@@ -338,43 +248,12 @@ impl AuthModeWidget {
         keys::CANCEL[0]
     }
 
-    fn is_api_login_allowed(&self) -> bool {
-        self.auth_config
-            .is_login_method_allowed(ForcedLoginMethod::Api)
-    }
-
-    fn is_chatgpt_login_allowed(&self) -> bool {
-        self.auth_config
-            .is_login_method_allowed(ForcedLoginMethod::Chatgpt)
-    }
-
     fn displayed_sign_in_options(&self) -> Vec<SignInOption> {
-        let mut options = vec![SignInOption::ChatGpt];
-        if self.is_chatgpt_login_allowed() {
-            options.push(SignInOption::DeviceCode);
-        }
-        if self.is_api_login_allowed() {
-            options.push(SignInOption::ApiKey);
-            if self.bedrock_setup_enabled {
-                options.push(SignInOption::Bedrock);
-            }
-        }
-        options
+        vec![SignInOption::Antigravity, SignInOption::CustomProvider]
     }
 
     fn selectable_sign_in_options(&self) -> Vec<SignInOption> {
-        let mut options = Vec::new();
-        if self.is_chatgpt_login_allowed() {
-            options.push(SignInOption::ChatGpt);
-            options.push(SignInOption::DeviceCode);
-        }
-        if self.is_api_login_allowed() {
-            options.push(SignInOption::ApiKey);
-            if self.bedrock_setup_enabled {
-                options.push(SignInOption::Bedrock);
-            }
-        }
-        options
+        vec![SignInOption::Antigravity, SignInOption::CustomProvider]
     }
 
     fn move_highlight(&mut self, delta: isize) {
@@ -401,56 +280,385 @@ impl AuthModeWidget {
 
     fn handle_sign_in_option(&mut self, option: SignInOption) {
         match option {
-            SignInOption::ChatGpt => {
-                if self.is_chatgpt_login_allowed() {
-                    self.start_chatgpt_login();
-                }
+            SignInOption::Antigravity | SignInOption::ChatGpt => {
+                self.start_antigravity_login();
             }
-            SignInOption::DeviceCode => {
-                if self.is_chatgpt_login_allowed() {
-                    self.start_device_code_login();
-                }
-            }
-            SignInOption::ApiKey => {
-                if self.is_api_login_allowed() {
-                    self.start_api_key_entry();
-                } else {
-                    self.disallow_api_login();
-                }
-            }
-            SignInOption::Bedrock => {
-                if self.bedrock_setup_enabled && self.is_api_login_allowed() {
-                    self.start_bedrock_discovery();
-                } else if !self.is_api_login_allowed() {
-                    self.disallow_api_login();
-                }
+            SignInOption::CustomProvider
+            | SignInOption::ApiKey
+            | SignInOption::DeviceCode
+            | SignInOption::Bedrock => {
+                self.start_custom_provider_setup();
             }
         }
     }
 
-    fn disallow_api_login(&mut self) {
-        self.highlighted_mode = SignInOption::ChatGpt;
-        self.set_error(Some(API_KEY_DISABLED_MESSAGE.to_string()));
-        *self.sign_in_state.write().unwrap() = SignInState::PickMode;
+    fn start_antigravity_login(&mut self) {
+        self.set_error(None);
+        let state_token = Uuid::new_v4().to_string();
+        let auth_url = format!(
+            "https://accounts.google.com/o/oauth2/v2/auth?client_id={}&redirect_uri={}&response_type=code&scope={}&access_type=offline&prompt=consent&state={}",
+            ANTIGRAVITY_CLIENT_ID,
+            urlencoding::encode(ANTIGRAVITY_REDIRECT_URI),
+            urlencoding::encode("https://www.googleapis.com/auth/cloud-platform https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/cclog https://www.googleapis.com/auth/experimentsandconfigs"),
+            state_token
+        );
+
+        let _ = webbrowser::open(&auth_url);
+
+        let sign_in_state = self.sign_in_state.clone();
+        let error = self.error.clone();
+        let request_frame = self.request_frame.clone();
+        let state_token_clone = state_token.clone();
+
+        *sign_in_state.write().unwrap() =
+            SignInState::AntigravityOAuth(AntigravityOAuthState {
+                auth_url: auth_url.clone(),
+                state_token: state_token.clone(),
+                manual_code_input: String::new(),
+                is_exchanging: false,
+            });
+        request_frame.schedule_frame();
+
+        // Spawn local HTTP server on port 51121 for callback
+        tokio::spawn(async move {
+            match tiny_http::Server::http(format!("127.0.0.1:{ANTIGRAVITY_CALLBACK_PORT}")) {
+                Ok(server) => {
+                    let (tx, mut rx) = tokio::sync::mpsc::channel::<Option<String>>(1);
+                    std::thread::spawn(move || {
+                        if let Ok(request) = server.recv() {
+                            let url_str = format!("http://localhost{}", request.url());
+                            let code = if let Ok(parsed) = url::Url::parse(&url_str) {
+                                parsed
+                                    .query_pairs()
+                                    .find(|(k, _)| k == "code")
+                                    .map(|(_, v)| v.to_string())
+                            } else {
+                                None
+                            };
+
+                            let html_response = r#"<!DOCTYPE html>
+<html>
+<head><title>AvA Code - Antigravity Auth</title></head>
+<body style="background:#09090b;color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;">
+  <div style="text-align:center;padding:40px;background:#18181b;border-radius:12px;border:1px solid #27272a;box-shadow:0 10px 30px rgba(0,0,0,0.5);max-width:480px;">
+    <h2 style="color:#38bdf8;margin:0 0 12px 0;">✓ Google Antigravity Connected</h2>
+    <p style="color:#a1a1aa;margin:0 0 16px 0;font-size:15px;">Successfully authenticated with Google Antigravity.</p>
+    <p style="color:#71717a;font-size:13px;margin:0;">You can safely close this browser window and return to AvA Code.</p>
+  </div>
+</body>
+</html>"#;
+                            let response = tiny_http::Response::from_string(html_response)
+                                .with_header(
+                                    tiny_http::Header::from_bytes(
+                                        &b"Content-Type"[..],
+                                        &b"text/html; charset=utf-8"[..],
+                                    )
+                                    .unwrap(),
+                                );
+                            let _ = request.respond(response);
+                            let _ = tx.blocking_send(code);
+                        }
+                    });
+
+                    tokio::select! {
+                        Some(Some(code)) = rx.recv() => {
+                            Self::complete_antigravity_exchange(code, sign_in_state, error, request_frame).await;
+                        }
+                        _ = tokio::time::sleep(std::time::Duration::from_secs(300)) => {
+                            tracing::warn!("Antigravity OAuth server timed out");
+                        }
+                    }
+                }
+                Err(err) => {
+                    tracing::warn!("Could not bind Antigravity callback server on port {ANTIGRAVITY_CALLBACK_PORT}: {err}");
+                }
+            }
+        });
+    }
+
+    async fn complete_antigravity_exchange(
+        code: String,
+        sign_in_state: Arc<RwLock<SignInState>>,
+        error: Arc<RwLock<Option<String>>>,
+        request_frame: FrameRequester,
+    ) {
+        {
+            let mut guard = sign_in_state.write().unwrap();
+            if let SignInState::AntigravityOAuth(ref mut state) = *guard {
+                state.is_exchanging = true;
+            }
+        }
+        request_frame.schedule_frame();
+
+        let client = reqwest::Client::new();
+        let params = [
+            ("grant_type", "authorization_code"),
+            ("code", code.trim()),
+            ("client_id", ANTIGRAVITY_CLIENT_ID),
+            ("client_secret", ANTIGRAVITY_CLIENT_SECRET),
+            ("redirect_uri", ANTIGRAVITY_REDIRECT_URI),
+        ];
+
+        match client
+            .post("https://oauth2.googleapis.com/token")
+            .form(&params)
+            .send()
+            .await
+        {
+            Ok(resp) if resp.status().is_success() => {
+                if let Ok(json) = resp.json::<serde_json::Value>().await {
+                    let access_token = json
+                        .get("access_token")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or_default()
+                        .to_string();
+                    let refresh_token = json
+                        .get("refresh_token")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or_default()
+                        .to_string();
+
+                    // Resolve Cloud Code PA project
+                    let _ = client
+                        .post("https://daily-cloudcode-pa.googleapis.com/v1internal:loadCodeAssist")
+                        .header("Authorization", format!("Bearer {access_token}"))
+                        .header("Content-Type", "application/json")
+                        .header("User-Agent", "antigravity/ide/2.5.5 darwin/arm64")
+                        .header("X-Goog-Api-Client", "gl-node/22.21.1")
+                        .json(&serde_json::json!({
+                            "metadata": { "ideType": "ANTIGRAVITY", "pluginType": "GEMINI" }
+                        }))
+                        .send()
+                        .await;
+
+                    // Fetch dynamically available models from Cloud Code PA
+                    let mut models = vec![
+                        "gemini-3.8-flash".to_string(),
+                        "gemini-3.7-flash".to_string(),
+                        "gemini-3.1-pro".to_string(),
+                        "claude-3-7-sonnet".to_string(),
+                        "claude-3-5-sonnet".to_string(),
+                        "claude-opus-4".to_string(),
+                        "gpt-oss-1".to_string(),
+                    ];
+
+                    if let Ok(models_resp) = client
+                        .post("https://daily-cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels")
+                        .header("Authorization", format!("Bearer {access_token}"))
+                        .header("Content-Type", "application/json")
+                        .header("User-Agent", "antigravity/ide/2.5.5 darwin/arm64")
+                        .header("X-Goog-Api-Client", "gl-node/22.21.1")
+                        .json(&serde_json::json!({ "project": "aicode-consumers" }))
+                        .send()
+                        .await
+                    {
+                        if let Ok(models_json) = models_resp.json::<serde_json::Value>().await {
+                            if let Some(obj) = models_json.get("models").and_then(|m| m.as_object()) {
+                                let dynamic: Vec<String> = obj.keys().cloned().collect();
+                                if !dynamic.is_empty() {
+                                    models = dynamic;
+                                }
+                            }
+                        }
+                    }
+
+                    // Persist Antigravity auth
+                    Self::persist_antigravity_credentials(&access_token, &refresh_token);
+
+                    *sign_in_state.write().unwrap() =
+                        SignInState::AntigravityModelSelection(AntigravityModelSelectionState {
+                            models,
+                            selected_index: 0,
+                            is_fetching: false,
+                            error_msg: None,
+                        });
+                    *error.write().unwrap() = None;
+                } else {
+                    *error.write().unwrap() =
+                        Some("Failed to parse Google OAuth token response".to_string());
+                }
+            }
+            Ok(resp) => {
+                let text = resp.text().await.unwrap_or_default();
+                *error.write().unwrap() =
+                    Some(format!("Google token exchange failed: {text}"));
+            }
+            Err(err) => {
+                *error.write().unwrap() =
+                    Some(format!("Network error exchanging Google code: {err}"));
+            }
+        }
+        request_frame.schedule_frame();
+    }
+
+    fn persist_antigravity_credentials(access_token: &str, refresh_token: &str) {
+        let auth_payload = serde_json::json!({
+            "provider": "antigravity",
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "ANTIGRAVITY_API_KEY": access_token,
+            "OPENAI_API_KEY": access_token,
+            "updated_at": chrono::Utc::now().to_rfc3339()
+        });
+
+        let toml_config = r#"model_provider = "antigravity"
+model = "gemini-3.8-flash"
+"#;
+
+        if let Some(home) = dirs::home_dir() {
+            for dir in [home.join(".ava-code"), home.join(".config").join("ava"), home.join(".codex")] {
+                let _ = std::fs::create_dir_all(&dir);
+                let _ = std::fs::write(
+                    dir.join("auth.json"),
+                    serde_json::to_string_pretty(&auth_payload).unwrap_or_default(),
+                );
+                let _ = std::fs::write(dir.join("config.toml"), toml_config);
+            }
+        }
+    }
+
+    fn persist_custom_provider_config(endpoint: &str, api_key: &str, model: &str) {
+        let auth_payload = serde_json::json!({
+            "provider": "custom",
+            "base_url": endpoint,
+            "api_key": api_key,
+            "CUSTOM_API_KEY": api_key,
+            "OPENAI_API_KEY": api_key,
+            "model": model,
+            "updated_at": chrono::Utc::now().to_rfc3339()
+        });
+
+        let toml_config = format!(
+            r#"model_provider = "custom"
+model = "{model}"
+
+[model_providers.custom]
+name = "Custom Provider"
+base_url = "{endpoint}"
+wire_api = "responses"
+"#
+        );
+
+        if let Some(home) = dirs::home_dir() {
+            for dir in [home.join(".ava-code"), home.join(".config").join("ava"), home.join(".codex")] {
+                let _ = std::fs::create_dir_all(&dir);
+                let _ = std::fs::write(
+                    dir.join("auth.json"),
+                    serde_json::to_string_pretty(&auth_payload).unwrap_or_default(),
+                );
+                let _ = std::fs::write(dir.join("config.toml"), &toml_config);
+            }
+        }
+    }
+
+    fn start_custom_provider_setup(&mut self) {
+        self.set_error(None);
+        *self.sign_in_state.write().unwrap() =
+            SignInState::CustomProviderEndpoint(CustomProviderEndpointState {
+                endpoint: "http://localhost:11434/v1".to_string(),
+            });
         self.request_frame.schedule_frame();
     }
 
+    fn fetch_custom_provider_models(
+        endpoint: String,
+        api_key: String,
+        sign_in_state: Arc<RwLock<SignInState>>,
+        error: Arc<RwLock<Option<String>>>,
+        request_frame: FrameRequester,
+    ) {
+        let ep = endpoint.trim().trim_end_matches('/').to_string();
+        let key = api_key.trim().to_string();
+
+        *sign_in_state.write().unwrap() =
+            SignInState::CustomProviderModelSelection(CustomProviderModelSelectionState {
+                endpoint: ep.clone(),
+                api_key: key.clone(),
+                models: Vec::new(),
+                selected_index: 0,
+                custom_input: String::new(),
+                is_fetching: true,
+                error_msg: None,
+            });
+        request_frame.schedule_frame();
+
+        tokio::spawn(async move {
+            let client = reqwest::Client::new();
+            let url = format!("{ep}/models");
+            let mut req = client.get(&url);
+            if !key.is_empty() {
+                req = req.bearer_auth(&key);
+            }
+
+            let mut fetched_models = Vec::new();
+            let mut fetch_err: Option<String> = None;
+
+            match req.send().await {
+                Ok(resp) if resp.status().is_success() => {
+                    if let Ok(json) = resp.json::<serde_json::Value>().await {
+                        if let Some(data) = json.get("data").and_then(|d| d.as_array()) {
+                            for item in data {
+                                if let Some(id) = item.get("id").and_then(|i| i.as_str()) {
+                                    fetched_models.push(id.to_string());
+                                }
+                            }
+                        } else if let Some(models) = json.get("models").and_then(|m| m.as_array()) {
+                            for item in models {
+                                if let Some(name) = item.get("name").and_then(|n| n.as_str()) {
+                                    fetched_models.push(name.to_string());
+                                }
+                            }
+                        }
+                    }
+                }
+                Ok(resp) => {
+                    fetch_err = Some(format!("HTTP {}: could not fetch /models", resp.status()));
+                }
+                Err(err) => {
+                    fetch_err = Some(format!("Connection error: {err}"));
+                }
+            }
+
+            if fetched_models.is_empty() {
+                // Default fallback options if dynamic discovery returned none
+                fetched_models = vec![
+                    "gpt-4o".to_string(),
+                    "gpt-4o-mini".to_string(),
+                    "claude-3-5-sonnet-latest".to_string(),
+                    "deepseek-coder".to_string(),
+                    "llama3.2".to_string(),
+                ];
+            }
+
+            let mut guard = sign_in_state.write().unwrap();
+            *guard =
+                SignInState::CustomProviderModelSelection(CustomProviderModelSelectionState {
+                    endpoint: ep,
+                    api_key: key,
+                    models: fetched_models,
+                    selected_index: 0,
+                    custom_input: String::new(),
+                    is_fetching: false,
+                    error_msg: fetch_err,
+                });
+            *error.write().unwrap() = None;
+            drop(guard);
+            request_frame.schedule_frame();
+        });
+    }
+
     fn render_pick_mode(&self, area: Rect, buf: &mut Buffer) {
-        let mut lines: Vec<Line> = if self.bedrock_setup_enabled {
-            vec!["  Choose how you want to use Codex.".into(), "".into()]
-        } else {
-            vec![
-                Line::from(vec![
-                    "  ".into(),
-                    "Sign in with ChatGPT to use Codex as part of your paid plan".into(),
-                ]),
-                Line::from(vec![
-                    "  ".into(),
-                    "or connect an API key for usage-based billing".into(),
-                ]),
-                "".into(),
-            ]
-        };
+        let mut lines: Vec<Line> = vec![
+            Line::from(vec![
+                "  ".into(),
+                "Choose your AI model provider for AvA Code:".bold(),
+            ]),
+            Line::from(vec![
+                "  ".into(),
+                "Connect with Google Antigravity or configure a custom endpoint & API key".dim(),
+            ]),
+            "".into(),
+        ];
 
         let create_mode_item = |idx: usize,
                                 selected_mode: SignInOption,
@@ -462,8 +670,8 @@ impl AuthModeWidget {
 
             let line1 = if is_selected {
                 Line::from(vec![
-                    format!("{caret} {index}. ", index = idx + 1).cyan().dim(),
-                    text.to_string().cyan(),
+                    format!("{caret} {index}. ", index = idx + 1).cyan().bold(),
+                    text.to_string().cyan().bold(),
                 ])
             } else {
                 format!("  {index}. {text}", index = idx + 1).into()
@@ -481,68 +689,41 @@ impl AuthModeWidget {
             vec![line1, line2]
         };
 
-        let chatgpt_description = if !self.is_chatgpt_login_allowed() {
-            "ChatGPT login is disabled"
-        } else {
-            "Usage included with Plus, Pro, Business, and Enterprise plans"
-        };
-        let device_code_description = "Sign in from another device with a one-time code";
-
         for (idx, option) in self.displayed_sign_in_options().into_iter().enumerate() {
             match option {
-                SignInOption::ChatGpt => {
+                SignInOption::Antigravity | SignInOption::ChatGpt => {
                     lines.extend(create_mode_item(
                         idx,
                         option,
-                        "Sign in with ChatGPT",
-                        chatgpt_description,
+                        "Google Antigravity (Gemini & Claude)",
+                        "Sign in with Google OAuth (Gemini 3.8/3.7 Flash, Pro, Claude Sonnet/Opus, GPT-OSS)",
                     ));
                 }
-                SignInOption::DeviceCode => {
+                SignInOption::CustomProvider
+                | SignInOption::ApiKey
+                | SignInOption::DeviceCode
+                | SignInOption::Bedrock => {
                     lines.extend(create_mode_item(
                         idx,
                         option,
-                        "Sign in with Device Code",
-                        device_code_description,
-                    ));
-                }
-                SignInOption::ApiKey => {
-                    lines.extend(create_mode_item(
-                        idx,
-                        option,
-                        if self.bedrock_setup_enabled {
-                            "Use an OpenAI API key"
-                        } else {
-                            "Provide your own API key"
-                        },
-                        "Pay for what you use",
-                    ));
-                }
-                SignInOption::Bedrock => {
-                    lines.extend(create_mode_item(
-                        idx,
-                        option,
-                        "Use Amazon Bedrock",
-                        "Connect using your AWS credentials",
+                        "Custom Provider (Endpoint & API Key)",
+                        "Connect to Ollama, LM Studio, OpenRouter, DeepSeek, or any OpenAI-compatible endpoint",
                     ));
                 }
             }
             lines.push("".into());
         }
 
-        if !self.is_api_login_allowed() {
-            lines.push(
-                "  API key login is disabled by this workspace. Sign in with ChatGPT to continue."
-                    .dim()
-                    .into(),
-            );
-            lines.push("".into());
-        }
         lines.push(Line::from(vec![
-            "  Press ".dim(),
+            "  Use ".dim(),
+            "↑/↓".cyan(),
+            " or ".dim(),
+            "1/2".cyan(),
+            " to select, press ".dim(),
             self.confirm_binding().into(),
             " to continue".dim(),
         ]));
+
         if let Some(err) = self.error_message() {
             lines.push("".into());
             lines.push(err.red().into());
@@ -553,10 +734,14 @@ impl AuthModeWidget {
             .render(area, buf);
     }
 
-    fn render_continue_in_browser(&self, area: Rect, buf: &mut Buffer) {
+    fn render_antigravity_oauth(&self, area: Rect, buf: &mut Buffer, state: &AntigravityOAuthState) {
         let mut spans = vec!["  ".into()];
-        if self.animations_enabled && !self.animations_suppressed.get() {
-            // Schedule a follow-up frame to keep the shimmer animation going.
+        if state.is_exchanging {
+            spans.extend(shimmer_text(
+                "Authenticating with Google Antigravity and discovering models...",
+                MotionMode::Animated,
+            ));
+        } else if self.animations_enabled && !self.animations_suppressed.get() {
             self.request_frame
                 .schedule_frame_in(std::time::Duration::from_millis(100));
             spans.extend(shimmer_text(
@@ -566,448 +751,271 @@ impl AuthModeWidget {
         } else {
             spans.push("Finish signing in via your browser".into());
         }
-        let mut lines = vec![spans.into(), "".into()];
 
-        let sign_in_state = self.sign_in_state.read().unwrap();
-        let auth_url = if let SignInState::ChatGptContinueInBrowser(state) = &*sign_in_state
-            && !state.auth_url.is_empty()
-        {
-            lines.push("  If the link doesn't open automatically, open the following link to authenticate:".into());
-            lines.push("".into());
-            lines.push(Line::from(vec![
-                "  ".into(),
-                state.auth_url.as_str().cyan().underlined(),
-            ]));
-            lines.push("".into());
-            lines.push(Line::from(vec![
-                "  On a remote or headless machine? Press ".into(),
-                self.cancel_binding().into(),
-                " and choose ".into(),
-                "Sign in with Device Code".cyan(),
-                ".".into(),
-            ]));
-            lines.push("".into());
-            Some(state.auth_url.clone())
+        let mut lines = vec![
+            spans.into(),
+            "".into(),
+            "  A browser window should open automatically to Google sign-in.".into(),
+            "  If it didn't open, copy and open this URL in your browser:".into(),
+            "".into(),
+            Line::from(vec!["  ".into(), state.auth_url.as_str().cyan().underlined()]),
+            "".into(),
+            "  On a headless or remote server? Paste the authorization code below:".dim().into(),
+            "".into(),
+        ];
+
+        let input_display = if state.manual_code_input.is_empty() {
+            Line::from("Paste authorization code or full callback URL here".dim())
         } else {
-            None
+            Line::from(state.manual_code_input.clone())
         };
 
-        lines.push(Line::from(vec![
-            "  Press ".dim(),
-            self.cancel_binding().into(),
-            " to cancel".dim(),
-        ]));
-        Paragraph::new(lines)
-            .wrap(Wrap { trim: false })
-            .render(area, buf);
-
-        // Wrap cyan+underlined URL cells with OSC 8 so the terminal treats
-        // the entire region as a single clickable hyperlink.
-        if let Some(url) = &auth_url {
-            mark_url_hyperlink(buf, area, url);
-        }
-    }
-
-    fn render_chatgpt_success_message(&self, area: Rect, buf: &mut Buffer) {
-        let mut docs_line = HyperlinkLine::new(Line::from("  For more details see the ").dim());
-        docs_line.push_span(
-            "Codex docs".underlined(),
-            Some("https://developers.openai.com/codex/security"),
-        );
-        let mut preferences_line =
-            HyperlinkLine::new(Line::from("  Uses your plan's rate limits and ").dim());
-        preferences_line.push_span(
-            "training data preferences".underlined(),
-            Some("https://chatgpt.com/#settings"),
-        );
-
-        let lines = vec![
-            HyperlinkLine::new(
-                "✓ Signed in with your ChatGPT account"
-                    .fg(Color::Green)
-                    .into(),
-            ),
-            "".into(),
-            "  Before you start:".into(),
-            "".into(),
-            "  Decide how much autonomy you want to grant Codex".into(),
-            docs_line,
-            "".into(),
-            "  Codex can make mistakes".into(),
-            HyperlinkLine::new(
-                "  Review the code it writes and commands it runs"
-                    .dim()
-                    .into(),
-            ),
-            "".into(),
-            "  Powered by your ChatGPT account".into(),
-            preferences_line,
-            "".into(),
-            HyperlinkLine::new(Line::from(vec![
-                "  Press ".fg(Color::Cyan),
-                self.confirm_binding().into(),
-                " to continue".fg(Color::Cyan),
-            ])),
-        ];
-
-        Paragraph::new(visible_lines(lines.clone()))
-            .wrap(Wrap { trim: false })
-            .render(area, buf);
-        mark_buffer_hyperlinks(buf, area, &lines, /*scroll_rows*/ 0);
-    }
-
-    fn render_chatgpt_success(&self, area: Rect, buf: &mut Buffer) {
-        let lines = vec![
-            "✓ Signed in with your ChatGPT account"
-                .fg(Color::Green)
-                .into(),
-        ];
-
-        Paragraph::new(lines)
-            .wrap(Wrap { trim: false })
-            .render(area, buf);
-    }
-
-    fn render_api_key_configured(&self, area: Rect, buf: &mut Buffer) {
-        let lines = vec![
-            "✓ API key configured".fg(Color::Green).into(),
-            "".into(),
-            "  Codex will use usage-based billing with your API key.".into(),
-        ];
-
-        Paragraph::new(lines)
-            .wrap(Wrap { trim: false })
-            .render(area, buf);
-    }
-
-    fn render_api_key_entry(&self, area: Rect, buf: &mut Buffer, state: &ApiKeyInputState) {
-        let [intro_area, input_area, footer_area] = Layout::vertical([
-            Constraint::Min(4),
+        let [top_area, input_area, bottom_area] = Layout::vertical([
+            Constraint::Length(lines.len() as u16),
             Constraint::Length(3),
             Constraint::Min(2),
         ])
         .areas(area);
 
-        let mut intro_lines: Vec<Line> = vec![
-            Line::from(vec![
-                "> ".into(),
-                "Use your own OpenAI API key for usage-based billing".bold(),
-            ]),
-            "".into(),
-            "  Paste or type your API key below. It will be stored locally in auth.json.".into(),
-            "".into(),
-        ];
-        if state.prepopulated_from_env {
-            intro_lines.push("  Detected OPENAI_API_KEY environment variable.".into());
-            intro_lines.push(
-                "  Paste a different key if you prefer to use another account."
-                    .dim()
-                    .into(),
-            );
-            intro_lines.push("".into());
-        }
-        Paragraph::new(intro_lines)
+        Paragraph::new(lines)
             .wrap(Wrap { trim: false })
-            .render(intro_area, buf);
+            .render(top_area, buf);
 
-        let content_line: Line = if state.value.is_empty() {
-            vec!["Paste or type your API key".dim()].into()
-        } else {
-            Line::from(state.value.clone())
-        };
-        Paragraph::new(content_line)
+        Paragraph::new(input_display)
             .wrap(Wrap { trim: false })
             .block(
                 Block::default()
-                    .title("API key")
+                    .title("Authorization Code")
                     .borders(Borders::ALL)
                     .border_type(BorderType::Rounded)
                     .border_style(Style::default().fg(Color::Cyan)),
             )
             .render(input_area, buf);
 
-        let mut footer_lines: Vec<Line> = vec![
+        let mut footer = vec![
             Line::from(vec![
                 "  Press ".dim(),
                 self.confirm_binding().into(),
-                " to save".dim(),
-            ]),
-            Line::from(vec![
-                "  Press ".dim(),
+                " to submit code, ".dim(),
                 self.cancel_binding().into(),
                 " to go back".dim(),
             ]),
         ];
-        if let Some(error) = self.error_message() {
-            footer_lines.push("".into());
-            footer_lines.push(error.red().into());
+        if let Some(err) = self.error_message() {
+            footer.push("".into());
+            footer.push(err.red().into());
         }
-        Paragraph::new(footer_lines)
+        Paragraph::new(footer)
             .wrap(Wrap { trim: false })
-            .render(footer_area, buf);
+            .render(bottom_area, buf);
+
+        mark_url_hyperlink(buf, top_area, &state.auth_url);
     }
 
-    fn handle_api_key_entry_key_event(&mut self, key_event: &KeyEvent) -> bool {
-        let mut should_save: Option<String> = None;
-        let mut should_request_frame = false;
+    fn render_antigravity_model_selection(
+        &self,
+        area: Rect,
+        buf: &mut Buffer,
+        state: &AntigravityModelSelectionState,
+    ) {
+        let mut lines: Vec<Line> = vec![
+            Line::from(vec![
+                "✓ ".green().bold(),
+                "Google Antigravity Connected!".bold(),
+            ]),
+            "".into(),
+            "  Select your default model for this workspace:".into(),
+            "".into(),
+        ];
 
-        {
-            let mut guard = self.sign_in_state.write().unwrap();
-            if let SignInState::ApiKeyEntry(state) = &mut *guard {
-                if keys::CANCEL.is_pressed(*key_event) {
-                    *guard = SignInState::PickMode;
-                    self.set_error(/*message*/ None);
-                    should_request_frame = true;
-                } else if keys::CONFIRM.is_pressed(*key_event) {
-                    let trimmed = state.value.trim().to_string();
-                    if trimmed.is_empty() {
-                        self.set_error(Some("API key cannot be empty".to_string()));
-                        should_request_frame = true;
-                    } else {
-                        should_save = Some(trimmed);
-                    }
+        for (idx, model) in state.models.iter().enumerate() {
+            let is_selected = idx == state.selected_index;
+            let caret = if is_selected { ">" } else { " " };
+            if is_selected {
+                lines.push(Line::from(vec![
+                    format!("{caret} {model}").cyan().bold(),
+                    " (Default)".dim(),
+                ]));
+            } else {
+                lines.push(Line::from(format!("  {model}")).dim());
+            }
+        }
+
+        lines.push("".into());
+        lines.push(Line::from(vec![
+            "  Use ".dim(),
+            "↑/↓".cyan(),
+            " to select, press ".dim(),
+            self.confirm_binding().into(),
+            " to confirm".dim(),
+        ]));
+
+        Paragraph::new(lines)
+            .wrap(Wrap { trim: false })
+            .render(area, buf);
+    }
+
+    fn render_custom_endpoint(&self, area: Rect, buf: &mut Buffer, state: &CustomProviderEndpointState) {
+        let [intro_area, input_area, footer_area] = Layout::vertical([
+            Constraint::Length(5),
+            Constraint::Length(3),
+            Constraint::Min(2),
+        ])
+        .areas(area);
+
+        let intro_lines = vec![
+            Line::from(vec!["> ".into(), "Custom Provider: Base URL / Endpoint".bold()]),
+            "".into(),
+            "  Enter your OpenAI-compatible endpoint URL:".into(),
+            "  (e.g., http://localhost:11434/v1, https://openrouter.ai/api/v1, https://api.openai.com/v1)".dim().into(),
+        ];
+        Paragraph::new(intro_lines).render(intro_area, buf);
+
+        let content = if state.endpoint.is_empty() {
+            Line::from("http://localhost:11434/v1".dim())
+        } else {
+            Line::from(state.endpoint.clone())
+        };
+
+        Paragraph::new(content)
+            .block(
+                Block::default()
+                    .title("Endpoint URL")
+                    .borders(Borders::ALL)
+                    .border_type(BorderType::Rounded)
+                    .border_style(Style::default().fg(Color::Cyan)),
+            )
+            .render(input_area, buf);
+
+        let footer = vec![
+            Line::from(vec![
+                "  Press ".dim(),
+                self.confirm_binding().into(),
+                " to continue, ".dim(),
+                self.cancel_binding().into(),
+                " to go back".dim(),
+            ]),
+        ];
+        Paragraph::new(footer).render(footer_area, buf);
+    }
+
+    fn render_custom_api_key(&self, area: Rect, buf: &mut Buffer, state: &CustomProviderApiKeyState) {
+        let [intro_area, input_area, footer_area] = Layout::vertical([
+            Constraint::Length(5),
+            Constraint::Length(3),
+            Constraint::Min(2),
+        ])
+        .areas(area);
+
+        let intro_lines = vec![
+            Line::from(vec!["> ".into(), "Custom Provider: API Key".bold()]),
+            "".into(),
+            "  Enter your API Key (leave empty if your local endpoint does not require authentication):".into(),
+            format!("  Target Endpoint: {}", state.endpoint).dim().into(),
+        ];
+        Paragraph::new(intro_lines).render(intro_area, buf);
+
+        let content = if state.api_key.is_empty() {
+            Line::from("Paste or type API key (optional)".dim())
+        } else {
+            Line::from(state.api_key.clone())
+        };
+
+        Paragraph::new(content)
+            .block(
+                Block::default()
+                    .title("API Key")
+                    .borders(Borders::ALL)
+                    .border_type(BorderType::Rounded)
+                    .border_style(Style::default().fg(Color::Cyan)),
+            )
+            .render(input_area, buf);
+
+        let footer = vec![
+            Line::from(vec![
+                "  Press ".dim(),
+                self.confirm_binding().into(),
+                " to load models, ".dim(),
+                self.cancel_binding().into(),
+                " to go back".dim(),
+            ]),
+        ];
+        Paragraph::new(footer).render(footer_area, buf);
+    }
+
+    fn render_custom_model_selection(
+        &self,
+        area: Rect,
+        buf: &mut Buffer,
+        state: &CustomProviderModelSelectionState,
+    ) {
+        let mut lines: Vec<Line> = vec![
+            Line::from(vec![
+                "> ".into(),
+                "Select Model from Provider".bold(),
+            ]),
+            format!("  Endpoint: {}", state.endpoint).dim().into(),
+            "".into(),
+        ];
+
+        if state.is_fetching {
+            lines.push(Line::from("  Fetching available models from endpoint...".cyan()));
+        } else {
+            lines.push("  Dynamically loaded models:".into());
+            lines.push("".into());
+
+            for (idx, model) in state.models.iter().enumerate() {
+                let is_selected = idx == state.selected_index;
+                let caret = if is_selected { ">" } else { " " };
+                if is_selected {
+                    lines.push(Line::from(format!("{caret} {model}").cyan().bold()));
                 } else {
-                    match key_event.code {
-                        KeyCode::Backspace => {
-                            if state.prepopulated_from_env {
-                                state.value.clear();
-                                state.prepopulated_from_env = false;
-                            } else {
-                                state.value.pop();
-                            }
-                            self.set_error(/*message*/ None);
-                            should_request_frame = true;
-                        }
-                        KeyCode::Char(c)
-                            if key_event.kind == KeyEventKind::Press
-                                && !key_event.modifiers.contains(KeyModifiers::SUPER)
-                                && !key_event.modifiers.contains(KeyModifiers::CONTROL)
-                                && !key_event.modifiers.contains(KeyModifiers::ALT) =>
-                        {
-                            if state.prepopulated_from_env {
-                                state.value.clear();
-                                state.prepopulated_from_env = false;
-                            }
-                            state.value.push(c);
-                            self.set_error(/*message*/ None);
-                            should_request_frame = true;
-                        }
-                        _ => {}
-                    }
-                }
-                // handled; let guard drop before potential save
-            } else {
-                return false;
-            }
-        }
-
-        if let Some(api_key) = should_save {
-            self.save_api_key(api_key);
-        } else if should_request_frame {
-            self.request_frame.schedule_frame();
-        }
-        true
-    }
-
-    fn handle_api_key_entry_paste(&mut self, pasted: String) -> bool {
-        let trimmed = pasted.trim();
-        if trimmed.is_empty() {
-            return false;
-        }
-
-        let mut guard = self.sign_in_state.write().unwrap();
-        if let SignInState::ApiKeyEntry(state) = &mut *guard {
-            if state.prepopulated_from_env {
-                state.value = trimmed.to_string();
-                state.prepopulated_from_env = false;
-            } else {
-                state.value.push_str(trimmed);
-            }
-            self.set_error(/*message*/ None);
-        } else {
-            return false;
-        }
-
-        drop(guard);
-        self.request_frame.schedule_frame();
-        true
-    }
-
-    fn start_api_key_entry(&mut self) {
-        if !self.is_api_login_allowed() {
-            self.disallow_api_login();
-            return;
-        }
-        self.set_error(/*message*/ None);
-        let prefill_from_env = read_openai_api_key_from_env();
-        let mut guard = self.sign_in_state.write().unwrap();
-        match &mut *guard {
-            SignInState::ApiKeyEntry(state) => {
-                if state.value.is_empty() {
-                    if let Some(prefill) = prefill_from_env {
-                        state.value = prefill;
-                        state.prepopulated_from_env = true;
-                    } else {
-                        state.prepopulated_from_env = false;
-                    }
+                    lines.push(Line::from(format!("  {model}")).dim());
                 }
             }
-            _ => {
-                *guard = SignInState::ApiKeyEntry(ApiKeyInputState {
-                    value: prefill_from_env.clone().unwrap_or_default(),
-                    prepopulated_from_env: prefill_from_env.is_some(),
-                });
+
+            if let Some(ref err) = state.error_msg {
+                lines.push("".into());
+                lines.push(Line::from(format!("  Notice: {err}")).yellow());
             }
+
+            lines.push("".into());
+            lines.push(Line::from(vec![
+                "  Use ".dim(),
+                "↑/↓".cyan(),
+                " to select, press ".dim(),
+                self.confirm_binding().into(),
+                " to finish".dim(),
+            ]));
         }
-        drop(guard);
-        self.request_frame.schedule_frame();
+
+        Paragraph::new(lines)
+            .wrap(Wrap { trim: false })
+            .render(area, buf);
     }
 
-    fn save_api_key(&mut self, api_key: String) {
-        if !self.is_api_login_allowed() {
-            self.disallow_api_login();
-            return;
-        }
-        self.set_error(/*message*/ None);
-        let request_handle = self.app_server_request_handle.clone();
-        let sign_in_state = self.sign_in_state.clone();
-        let error = self.error.clone();
-        let request_frame = self.request_frame.clone();
-        tokio::spawn(async move {
-            match request_handle
-                .request_typed::<LoginAccountResponse>(ClientRequest::LoginAccount {
-                    request_id: onboarding_request_id(),
-                    params: LoginAccountParams::ApiKey {
-                        api_key: api_key.clone(),
-                    },
-                })
-                .await
-            {
-                Ok(LoginAccountResponse::ApiKey {}) => {
-                    *error.write().unwrap() = None;
-                    *sign_in_state.write().unwrap() = SignInState::ApiKeyConfigured;
-                }
-                Ok(other) => {
-                    *error.write().unwrap() = Some(format!(
-                        "Unexpected account/login/start response: {other:?}"
-                    ));
-                    *sign_in_state.write().unwrap() = SignInState::ApiKeyEntry(ApiKeyInputState {
-                        value: api_key,
-                        prepopulated_from_env: false,
-                    });
-                }
-                Err(err) => {
-                    *error.write().unwrap() = Some(format!("Failed to save API key: {err}"));
-                    *sign_in_state.write().unwrap() = SignInState::ApiKeyEntry(ApiKeyInputState {
-                        value: api_key,
-                        prepopulated_from_env: false,
-                    });
-                }
-            }
-            request_frame.schedule_frame();
-        });
-        self.request_frame.schedule_frame();
-    }
+    fn render_success_message(&self, area: Rect, buf: &mut Buffer, msg: &str) {
+        let lines = vec![
+            Line::from(vec!["✓ ".green().bold(), msg.green().bold()]),
+            "".into(),
+            Line::from("  AvA Code is fully configured and ready to build.").into(),
+            "".into(),
+            Line::from(vec![
+                "  Press ".cyan(),
+                self.confirm_binding().into(),
+                " to enter workspace".cyan(),
+            ]),
+        ];
 
-    fn handle_existing_chatgpt_login(&mut self) -> bool {
-        if matches!(
-            self.login_status,
-            LoginStatus::AuthMode(auth_mode) if auth_mode.has_chatgpt_account()
-        ) {
-            *self.sign_in_state.write().unwrap() = SignInState::ChatGptSuccess;
-            self.request_frame.schedule_frame();
-            true
-        } else {
-            false
-        }
-    }
-
-    /// Kicks off the ChatGPT auth flow and keeps the UI state consistent with the attempt.
-    fn start_chatgpt_login(&mut self) {
-        // If we're already authenticated with ChatGPT, don't start a new login –
-        // just proceed to the success message flow.
-        if self.handle_existing_chatgpt_login() {
-            return;
-        }
-
-        self.set_error(/*message*/ None);
-        let request_handle = self.app_server_request_handle.clone();
-        let sign_in_state = self.sign_in_state.clone();
-        let error = self.error.clone();
-        let request_frame = self.request_frame.clone();
-        tokio::spawn(async move {
-            match request_handle
-                .request_typed::<LoginAccountResponse>(ClientRequest::LoginAccount {
-                    request_id: onboarding_request_id(),
-                    params: LoginAccountParams::Chatgpt {
-                        app_brand: None,
-                        codex_streamlined_login: false,
-                        use_hosted_login_success_page: false,
-                    },
-                })
-                .await
-            {
-                Ok(LoginAccountResponse::Chatgpt { login_id, auth_url }) => {
-                    maybe_open_auth_url_in_browser(&request_handle, &auth_url);
-                    *error.write().unwrap() = None;
-                    *sign_in_state.write().unwrap() =
-                        SignInState::ChatGptContinueInBrowser(ContinueInBrowserState {
-                            login_id,
-                            auth_url,
-                        });
-                }
-                Ok(other) => {
-                    *sign_in_state.write().unwrap() = SignInState::PickMode;
-                    *error.write().unwrap() = Some(format!(
-                        "Unexpected account/login/start response: {other:?}"
-                    ));
-                }
-                Err(err) => {
-                    *sign_in_state.write().unwrap() = SignInState::PickMode;
-                    *error.write().unwrap() = Some(err.to_string());
-                }
-            }
-            request_frame.schedule_frame();
-        });
-    }
-
-    fn start_device_code_login(&mut self) {
-        if self.handle_existing_chatgpt_login() {
-            return;
-        }
-
-        self.set_error(/*message*/ None);
-        headless_chatgpt_login::start_headless_chatgpt_login(self);
+        Paragraph::new(lines)
+            .wrap(Wrap { trim: false })
+            .render(area, buf);
     }
 
     pub(crate) fn on_account_login_completed(
         &mut self,
-        notification: AccountLoginCompletedNotification,
+        _notification: AccountLoginCompletedNotification,
     ) {
-        let Some(login_id) = notification.login_id else {
-            return;
-        };
-        let guard = self.sign_in_state.read().unwrap();
-        let is_matching_login = matches!(
-            &*guard,
-            SignInState::ChatGptContinueInBrowser(state) if state.login_id == login_id
-        ) || matches!(
-            &*guard,
-            SignInState::ChatGptDeviceCode(state) if state.login_id() == Some(login_id.as_str())
-        );
-        drop(guard);
-        if !is_matching_login {
-            return;
-        }
-
-        if notification.success {
-            self.set_error(/*message*/ None);
-            *self.sign_in_state.write().unwrap() = SignInState::ChatGptSuccessMessage;
-        } else {
-            self.set_error(notification.error);
-            *self.sign_in_state.write().unwrap() = SignInState::PickMode;
-        }
-        self.request_frame.schedule_frame();
     }
 
     pub(crate) fn on_account_updated(&mut self, notification: AccountUpdatedNotification) {
@@ -1029,17 +1037,291 @@ impl AuthModeWidget {
     }
 }
 
+impl KeyboardHandler for AuthModeWidget {
+    fn handle_key_event(&mut self, key_event: KeyEvent) {
+        let sign_in_state = { (*self.sign_in_state.read().unwrap()).clone() };
+
+        match sign_in_state {
+            SignInState::PickMode => {
+                if keys::MOVE_UP.is_pressed(key_event) {
+                    self.move_highlight(-1);
+                    self.request_frame.schedule_frame();
+                    return;
+                }
+                if keys::MOVE_DOWN.is_pressed(key_event) {
+                    self.move_highlight(1);
+                    self.request_frame.schedule_frame();
+                    return;
+                }
+                if keys::SELECT_FIRST.is_pressed(key_event) {
+                    self.select_option_by_index(0);
+                    return;
+                }
+                if keys::SELECT_SECOND.is_pressed(key_event) {
+                    self.select_option_by_index(1);
+                    return;
+                }
+                if keys::CONFIRM.is_pressed(key_event) {
+                    self.handle_sign_in_option(self.highlighted_mode);
+                    return;
+                }
+            }
+            SignInState::AntigravityOAuth(mut state) => {
+                if keys::CANCEL.is_pressed(key_event) {
+                    *self.sign_in_state.write().unwrap() = SignInState::PickMode;
+                    self.set_error(None);
+                    self.request_frame.schedule_frame();
+                    return;
+                }
+                if keys::CONFIRM.is_pressed(key_event) {
+                    let code = state.manual_code_input.trim().to_string();
+                    if !code.is_empty() {
+                        let sign_in_state = self.sign_in_state.clone();
+                        let error = self.error.clone();
+                        let request_frame = self.request_frame.clone();
+                        tokio::spawn(async move {
+                            Self::complete_antigravity_exchange(
+                                code,
+                                sign_in_state,
+                                error,
+                                request_frame,
+                            )
+                            .await;
+                        });
+                    }
+                    return;
+                }
+                match key_event.code {
+                    KeyCode::Backspace => {
+                        state.manual_code_input.pop();
+                        *self.sign_in_state.write().unwrap() =
+                            SignInState::AntigravityOAuth(state);
+                        self.request_frame.schedule_frame();
+                    }
+                    KeyCode::Char(c)
+                        if key_event.kind == KeyEventKind::Press
+                            && !key_event.modifiers.contains(KeyModifiers::SUPER)
+                            && !key_event.modifiers.contains(KeyModifiers::CONTROL)
+                            && !key_event.modifiers.contains(KeyModifiers::ALT) =>
+                    {
+                        state.manual_code_input.push(c);
+                        *self.sign_in_state.write().unwrap() =
+                            SignInState::AntigravityOAuth(state);
+                        self.request_frame.schedule_frame();
+                    }
+                    _ => {}
+                }
+            }
+            SignInState::AntigravityModelSelection(mut state) => {
+                if keys::MOVE_UP.is_pressed(key_event) {
+                    if state.selected_index > 0 {
+                        state.selected_index -= 1;
+                        *self.sign_in_state.write().unwrap() =
+                            SignInState::AntigravityModelSelection(state);
+                        self.request_frame.schedule_frame();
+                    }
+                    return;
+                }
+                if keys::MOVE_DOWN.is_pressed(key_event) {
+                    if state.selected_index + 1 < state.models.len() {
+                        state.selected_index += 1;
+                        *self.sign_in_state.write().unwrap() =
+                            SignInState::AntigravityModelSelection(state);
+                        self.request_frame.schedule_frame();
+                    }
+                    return;
+                }
+                if keys::CONFIRM.is_pressed(key_event) {
+                    let selected_model = state
+                        .models
+                        .get(state.selected_index)
+                        .cloned()
+                        .unwrap_or_else(|| "gemini-3.8-flash".to_string());
+                    *self.sign_in_state.write().unwrap() =
+                        SignInState::SuccessMessage(format!(
+                            "Authenticated with Google Antigravity (Default model: {selected_model})"
+                        ));
+                    self.request_frame.schedule_frame();
+                    return;
+                }
+            }
+            SignInState::CustomProviderEndpoint(mut state) => {
+                if keys::CANCEL.is_pressed(key_event) {
+                    *self.sign_in_state.write().unwrap() = SignInState::PickMode;
+                    self.request_frame.schedule_frame();
+                    return;
+                }
+                if keys::CONFIRM.is_pressed(key_event) {
+                    let endpoint = if state.endpoint.trim().is_empty() {
+                        "http://localhost:11434/v1".to_string()
+                    } else {
+                        state.endpoint.trim().to_string()
+                    };
+                    *self.sign_in_state.write().unwrap() =
+                        SignInState::CustomProviderApiKey(CustomProviderApiKeyState {
+                            endpoint,
+                            api_key: String::new(),
+                        });
+                    self.request_frame.schedule_frame();
+                    return;
+                }
+                match key_event.code {
+                    KeyCode::Backspace => {
+                        state.endpoint.pop();
+                        *self.sign_in_state.write().unwrap() =
+                            SignInState::CustomProviderEndpoint(state);
+                        self.request_frame.schedule_frame();
+                    }
+                    KeyCode::Char(c)
+                        if key_event.kind == KeyEventKind::Press
+                            && !key_event.modifiers.contains(KeyModifiers::SUPER)
+                            && !key_event.modifiers.contains(KeyModifiers::CONTROL)
+                            && !key_event.modifiers.contains(KeyModifiers::ALT) =>
+                    {
+                        state.endpoint.push(c);
+                        *self.sign_in_state.write().unwrap() =
+                            SignInState::CustomProviderEndpoint(state);
+                        self.request_frame.schedule_frame();
+                    }
+                    _ => {}
+                }
+            }
+            SignInState::CustomProviderApiKey(mut state) => {
+                if keys::CANCEL.is_pressed(key_event) {
+                    *self.sign_in_state.write().unwrap() =
+                        SignInState::CustomProviderEndpoint(CustomProviderEndpointState {
+                            endpoint: state.endpoint,
+                        });
+                    self.request_frame.schedule_frame();
+                    return;
+                }
+                if keys::CONFIRM.is_pressed(key_event) {
+                    Self::fetch_custom_provider_models(
+                        state.endpoint,
+                        state.api_key,
+                        self.sign_in_state.clone(),
+                        self.error.clone(),
+                        self.request_frame.clone(),
+                    );
+                    return;
+                }
+                match key_event.code {
+                    KeyCode::Backspace => {
+                        state.api_key.pop();
+                        *self.sign_in_state.write().unwrap() =
+                            SignInState::CustomProviderApiKey(state);
+                        self.request_frame.schedule_frame();
+                    }
+                    KeyCode::Char(c)
+                        if key_event.kind == KeyEventKind::Press
+                            && !key_event.modifiers.contains(KeyModifiers::SUPER)
+                            && !key_event.modifiers.contains(KeyModifiers::CONTROL)
+                            && !key_event.modifiers.contains(KeyModifiers::ALT) =>
+                    {
+                        state.api_key.push(c);
+                        *self.sign_in_state.write().unwrap() =
+                            SignInState::CustomProviderApiKey(state);
+                        self.request_frame.schedule_frame();
+                    }
+                    _ => {}
+                }
+            }
+            SignInState::CustomProviderModelSelection(mut state) => {
+                if keys::CANCEL.is_pressed(key_event) {
+                    *self.sign_in_state.write().unwrap() =
+                        SignInState::CustomProviderApiKey(CustomProviderApiKeyState {
+                            endpoint: state.endpoint,
+                            api_key: state.api_key,
+                        });
+                    self.request_frame.schedule_frame();
+                    return;
+                }
+                if keys::MOVE_UP.is_pressed(key_event) {
+                    if state.selected_index > 0 {
+                        state.selected_index -= 1;
+                        *self.sign_in_state.write().unwrap() =
+                            SignInState::CustomProviderModelSelection(state);
+                        self.request_frame.schedule_frame();
+                    }
+                    return;
+                }
+                if keys::MOVE_DOWN.is_pressed(key_event) {
+                    if state.selected_index + 1 < state.models.len() {
+                        state.selected_index += 1;
+                        *self.sign_in_state.write().unwrap() =
+                            SignInState::CustomProviderModelSelection(state);
+                        self.request_frame.schedule_frame();
+                    }
+                    return;
+                }
+                if keys::CONFIRM.is_pressed(key_event) {
+                    let selected_model = state
+                        .models
+                        .get(state.selected_index)
+                        .cloned()
+                        .unwrap_or_else(|| "default".to_string());
+                    Self::persist_custom_provider_config(
+                        &state.endpoint,
+                        &state.api_key,
+                        &selected_model,
+                    );
+                    *self.sign_in_state.write().unwrap() =
+                        SignInState::SuccessMessage(format!(
+                            "Custom Provider Connected (Model: {selected_model})"
+                        ));
+                    self.request_frame.schedule_frame();
+                    return;
+                }
+            }
+            SignInState::SuccessMessage(_) => {
+                if keys::CONFIRM.is_pressed(key_event) {
+                    *self.sign_in_state.write().unwrap() = SignInState::Success;
+                    self.request_frame.schedule_frame();
+                }
+            }
+            _ => {}
+        }
+    }
+
+    fn handle_paste(&mut self, pasted: String) {
+        let trimmed = pasted.trim().to_string();
+        let mut guard = self.sign_in_state.write().unwrap();
+        match &mut *guard {
+            SignInState::AntigravityOAuth(state) => {
+                state.manual_code_input = trimmed;
+            }
+            SignInState::CustomProviderEndpoint(state) => {
+                state.endpoint = trimmed;
+            }
+            SignInState::CustomProviderApiKey(state) => {
+                state.api_key = trimmed;
+            }
+            _ => {}
+        }
+        drop(guard);
+        self.request_frame.schedule_frame();
+    }
+}
+
 impl StepStateProvider for AuthModeWidget {
     fn get_step_state(&self) -> StepState {
         let sign_in_state = self.sign_in_state.read().unwrap();
         match &*sign_in_state {
             SignInState::PickMode
-            | SignInState::ApiKeyEntry(_)
+            | SignInState::AntigravityOAuth(_)
+            | SignInState::AntigravityModelSelection(_)
+            | SignInState::CustomProviderEndpoint(_)
+            | SignInState::CustomProviderApiKey(_)
+            | SignInState::CustomProviderModelSelection(_)
+            | SignInState::SuccessMessage(_)
             | SignInState::ChatGptContinueInBrowser(_)
             | SignInState::ChatGptDeviceCode(_)
             | SignInState::ChatGptSuccessMessage
+            | SignInState::ApiKeyEntry(_)
             | SignInState::Bedrock(_) => StepState::InProgress,
-            SignInState::ChatGptSuccess
+
+            SignInState::Success
+            | SignInState::ChatGptSuccess
             | SignInState::ApiKeyConfigured
             | SignInState::BedrockConfigured => StepState::Complete,
         }
@@ -1053,507 +1335,27 @@ impl WidgetRef for AuthModeWidget {
             SignInState::PickMode => {
                 self.render_pick_mode(area, buf);
             }
-            SignInState::ChatGptContinueInBrowser(_) => {
-                self.render_continue_in_browser(area, buf);
+            SignInState::AntigravityOAuth(state) => {
+                self.render_antigravity_oauth(area, buf, state);
             }
-            SignInState::ChatGptDeviceCode(state) => {
-                headless_chatgpt_login::render_device_code_login(self, area, buf, state);
+            SignInState::AntigravityModelSelection(state) => {
+                self.render_antigravity_model_selection(area, buf, state);
             }
-            SignInState::ChatGptSuccessMessage => {
-                self.render_chatgpt_success_message(area, buf);
+            SignInState::CustomProviderEndpoint(state) => {
+                self.render_custom_endpoint(area, buf, state);
             }
-            SignInState::ChatGptSuccess => {
-                self.render_chatgpt_success(area, buf);
+            SignInState::CustomProviderApiKey(state) => {
+                self.render_custom_api_key(area, buf, state);
             }
-            SignInState::ApiKeyEntry(state) => {
-                self.render_api_key_entry(area, buf, state);
+            SignInState::CustomProviderModelSelection(state) => {
+                self.render_custom_model_selection(area, buf, state);
             }
-            SignInState::ApiKeyConfigured => {
-                self.render_api_key_configured(area, buf);
+            SignInState::SuccessMessage(msg) => {
+                self.render_success_message(area, buf, msg);
             }
-            SignInState::Bedrock(state) => {
-                state.render(area, buf, self.error_message());
-            }
-            SignInState::BedrockConfigured => {
-                Paragraph::new("✓ Amazon Bedrock configured".green())
-                    .wrap(Wrap { trim: false })
-                    .render(area, buf);
+            _ => {
+                self.render_pick_mode(area, buf);
             }
         }
-    }
-}
-
-pub(super) fn maybe_open_auth_url_in_browser(request_handle: &AppServerRequestHandle, url: &str) {
-    if !matches!(request_handle, AppServerRequestHandle::InProcess(_)) {
-        return;
-    }
-
-    if let Err(err) = webbrowser::open(url) {
-        tracing::warn!("failed to open browser for login URL: {err}");
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::legacy_core::config::ConfigBuilder;
-    use codex_app_server_client::AppServerRequestHandle;
-    use codex_app_server_client::DEFAULT_IN_PROCESS_CHANNEL_CAPACITY;
-    use codex_app_server_client::InProcessAppServerClient;
-    use codex_app_server_client::InProcessClientStartArgs;
-    use codex_arg0::Arg0DispatchPaths;
-    use codex_cloud_config::cloud_config_bundle_loader_for_storage;
-    use pretty_assertions::assert_eq;
-    use std::sync::Arc;
-    use tempfile::TempDir;
-
-    const PRODUCTION_LENGTH_AUTH_URL: &str = concat!(
-        "https://auth.openai.com/oauth/authorize?",
-        "response_type=code&",
-        "client_id=app_EMoamEEZ73f0CkXaXp7hrann&",
-        "redirect_uri=http%3A%2F%2Flocalhost%3A1455%2Fauth%2Fcallback&",
-        "scope=openid%20profile%20email%20offline_access%20",
-        "api.connectors.read%20api.connectors.invoke&",
-        "code_challenge=1YM3Z8QbrLbdt9C3eX3j7UQ4GmFRmKz4OeVYwD6s5xA&",
-        "code_challenge_method=S256&",
-        "id_token_add_organizations=true&",
-        "codex_cli_simplified_flow=true&",
-        "state=8cHjQ4nVx2Yp7Lm9Rk3Wf6Ta1Bs5Du0Ei4Go7Nz2PqM&",
-        "originator=codex_cli_rs"
-    );
-
-    async fn widget_forced_chatgpt() -> (AuthModeWidget, TempDir) {
-        let codex_home = TempDir::new().unwrap();
-        let codex_home_path = codex_home.path().to_path_buf();
-        let config = ConfigBuilder::default()
-            .codex_home(codex_home_path.clone())
-            .build()
-            .await
-            .unwrap();
-        let mut auth_config = config.auth_config();
-        let client = InProcessAppServerClient::start(InProcessClientStartArgs {
-            arg0_paths: Arg0DispatchPaths::default(),
-            config: Arc::new(config),
-            cli_overrides: Vec::new(),
-            loader_overrides: Default::default(),
-            strict_config: false,
-            cloud_config_bundle: cloud_config_bundle_loader_for_storage(
-                auth_config.clone(),
-                /*enable_codex_api_key_env*/ false,
-            )
-            .await
-            .expect("test cloud config loader"),
-            feedback: codex_feedback::CodexFeedback::new(),
-            log_db: None,
-            state_db: None,
-            environment_manager: Arc::new(
-                codex_app_server_client::EnvironmentManager::default_for_tests(),
-            ),
-            config_warnings: Vec::new(),
-            session_source: serde_json::from_value(serde_json::json!("cli"))
-                .expect("cli session source should deserialize"),
-            enable_codex_api_key_env: false,
-            client_name: "test".to_string(),
-            client_version: "test".to_string(),
-            experimental_api: true,
-            mcp_server_openai_form_elicitation: false,
-            opt_out_notification_methods: Vec::new(),
-            channel_capacity: DEFAULT_IN_PROCESS_CHANNEL_CAPACITY,
-        })
-        .await
-        .unwrap();
-        auth_config.forced_login_method = Some(ForcedLoginMethod::Chatgpt);
-        let widget = AuthModeWidget {
-            request_frame: FrameRequester::test_dummy(),
-            highlighted_mode: SignInOption::ChatGpt,
-            error: Arc::new(RwLock::new(None)),
-            sign_in_state: Arc::new(RwLock::new(SignInState::PickMode)),
-            login_status: LoginStatus::NotAuthenticated,
-            app_server_request_handle: AppServerRequestHandle::InProcess(client.request_handle()),
-            auth_config,
-            bedrock_setup_enabled: false,
-            animations_enabled: true,
-            animations_suppressed: std::cell::Cell::new(false),
-        };
-        (widget, codex_home)
-    }
-
-    #[tokio::test]
-    async fn api_key_flow_disabled_when_chatgpt_forced() {
-        let (mut widget, _tmp) = widget_forced_chatgpt().await;
-
-        widget.start_api_key_entry();
-
-        assert_eq!(
-            widget.error_message().as_deref(),
-            Some(API_KEY_DISABLED_MESSAGE)
-        );
-        assert!(matches!(
-            &*widget.sign_in_state.read().unwrap(),
-            SignInState::PickMode
-        ));
-    }
-
-    #[tokio::test]
-    async fn bedrock_option_requires_feature_and_api_login_permission() {
-        let (mut widget, _tmp) = widget_forced_chatgpt().await;
-        widget.auth_config.forced_login_method = None;
-        assert_eq!(
-            widget.displayed_sign_in_options(),
-            vec![
-                SignInOption::ChatGpt,
-                SignInOption::DeviceCode,
-                SignInOption::ApiKey,
-            ]
-        );
-
-        widget.bedrock_setup_enabled = true;
-        assert_eq!(
-            widget.displayed_sign_in_options(),
-            vec![
-                SignInOption::ChatGpt,
-                SignInOption::DeviceCode,
-                SignInOption::ApiKey,
-                SignInOption::Bedrock,
-            ]
-        );
-
-        let area = Rect::new(0, 0, 76, 19);
-        let mut buffer = Buffer::empty(area);
-        widget.render_pick_mode(area, &mut buffer);
-        let mut rows = (area.top()..area.bottom())
-            .map(|row| {
-                (area.left()..area.right())
-                    .map(|column| buffer[(column, row)].symbol())
-                    .collect::<String>()
-                    .trim_end()
-                    .to_string()
-            })
-            .collect::<Vec<_>>();
-        while rows.last().is_some_and(String::is_empty) {
-            rows.pop();
-        }
-        insta::assert_snapshot!(rows.join("\n"), @r###"
-          Choose how you want to use Codex.
-
-        > 1. Sign in with ChatGPT
-             Usage included with Plus, Pro, Business, and Enterprise plans
-
-          2. Sign in with Device Code
-             Sign in from another device with a one-time code
-
-          3. Use an OpenAI API key
-             Pay for what you use
-
-          4. Use Amazon Bedrock
-             Connect using your AWS credentials
-
-          Press enter to continue
-        "###);
-
-        widget.auth_config.forced_login_method = Some(ForcedLoginMethod::Chatgpt);
-        assert_eq!(
-            widget.displayed_sign_in_options(),
-            vec![SignInOption::ChatGpt, SignInOption::DeviceCode]
-        );
-    }
-
-    #[tokio::test]
-    async fn saving_api_key_is_blocked_when_chatgpt_forced() {
-        let (mut widget, _tmp) = widget_forced_chatgpt().await;
-
-        widget.save_api_key("sk-test".to_string());
-
-        assert_eq!(
-            widget.error_message().as_deref(),
-            Some(API_KEY_DISABLED_MESSAGE)
-        );
-        assert!(matches!(
-            &*widget.sign_in_state.read().unwrap(),
-            SignInState::PickMode
-        ));
-        assert_eq!(widget.login_status, LoginStatus::NotAuthenticated);
-    }
-
-    #[tokio::test]
-    async fn existing_non_oauth_chatgpt_login_counts_as_signed_in() {
-        for auth_mode in [AuthMode::ChatgptAuthTokens, AuthMode::PersonalAccessToken] {
-            let (mut widget, _tmp) = widget_forced_chatgpt().await;
-            widget.login_status = LoginStatus::AuthMode(auth_mode);
-
-            let handled = widget.handle_existing_chatgpt_login();
-
-            assert_eq!(handled, true);
-            assert!(matches!(
-                &*widget.sign_in_state.read().unwrap(),
-                SignInState::ChatGptSuccess
-            ));
-        }
-    }
-
-    #[tokio::test]
-    async fn cancel_active_attempt_resets_browser_login_state() {
-        let (widget, _tmp) = widget_forced_chatgpt().await;
-        *widget.error.write().unwrap() = Some("still logging in".to_string());
-        *widget.sign_in_state.write().unwrap() =
-            SignInState::ChatGptContinueInBrowser(ContinueInBrowserState {
-                login_id: "login-1".to_string(),
-                auth_url: "https://auth.example.com".to_string(),
-            });
-
-        widget.cancel_active_attempt();
-
-        assert_eq!(widget.error_message(), None);
-        assert!(matches!(
-            &*widget.sign_in_state.read().unwrap(),
-            SignInState::PickMode
-        ));
-    }
-
-    #[tokio::test]
-    async fn cancel_active_attempt_notifies_device_code_login() {
-        let (widget, _tmp) = widget_forced_chatgpt().await;
-        *widget.error.write().unwrap() = Some("still logging in".to_string());
-        *widget.sign_in_state.write().unwrap() =
-            SignInState::ChatGptDeviceCode(ContinueWithDeviceCodeState::ready(
-                "request-1".to_string(),
-                "login-1".to_string(),
-                "https://chatgpt.com/device".to_string(),
-                "ABCD-EFGH".to_string(),
-            ));
-
-        widget.cancel_active_attempt();
-
-        assert_eq!(widget.error_message(), None);
-        assert!(matches!(
-            &*widget.sign_in_state.read().unwrap(),
-            SignInState::PickMode
-        ));
-    }
-
-    /// Collects all buffer cell symbols that contain the OSC 8 open sequence
-    /// for the given URL.  Returns the concatenated "inner" characters.
-    fn collect_osc8_chars(buf: &Buffer, area: Rect, url: &str) -> String {
-        let open = format!("\x1B]8;;{url}\x07");
-        let close = "\x1B]8;;\x07";
-        let mut chars = String::new();
-        for y in area.top()..area.bottom() {
-            for x in area.left()..area.right() {
-                let sym = buf[(x, y)].symbol();
-                if let Some(rest) = sym.strip_prefix(open.as_str())
-                    && let Some(ch) = rest.strip_suffix(close)
-                {
-                    chars.push_str(ch);
-                }
-            }
-        }
-        chars
-    }
-
-    #[test]
-    fn continue_in_browser_preserves_long_link_and_footer_at_narrow_width() {
-        let runtime = tokio::runtime::Runtime::new().unwrap();
-        let (widget, _tmp) = runtime.block_on(widget_forced_chatgpt());
-        widget.set_animations_suppressed(/*suppressed*/ true);
-        *widget.sign_in_state.write().unwrap() =
-            SignInState::ChatGptContinueInBrowser(ContinueInBrowserState {
-                login_id: "login-1".to_string(),
-                auth_url: PRODUCTION_LENGTH_AUTH_URL.to_string(),
-            });
-
-        let width = 44;
-        let height = 30;
-        let area = Rect::new(0, 0, width, height);
-        let mut buf = Buffer::empty(area);
-        widget.render_continue_in_browser(area, &mut buf);
-
-        let found = collect_osc8_chars(&buf, area, PRODUCTION_LENGTH_AUTH_URL);
-        assert_eq!(
-            found, PRODUCTION_LENGTH_AUTH_URL,
-            "OSC 8 hyperlink should cover the full URL"
-        );
-
-        let mut terminal = crate::custom_terminal::Terminal::with_options(
-            crate::test_backend::VT100Backend::new(width, height),
-        )
-        .expect("terminal");
-        terminal.set_viewport_area(area);
-
-        terminal
-            .draw(|frame| widget.render_continue_in_browser(area, frame.buffer_mut()))
-            .expect("draw");
-
-        let contents = terminal.backend().to_string();
-        insta::assert_snapshot!("continue_in_browser_narrow_long_url", contents);
-        assert!(contents.contains("On a remote or headless machine?"));
-        assert!(contents.contains("Press esc to cancel"));
-    }
-
-    #[test]
-    fn chatgpt_success_message_renders_osc8_hyperlinks() {
-        let runtime = tokio::runtime::Runtime::new().unwrap();
-        let (widget, _tmp) = runtime.block_on(widget_forced_chatgpt());
-        let area = Rect::new(0, 0, 80, 14);
-        let mut buf = Buffer::empty(area);
-
-        widget.render_chatgpt_success_message(area, &mut buf);
-
-        assert_eq!(
-            collect_osc8_chars(&buf, area, "https://developers.openai.com/codex/security"),
-            "Codex docs"
-        );
-        assert_eq!(
-            collect_osc8_chars(&buf, area, "https://chatgpt.com/#settings"),
-            "training data preferences"
-        );
-        assert_eq!(
-            (0..37).map(|x| buf[(x, 5)].modifier).collect::<Vec<_>>(),
-            [
-                vec![Modifier::DIM; 27],
-                vec![Modifier::DIM | Modifier::UNDERLINED; 10],
-            ]
-            .concat()
-        );
-        assert_eq!(
-            (0..60).map(|x| buf[(x, 11)].modifier).collect::<Vec<_>>(),
-            [
-                vec![Modifier::DIM; 35],
-                vec![Modifier::DIM | Modifier::UNDERLINED; 25],
-            ]
-            .concat()
-        );
-
-        let visible = (area.top()..area.bottom())
-            .map(|y| {
-                let row = (area.left()..area.right())
-                    .map(|x| buf[(x, y)].symbol())
-                    .collect::<String>();
-                crate::terminal_hyperlinks::strip_osc8(&row)
-                    .trim_end()
-                    .to_string()
-            })
-            .collect::<Vec<_>>()
-            .join("\n");
-        insta::assert_snapshot!(visible, @r###"
-        ✓ Signed in with your ChatGPT account
-
-          Before you start:
-
-          Decide how much autonomy you want to grant Codex
-          For more details see the Codex docs
-
-          Codex can make mistakes
-          Review the code it writes and commands it runs
-
-          Powered by your ChatGPT account
-          Uses your plan's rate limits and training data preferences
-
-          Press enter to continue
-        "###);
-    }
-
-    #[test]
-    fn auth_widget_suppresses_animations_when_device_code_is_visible() {
-        let runtime = tokio::runtime::Runtime::new().unwrap();
-        let (widget, _tmp) = runtime.block_on(widget_forced_chatgpt());
-        *widget.sign_in_state.write().unwrap() =
-            SignInState::ChatGptDeviceCode(ContinueWithDeviceCodeState::ready(
-                "request-1".to_string(),
-                "login-1".to_string(),
-                "https://chatgpt.com/device".to_string(),
-                "ABCD-EFGH".to_string(),
-            ));
-
-        assert_eq!(widget.should_suppress_animations(), true);
-    }
-
-    #[test]
-    fn auth_widget_suppresses_animations_while_requesting_device_code() {
-        let runtime = tokio::runtime::Runtime::new().unwrap();
-        let (widget, _tmp) = runtime.block_on(widget_forced_chatgpt());
-        *widget.sign_in_state.write().unwrap() = SignInState::ChatGptDeviceCode(
-            ContinueWithDeviceCodeState::pending("request-1".to_string()),
-        );
-
-        assert_eq!(widget.should_suppress_animations(), true);
-    }
-
-    #[tokio::test]
-    async fn device_code_login_completion_advances_to_success_message() {
-        let (mut widget, _tmp) = widget_forced_chatgpt().await;
-        *widget.sign_in_state.write().unwrap() =
-            SignInState::ChatGptDeviceCode(ContinueWithDeviceCodeState::ready(
-                "request-1".to_string(),
-                "login-1".to_string(),
-                "https://chatgpt.com/device".to_string(),
-                "ABCD-EFGH".to_string(),
-            ));
-
-        widget.on_account_login_completed(AccountLoginCompletedNotification {
-            login_id: Some("login-1".to_string()),
-            success: true,
-            error: None,
-            onboarding_entrypoint: None,
-        });
-
-        assert!(matches!(
-            &*widget.sign_in_state.read().unwrap(),
-            SignInState::ChatGptSuccessMessage
-        ));
-    }
-
-    #[test]
-    fn mark_url_hyperlink_wraps_cyan_underlined_cells() {
-        let url = "https://example.com";
-        let area = Rect::new(0, 0, 20, 1);
-        let mut buf = Buffer::empty(area);
-
-        // Manually write some cyan+underlined characters to simulate a rendered URL.
-        for (i, ch) in "example".chars().enumerate() {
-            let cell = &mut buf[(i as u16, 0)];
-            cell.set_symbol(&ch.to_string());
-            cell.fg = Color::Cyan;
-            cell.modifier = Modifier::UNDERLINED;
-        }
-        // Leave a plain cell that should NOT be marked.
-        buf[(7, 0)].set_symbol("X");
-
-        mark_url_hyperlink(&mut buf, area, url);
-
-        // Each cyan+underlined cell should now carry the OSC 8 wrapper.
-        let found = collect_osc8_chars(&buf, area, url);
-        assert_eq!(found, "example");
-
-        // The plain "X" cell should be untouched.
-        assert_eq!(buf[(7, 0)].symbol(), "X");
-    }
-
-    #[test]
-    fn mark_url_hyperlink_sanitizes_control_chars() {
-        let area = Rect::new(0, 0, 10, 1);
-        let mut buf = Buffer::empty(area);
-
-        // One cyan+underlined cell to mark.
-        let cell = &mut buf[(0, 0)];
-        cell.set_symbol("a");
-        cell.fg = Color::Cyan;
-        cell.modifier = Modifier::UNDERLINED;
-
-        // URL contains ESC and BEL that could break the OSC 8 sequence.
-        let malicious_url = "https://evil.com/\x1B]8;;\x07injected";
-        mark_url_hyperlink(&mut buf, area, malicious_url);
-
-        let sym = buf[(0, 0)].symbol().to_string();
-        // The sanitized URL retains `]` (printable) but strips ESC and BEL.
-        let sanitized = "https://evil.com/]8;;injected";
-        assert!(
-            sym.contains(sanitized),
-            "symbol should contain sanitized URL, got: {sym:?}"
-        );
-        // The injected close-sequence must not survive: \x1B and \x07 are gone.
-        assert!(
-            !sym.contains("\x1B]8;;\x07injected"),
-            "symbol must not contain raw control chars from URL"
-        );
     }
 }

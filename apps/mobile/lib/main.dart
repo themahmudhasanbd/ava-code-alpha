@@ -8,6 +8,7 @@ import 'core/theme/app_theme.dart';
 import 'core/theme/app_typography.dart';
 import 'data/repositories/auth_repository.dart';
 import 'presentation/screens/auth/login_screen.dart';
+import 'presentation/screens/onboarding/onboarding_screen.dart';
 import 'presentation/screens/main_navigation_shell.dart';
 import 'presentation/state/app_state.dart';
 import 'presentation/state/auth_controller.dart';
@@ -38,12 +39,14 @@ void main() async {
   final authRepo = AuthRepository(storage: storage, rpcClient: rpcClient);
   final authController = AuthController(repository: authRepo);
   final threadController = ThreadController(rpcClient: rpcClient);
-  final providerController = ProviderController(rpcClient: rpcClient);
+  final providerController = ProviderController(rpcClient: rpcClient, storage: storage);
 
-  // Initialize auth state
+  // Initialize provider and auth state
+  await providerController.init();
   await authController.init();
   if (authController.session != null) {
     rpcClient.setAuthToken(authController.session!.token);
+    await threadController.init();
   }
 
   runApp(
@@ -115,7 +118,9 @@ class AuthGate extends StatelessWidget {
       builder: (context, _) {
         switch (authController.status) {
           case AuthStatus.authenticated:
-            return const MainNavigationShell();
+            return MainNavigationShell(initialIndex: authController.initialTabIndex);
+          case AuthStatus.needsOnboarding:
+            return const OnboardingScreen();
           case AuthStatus.unauthenticated:
             return const LoginScreen();
           case AuthStatus.authenticating:

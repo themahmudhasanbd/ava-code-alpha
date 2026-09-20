@@ -4,92 +4,93 @@ class ProviderModel {
   final String name;
   final String description;
   final String baseUrl;
+  final String? apiKey;
   final String? assetIcon;
   final bool isConnected;
   final bool isDefault;
   final List<String> models;
 
-  ProviderModel({
+  const ProviderModel({
     required this.id,
     required this.name,
     required this.description,
     this.baseUrl = '',
+    this.apiKey,
     this.assetIcon,
     this.isConnected = false,
     this.isDefault = false,
     this.models = const [],
   });
 
+  ProviderModel copyWith({
+    bool? isConnected,
+    List<String>? models,
+    String? apiKey,
+    String? baseUrl,
+  }) =>
+      ProviderModel(
+        id: id,
+        name: name,
+        description: description,
+        baseUrl: baseUrl ?? this.baseUrl,
+        apiKey: apiKey ?? this.apiKey,
+        assetIcon: assetIcon,
+        isConnected: isConnected ?? this.isConnected,
+        isDefault: isDefault,
+        models: models ?? this.models,
+      );
+
+  /// Built-in provider catalog. Models are empty — loaded dynamically via /connect or API.
   static List<ProviderModel> get builtInPresets => [
-        ProviderModel(
+        const ProviderModel(
           id: 'antigravity',
           name: 'Google Antigravity',
-          description: 'Native Cloud Code backend with Gemini 3.7/3.8, Claude Opus & Sonnet',
+          description: 'Native Cloud Code backend with Gemini & Claude models',
           baseUrl: 'https://daily-cloudcode-pa.googleapis.com',
           assetIcon: 'assets/providers/antigravity.png',
-          isConnected: true,
           isDefault: true,
-          models: [
-            'gemini-3.7-flash-tiered',
-            'gemini-3.7-flash-high',
-            'gemini-3.8-flash-tiered',
-            'gemini-pro-agent',
-            'claude-opus-4-6-thinking',
-            'claude-sonnet-4-6',
-            'gpt-oss-120b-medium',
-          ],
         ),
-        ProviderModel(
+        const ProviderModel(
           id: 'anthropic',
           name: 'Anthropic Claude',
-          description: 'Claude 3.7 Sonnet & 3.5 Haiku direct Messages API',
+          description: 'Claude family via direct Anthropic Messages API',
           baseUrl: 'https://api.anthropic.com/v1',
           assetIcon: 'assets/providers/anthropic.png',
-          isConnected: true,
-          models: [
-            'claude-3-7-sonnet',
-            'claude-3-5-haiku',
-          ],
         ),
-        ProviderModel(
+        const ProviderModel(
           id: 'openai',
           name: 'OpenAI Platform',
-          description: 'GPT-4o, GPT-4o-mini, and o3-mini reasoning models',
+          description: 'GPT and o-series reasoning models',
           baseUrl: 'https://api.openai.com/v1',
           assetIcon: 'assets/providers/openai.png',
-          isConnected: true,
-          models: [
-            'gpt-4o',
-            'gpt-4o-mini',
-            'o3-mini',
-          ],
         ),
-        ProviderModel(
+        const ProviderModel(
           id: 'groq',
           name: 'Groq LPU',
-          description: 'Ultra-fast inference powered by Groq LPUs',
+          description: 'Ultra-fast inference via Groq LPUs',
           baseUrl: 'https://api.groq.com/openai/v1',
           assetIcon: 'assets/providers/groq.png',
-          isConnected: true,
-          models: ['llama-3.3-70b-versatile', 'mixtral-8x7b-32768'],
         ),
-        ProviderModel(
+        const ProviderModel(
           id: 'deepseek',
           name: 'DeepSeek',
-          description: 'Official DeepSeek V3 & R1 reasoning endpoints',
+          description: 'DeepSeek V3 & R1 reasoning endpoints',
           baseUrl: 'https://api.deepseek.com/v1',
           assetIcon: 'assets/providers/deepseek.png',
-          isConnected: true,
-          models: ['deepseek-chat', 'deepseek-reasoner'],
         ),
-        ProviderModel(
+        const ProviderModel(
           id: 'ollama',
           name: 'Ollama Local',
-          description: 'Local on-device or local network LLM server',
+          description: 'Local on-device LLM server',
           baseUrl: 'http://localhost:11434/v1',
           assetIcon: 'assets/providers/ollama.png',
-          isConnected: true,
-          models: ['qwen2.5-coder:7b', 'deepseek-r1:8b'],
+        ),
+        const ProviderModel(
+          id: 'custom',
+          name: 'Custom Endpoint',
+          description: 'OpenAI-compatible custom endpoint',
+          baseUrl: '',
+          assetIcon: 'assets/providers/custom.png',
         ),
       ];
 }

@@ -11,6 +11,45 @@ pub(super) const MODEL_SELECTION_VIEW_ID: &str = "model-selection";
 pub(super) const ALL_MODELS_SELECTION_VIEW_ID: &str = "all-models-selection";
 
 impl ChatWidget {
+    /// Open a popup to connect or switch AI model providers.
+    pub(crate) fn open_provider_connect_popup(&mut self) {
+        let current_provider = self.config.model_provider_id.as_str();
+        let items = vec![
+            SelectionItem {
+                name: "Google Antigravity (Gemini & Claude)".to_string(),
+                description: Some("Google Cloud Code PA with Gemini 3.8 Flash, 3.7 Flash, 3.1 Pro, and Claude Sonnet/Opus".to_string()),
+                is_current: current_provider == "antigravity",
+                actions: vec![Box::new(|tx| {
+                    tx.send(AppEvent::PersistProviderSelection {
+                        provider: "antigravity".to_string(),
+                        model: Some("gemini-3.8-flash".to_string()),
+                    });
+                })],
+                dismiss_on_select: true,
+                ..Default::default()
+            },
+            SelectionItem {
+                name: "Custom Provider (API Key & Endpoint)".to_string(),
+                description: Some("OpenAI-compatible endpoints (Ollama, LM Studio, OpenRouter, DeepSeek, OpenAI)".to_string()),
+                is_current: current_provider == "custom" || current_provider == "openai",
+                actions: vec![Box::new(|tx| {
+                    tx.send(AppEvent::PersistProviderSelection {
+                        provider: "custom".to_string(),
+                        model: None,
+                    });
+                })],
+                dismiss_on_select: true,
+                ..Default::default()
+            },
+        ];
+
+        self.bottom_pane.show_selection_view(SelectionViewParams {
+            title: Some("Connect / Switch AI Provider".into()),
+            items,
+            ..SelectionViewParams::picker()
+        });
+    }
+
     /// Open a popup to choose a quick auto model. Selecting "All models"
     /// opens the full picker with every available preset.
     pub(crate) fn open_model_popup(&mut self) {

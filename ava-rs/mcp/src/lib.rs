@@ -101,6 +101,7 @@ pub use mcp::McpPermissionPromptAutoApproveContext;
 pub use mcp::mcp_permission_prompt_is_auto_approved;
 pub use mcp::qualified_mcp_tool_name_prefix;
 
+pub(crate) mod apps;
 mod auth_changes;
 pub(crate) mod auth_elicitation;
 mod binding;
@@ -108,7 +109,6 @@ pub(crate) mod binding_clients;
 mod catalog;
 mod client_capabilities;
 mod client_tool_catalog;
-pub(crate) mod apps;
 pub(crate) mod connection_manager;
 pub(crate) mod elicitation;
 mod event_stream;

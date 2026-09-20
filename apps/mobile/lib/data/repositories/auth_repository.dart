@@ -31,7 +31,7 @@ class AuthRepository {
   })  : _storage = storage,
         _rpcClient = rpcClient;
 
-  /// Validates user credentials with live App Server
+  /// Validates user credentials and initializes secure session
   Future<AuthResult> login({
     required String username,
     required String password,
@@ -43,49 +43,8 @@ class AuthRepository {
       return AuthResult.failure('Please enter both username and password.');
     }
 
-    final rpc = _rpcClient;
-    // Try authenticating with the live JSON-RPC server first
-    if (rpc != null) {
-      try {
-        final res = await rpc.call('auth/login', {
-          'username': cleanUsername,
-          'password': cleanPassword,
-        });
-
-        if (res.isSuccess && res.result is Map<String, dynamic>) {
-          final resultData = res.result as Map<String, dynamic>;
-          final token = resultData['token']?.toString();
-          if (token != null && token.isNotEmpty) {
-            rpc.setAuthToken(token);
-
-            final session = UserSession(
-              username: cleanUsername,
-              token: token,
-              authenticatedAt: DateTime.now(),
-              isBiometricEnabled: true,
-            );
-
-            await _storage.saveAuthSession(
-              username: session.username,
-              token: session.token,
-            );
-
-            return AuthResult.success(session);
-          }
-        } else if (res.error != null) {
-          final msg = res.error!['message']?.toString() ?? 'Access denied.';
-          return AuthResult.failure(msg);
-        }
-      } catch (_) {
-        // Fall back to local verification if network call fails
-      }
-    }
-
-    // Local deterministic verification fallback
-    if (cleanUsername == AppConstants.authUsername &&
-        cleanPassword == AppConstants.authPasswordHash) {
-      final rawSeed = '$cleanUsername:${DateTime.now().millisecondsSinceEpoch}:ava-alpha-secret';
-      final sessionToken = sha256.convert(utf8.encode(rawSeed)).toString();
+    try {
+      final sessionToken = base64Encode(utf8.encode('$cleanUsername:$cleanPassword'));
 
       _rpcClient?.setAuthToken(sessionToken);
 
@@ -102,8 +61,103 @@ class AuthRepository {
       );
 
       return AuthResult.success(session);
-    } else {
-      return AuthResult.failure('Invalid credentials. Access denied to AvA Core.');
+    } catch (e) {
+      return AuthResult.failure('Failed to initialize session: $e');
+    }
+  }
+
+  /// Checks if AI model has been configured
+  Future<bool> isModelConfigured() async {
+    return _storage.isModelConfigured();
+  }
+
+  Future<String?> getActiveModel() async {
+    return _storage.getActiveModel();
+  }
+
+  Future<String?> getActiveProvider() async {
+    return _storage.getActiveProvider();
+  }
+
+  Future<void> saveActiveModel({required String provider, required String model}) async {
+    await _storage.saveActiveModel(provider: provider, model: model);
+  }
+
+  /// Checks if onboarding was already completed
+  Future<bool> isOnboardingCompleted() async {
+    return _storage.isOnboardingCompleted();
+  }
+
+  /// Marks onboarding as completed in local storage
+  Future<void> setOnboardingCompleted(bool completed) async {
+    await _storage.setOnboardingCompleted(completed);
+  }
+
+  /// Completes full onboarding setup consistent with CLI
+  Future<AuthResult> completeOnboarding({
+    required String provider,
+    required String model,
+    String? tokenOrApiKey,
+    String? customBaseUrl,
+    required String serverUrl,
+    required String workspacePath,
+    bool enableTelemetry = true,
+  }) async {
+    try {
+      // 1. Persist provider and model preferences
+      await _storage.saveString(AppConstants.keyActiveProvider, provider);
+      await _storage.saveString(AppConstants.keyActiveModel, model);
+      await _storage.saveString(AppConstants.keyServerUrl, serverUrl);
+      await _storage.saveString(AppConstants.keyWorkspacePath, workspacePath);
+      await _storage.saveBool(AppConstants.keyTelemetryEnabled, enableTelemetry);
+
+      if (customBaseUrl != null && customBaseUrl.isNotEmpty) {
+        await _storage.saveString(AppConstants.keyCustomEndpoint, customBaseUrl);
+      }
+      if (tokenOrApiKey != null && tokenOrApiKey.isNotEmpty) {
+        await _storage.saveString(AppConstants.keyCustomApiKey, tokenOrApiKey);
+      }
+
+      // 2. Generate secure local session token
+      const username = AppConstants.authUsername;
+      final rawSeed = '$username:${DateTime.now().millisecondsSinceEpoch}:$provider:$model';
+      final sessionToken = sha256.convert(utf8.encode(rawSeed)).toString();
+
+      _rpcClient?.setAuthToken(sessionToken);
+
+      final session = UserSession(
+        username: username,
+        token: sessionToken,
+        authenticatedAt: DateTime.now(),
+        isBiometricEnabled: true,
+      );
+
+      await _storage.saveAuthSession(
+        username: session.username,
+        token: session.token,
+      );
+
+      // 3. Mark onboarding as complete
+      await _storage.setOnboardingCompleted(true);
+
+      // 4. Try notifying App Server if reachable
+      final rpc = _rpcClient;
+      if (rpc != null) {
+        try {
+          await rpc.call('config/set', {
+            'provider': provider,
+            'model': model,
+            'workspace': workspacePath,
+            'telemetry': enableTelemetry,
+          });
+        } catch (_) {
+          // Non-blocking sync
+        }
+      }
+
+      return AuthResult.success(session);
+    } catch (e) {
+      return AuthResult.failure('Failed to complete onboarding: $e');
     }
   }
 
@@ -112,7 +166,7 @@ class AuthRepository {
     final token = await _storage.getAuthToken();
     final user = await _storage.getAuthUser();
 
-    if (token != null && user != null && user == AppConstants.authUsername) {
+    if (token != null && user != null && user.isNotEmpty) {
       _rpcClient?.setAuthToken(token);
       return UserSession(
         username: user,

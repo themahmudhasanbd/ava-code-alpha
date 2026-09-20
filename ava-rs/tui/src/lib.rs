@@ -2199,13 +2199,7 @@ fn should_show_onboarding(
     should_show_login_screen(login_status, requires_openai_auth)
 }
 
-fn should_show_login_screen(login_status: LoginStatus, requires_openai_auth: bool) -> bool {
-    // Only show the login screen for providers that actually require OpenAI auth
-    // (OpenAI or equivalents). For OSS/other providers, skip login entirely.
-    if !requires_openai_auth {
-        return false;
-    }
-
+fn should_show_login_screen(login_status: LoginStatus, _requires_openai_auth: bool) -> bool {
     login_status == LoginStatus::NotAuthenticated
 }
 

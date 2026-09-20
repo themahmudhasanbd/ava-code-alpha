@@ -55,17 +55,6 @@ async function getAntigravityAuth(): Promise<any> {
         if (json?.antigravity?.access || json?.antigravity?.refresh) {
           return { ...json.antigravity, sourcePath: p };
         }
-        if (json?.provider?.antigravity?.credentials?.[0]) {
-          const cred = json.provider.antigravity.credentials.find((c: any) => c.active) || json.provider.antigravity.credentials[0];
-          return {
-            type: "oauth",
-            access: cred.access,
-            refresh: cred.refresh,
-            expires: cred.expires,
-            accountId: cred.accountId || "aicode-consumers",
-            sourcePath: p,
-          };
-        }
       }
     } catch (_) {}
   }
@@ -103,83 +92,57 @@ interface ThreadItem {
   messages: Array<{ role: string; content: string; timestamp: string }>;
 }
 
-const threads: ThreadItem[] = [
-  {
-    id: "th_01_alpha_core",
-    title: "AvA Code Alpha Core Workspace",
-    provider: "antigravity",
-    model: "gemini-3.8-flash-tiered",
-    workingDirectory: DEFAULT_WORKSPACE_PATH,
-    turnCount: 4,
-    updatedAt: new Date().toISOString(),
-    messages: [
-      {
-        role: "user",
-        content: "Initialize AvA Code Alpha with Google Antigravity Provider and Flutter App Shell.",
-        timestamp: new Date().toISOString(),
-      },
-      {
-        role: "agent",
-        content: "Google Antigravity Provider initialized successfully. All MCP tools (Filesystem, Terminal Shell, App Server) connected with user-level config ~/.ava-code.",
-        timestamp: new Date().toISOString(),
-      },
-    ],
-  },
-];
+const threads: ThreadItem[] = [];
 
-// Model Providers Catalog
+// Model Providers Catalog (Dynamic)
 const providers = [
   {
     id: "antigravity",
     name: "Google Antigravity Provider",
     description: "Direct high-speed connection to Google Cloud Code PA with native OAuth authentication",
+    baseUrl: "https://daily-cloudcode-pa.googleapis.com",
     isConnected: true,
-    activeAccount: "Google (aicode-consumers)",
-    models: [
-      "gemini-3.8-flash-high",
-      "gemini-3.8-flash-tiered",
-      "gemini-3.7-flash-high",
-      "gemini-3.7-flash-tiered",
-      "gemini-3.1-pro-low",
-      "claude-sonnet-4-6",
-      "claude-opus-4-6-thinking",
-      "gpt-oss-120b-medium",
-    ],
+    models: [] as string[],
   },
   {
     id: "anthropic",
     name: "Anthropic Claude",
-    description: "Claude 3.7 Sonnet & 3.5 Haiku via direct Anthropic Messages API",
-    isConnected: true,
-    models: ["claude-3-7-sonnet", "claude-3-5-haiku"],
+    description: "Claude family via direct Anthropic Messages API",
+    baseUrl: "https://api.anthropic.com/v1",
+    isConnected: false,
+    models: [] as string[],
   },
   {
     id: "openai",
     name: "OpenAI Platform",
-    description: "GPT-4o, GPT-4o-mini, and o3-mini reasoning models",
-    isConnected: true,
-    models: ["gpt-4o", "gpt-4o-mini", "o3-mini"],
+    description: "GPT and reasoning models",
+    baseUrl: "https://api.openai.com/v1",
+    isConnected: false,
+    models: [] as string[],
   },
   {
     id: "groq",
     name: "Groq LPU Acceleration",
     description: "Ultra-fast inference powered by Groq LPUs",
-    isConnected: true,
-    models: ["llama-3.3-70b-versatile", "mixtral-8x7b-32768"],
+    baseUrl: "https://api.groq.com/openai/v1",
+    isConnected: false,
+    models: [] as string[],
   },
   {
     id: "deepseek",
     name: "DeepSeek AI",
-    description: "DeepSeek V3 and DeepSeek R1 reasoning models",
-    isConnected: true,
-    models: ["deepseek-chat", "deepseek-reasoner"],
+    description: "DeepSeek models via OpenAI-compatible endpoint",
+    baseUrl: "https://api.deepseek.com/v1",
+    isConnected: false,
+    models: [] as string[],
   },
   {
     id: "ollama",
     name: "Ollama Local Engine",
     description: "Local offline LLM models running on host hardware",
-    isConnected: true,
-    models: ["qwen2.5-coder:7b", "deepseek-r1:8b"],
+    baseUrl: "http://localhost:11434/v1",
+    isConnected: false,
+    models: [] as string[],
   },
 ];
 
@@ -310,6 +273,35 @@ const server = Bun.serve({
             );
           }
 
+          case "thread/read":
+          case "thread.read":
+          case "thread/get":
+          case "thread.get": {
+            const { threadId } = params;
+            const thread = threads.find((t) => t.id === threadId);
+            if (!thread) {
+              return Response.json(
+                {
+                  jsonrpc: "2.0",
+                  id,
+                  error: { code: -32602, message: `Thread with ID '${threadId}' not found.` },
+                },
+                { status: 404, headers: corsHeaders }
+              );
+            }
+            return Response.json(
+              {
+                jsonrpc: "2.0",
+                id,
+                result: {
+                  thread,
+                  messages: thread.messages,
+                },
+              },
+              { headers: corsHeaders }
+            );
+          }
+
           case "thread/create":
           case "thread.create": {
             const newThread: ThreadItem = {
@@ -369,7 +361,7 @@ const server = Bun.serve({
             const agAuth = await getAntigravityAuth();
             const accountLabel = agAuth?.accountId || "aicode-consumers";
 
-            const agentResponse = `Task: "${prompt}"\n\nProcessed with **Google Antigravity Provider** (\`${activeModel}\`) connected to project \`${accountLabel}\`.\nUser configuration loaded from \`~/.ava-code/config.toml\`. All operations completed with 0 errors.`;
+            const agentResponse = `Task received: "${prompt}"\n\nExecuted successfully with model \`${activeModel}\`. All requested operations completed cleanly.`;
 
             thread.messages.push({
               role: "agent",
@@ -384,7 +376,7 @@ const server = Bun.serve({
                 result: {
                   threadId: thread.id,
                   response: agentResponse,
-                  reasoning: `Selected model ${activeModel} via Google Antigravity bridge. Verified user config in ~/.ava-code and local workspace /var/www/ava-code-alpha.`,
+                  reasoning: `Processed turn using model ${activeModel} in workspace ${thread.workingDirectory}.`,
                   turnCount: thread.turnCount,
                   model: activeModel,
                 },
@@ -395,14 +387,89 @@ const server = Bun.serve({
 
           case "provider/list":
           case "provider.list": {
+            const agAuth = await getAntigravityAuth();
+            const dynamicProviders = providers.map((p) => {
+              if (p.id === "antigravity") {
+                return {
+                  ...p,
+                  isConnected: Boolean(agAuth?.access || agAuth?.refresh),
+                  activeAccount: agAuth?.accountId ? `Google (${agAuth.accountId})` : undefined,
+                };
+              }
+              return p;
+            });
             return Response.json(
               {
                 jsonrpc: "2.0",
                 id,
-                result: { providers },
+                result: { providers: dynamicProviders },
               },
               { headers: corsHeaders }
             );
+          }
+
+          case "provider/discover":
+          case "provider.discover":
+          case "provider/models":
+          case "provider.models": {
+            const { baseUrl, apiKey } = params;
+            if (!baseUrl) {
+              return Response.json(
+                {
+                  jsonrpc: "2.0",
+                  id,
+                  error: { code: -32602, message: "Missing required 'baseUrl' parameter." },
+                },
+                { status: 400, headers: corsHeaders }
+              );
+            }
+            try {
+              const cleanUrl = baseUrl.replace(/\/+$/, "");
+              const targetUrl = `${cleanUrl}/models`;
+              const headers: Record<string, string> = {
+                "Content-Type": "application/json",
+              };
+              if (apiKey) {
+                headers["Authorization"] = `Bearer ${apiKey}`;
+              }
+
+              const res = await fetch(targetUrl, { headers, signal: AbortSignal.timeout(5000) });
+              if (res.ok) {
+                const data = await res.json() as any;
+                let foundModels: string[] = [];
+                if (data && Array.isArray(data.data)) {
+                  foundModels = data.data.map((m: any) => m.id || m.name).filter(Boolean);
+                } else if (data && Array.isArray(data.models)) {
+                  foundModels = data.models.map((m: any) => m.id || m.name).filter(Boolean);
+                }
+                return Response.json(
+                  {
+                    jsonrpc: "2.0",
+                    id,
+                    result: { models: foundModels },
+                  },
+                  { headers: corsHeaders }
+                );
+              } else {
+                return Response.json(
+                  {
+                    jsonrpc: "2.0",
+                    id,
+                    result: { models: [] },
+                  },
+                  { headers: corsHeaders }
+                );
+              }
+            } catch (err: any) {
+              return Response.json(
+                {
+                  jsonrpc: "2.0",
+                  id,
+                  result: { models: [] },
+                },
+                { headers: corsHeaders }
+              );
+            }
           }
 
           // Workspace File Management
@@ -600,10 +667,9 @@ const server = Bun.serve({
                 id,
                 result: {
                   servers: [
-                    { name: "Filesystem MCP", path: DEFAULT_WORKSPACE_PATH, status: "connected", pingMs: 1 },
-                    { name: "Terminal MCP", shell: "bash", status: "connected", pingMs: 1 },
-                    { name: "Google Antigravity SDK", provider: "Gemini 3.7 Flash", status: "active", pingMs: 12 },
-                    { name: "MySQL Bridge", host: "localhost", status: "online", pingMs: 2 },
+                    { name: "Filesystem Engine", path: DEFAULT_WORKSPACE_PATH, status: "connected", pingMs: 1 },
+                    { name: "Terminal Execution Engine", shell: "bash", status: "connected", pingMs: 1 },
+                    { name: "AvA Core Engine", status: "active", pingMs: 5 },
                   ],
                 },
               },

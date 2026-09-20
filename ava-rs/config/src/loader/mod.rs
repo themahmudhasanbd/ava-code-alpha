@@ -125,8 +125,8 @@ async fn first_layer_config_error_from_entries(layers: &[ConfigLayerEntry]) -> O
 /// - user      `${CODEX_HOME}/config.toml`
 /// - profile   `${CODEX_HOME}/<name>.config.toml`, when selected
 /// - cwd       `${PWD}/config.toml` (loaded but disabled when the directory is untrusted)
-/// - tree      parent directories up to root looking for `./.codex/config.toml` (loaded but disabled when untrusted)
-/// - repo      `$(git rev-parse --show-toplevel)/.codex/config.toml` (loaded but disabled when untrusted)
+/// - tree      parent directories up to root looking for `./.ava-code/config.toml` (loaded but disabled when untrusted)
+/// - repo      `$(git rev-parse --show-toplevel)/.ava-code/config.toml` (loaded but disabled when untrusted)
 /// - runtime   e.g., --config flags, model selector in UI
 ///
 /// (*) Only available on macOS via managed device profiles.
@@ -1108,7 +1108,7 @@ impl ProjectTrustContext {
         }
 
         let relative_dir = dir.as_path().strip_prefix(checkout_root.as_path()).ok()?;
-        Some(repo_root.join(relative_dir).join(".codex"))
+        Some(repo_root.join(relative_dir).join(".ava-code"))
     }
 }
 
@@ -1662,10 +1662,8 @@ async fn discover_project_layers(
     for dir in dirs {
         let dot_ava_code_abs = dir.join(".ava-code");
         let dot_ava_abs = dir.join(".ava");
-        let dot_codex_abs = dir.join(".codex");
         let dot_ava_code_uri = PathUri::from_abs_path(&dot_ava_code_abs);
         let dot_ava_uri = PathUri::from_abs_path(&dot_ava_abs);
-        let dot_codex_uri = PathUri::from_abs_path(&dot_codex_abs);
 
         let (dot_config_abs, dot_config_uri) = if fs
             .get_metadata(&dot_ava_code_uri, Default::default(), /*sandbox*/ None)
@@ -1681,13 +1679,6 @@ async fn discover_project_layers(
             .unwrap_or(false)
         {
             (dot_ava_abs, dot_ava_uri)
-        } else if fs
-            .get_metadata(&dot_codex_uri, Default::default(), /*sandbox*/ None)
-            .await
-            .map(|metadata| metadata.is_directory)
-            .unwrap_or(false)
-        {
-            (dot_codex_abs, dot_codex_uri)
         } else {
             continue;
         };
@@ -1695,8 +1686,8 @@ async fn discover_project_layers(
         let decision = trust_context.decision_for_dir(&dir);
         let disabled_reason = trust_context.disabled_reason_for_decision(&decision);
         let hooks_config_folder_override = trust_context.root_checkout_hooks_folder_for_dir(&dir);
-        let dot_config_normalized =
-            normalize_path(dot_config_abs.as_path()).unwrap_or_else(|_| dot_config_abs.to_path_buf());
+        let dot_config_normalized = normalize_path(dot_config_abs.as_path())
+            .unwrap_or_else(|_| dot_config_abs.to_path_buf());
         if dot_config_abs == codex_home_abs || dot_config_normalized == codex_home_normalized {
             continue;
         }
@@ -1735,7 +1726,7 @@ async fn discover_project_layers(
                         config_file.as_path(),
                         &contents,
                         &config,
-                        dot_codex_abs.as_path(),
+                        dot_config_abs.as_path(),
                     )?;
                 }
                 let ignored_project_config_keys = sanitize_project_config(
@@ -1745,12 +1736,12 @@ async fn discover_project_layers(
                 );
                 if disabled_reason.is_none() && !ignored_project_config_keys.is_empty() {
                     startup_warnings.push(project_ignored_config_keys_warning(
-                        &dot_codex_abs,
+                        &dot_config_abs,
                         &ignored_project_config_keys,
                     ));
                 }
                 layers.push(DiscoveredProjectLayer {
-                    dot_codex_folder: dot_codex_abs,
+                    dot_codex_folder: dot_config_abs.clone(),
                     config,
                     disabled_reason,
                     hooks_config_folder_override,
@@ -1763,7 +1754,7 @@ async fn discover_project_layers(
                     // for this project layer, as this may still have subfolders
                     // that are significant in the overall ConfigLayerStack.
                     layers.push(DiscoveredProjectLayer {
-                        dot_codex_folder: dot_codex_abs,
+                        dot_codex_folder: dot_config_abs,
                         config: TomlValue::Table(toml::map::Map::new()),
                         disabled_reason,
                         hooks_config_folder_override,

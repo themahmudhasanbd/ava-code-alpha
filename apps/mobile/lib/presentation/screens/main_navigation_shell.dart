@@ -13,14 +13,22 @@ import 'threads/threads_screen.dart';
 
 /// Premier App Shell with Glassmorphic Top Header and Sliding Navigation Drawer
 class MainNavigationShell extends StatefulWidget {
-  const MainNavigationShell({super.key});
+  final int? initialIndex;
+
+  const MainNavigationShell({super.key, this.initialIndex});
 
   @override
   State<MainNavigationShell> createState() => _MainNavigationShellState();
 }
 
 class _MainNavigationShellState extends State<MainNavigationShell> {
-  int _currentIndex = 0;
+  late int _currentIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex ?? 0;
+  }
 
   void _onTabSelect(int index) {
     setState(() {
@@ -38,7 +46,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
       const ProvidersScreen(),
       const McpScreen(),
       const SystemScreen(),
-      const SettingsScreen(),
+      SettingsScreen(onNavigateTab: _onTabSelect),
     ];
 
     return Scaffold(

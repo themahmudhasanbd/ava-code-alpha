@@ -47,4 +47,9 @@ class AppConstants {
   static const String keyServerUrl = 'ava_server_endpoint_url';
   static const String keyActiveModel = 'ava_active_model_id';
   static const String keyActiveProvider = 'ava_active_provider_id';
+  static const String keyOnboardingCompleted = 'ava_onboarding_completed';
+  static const String keyWorkspacePath = 'ava_workspace_path';
+  static const String keyCustomEndpoint = 'ava_custom_endpoint';
+  static const String keyCustomApiKey = 'ava_custom_api_key';
+  static const String keyTelemetryEnabled = 'ava_telemetry_enabled';
 }

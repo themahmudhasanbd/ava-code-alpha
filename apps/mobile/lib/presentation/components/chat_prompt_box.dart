@@ -4,6 +4,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/prompt_theme.dart';
+import 'connect_provider_sheet.dart';
 
 /// Premier Glassmorphic Prompt Box matching AvA Code's original signature aesthetic
 /// Features multi-line input, action toolbar, suggestion pills, and gradient send button
@@ -49,6 +50,20 @@ class _ChatPromptBoxState extends State<ChatPromptBox> {
     final has = widget.controller.text.trim().isNotEmpty;
     if (has != _hasText) {
       setState(() => _hasText = has);
+    }
+  }
+
+  /// Handle slash commands typed in the prompt box
+  void _handleSlashCommand(String text) {
+    final trimmed = text.trim().toLowerCase();
+    if (trimmed == '/connect' || trimmed.startsWith('/connect ')) {
+      widget.controller.clear();
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => const ConnectProviderSheet(),
+      );
     }
   }
 
@@ -261,7 +276,11 @@ class _ChatPromptBoxState extends State<ChatPromptBox> {
                         isDense: true,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
                       ),
-                      onSubmitted: (_) {
+                      onSubmitted: (val) {
+                        if (val.trimLeft().startsWith('/')) {
+                          _handleSlashCommand(val);
+                          return;
+                        }
                         if (!widget.isStreaming && _hasText) {
                           widget.onSend();
                         }

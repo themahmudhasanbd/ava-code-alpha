@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-/// Semantic Design Tokens for AvA Code Alpha supporting full Light and Dark modes
+/// Semantic Design Tokens for AvA Code Alpha.
+/// Monochromatic & Minimalist Shadcn Zinc Palette (Pure Black/White in Light, Obsidian Zinc in Dark).
 class AppColors {
   AppColors._();
 
@@ -11,24 +12,24 @@ class AppColors {
   static const Color surfaceSubtle = Color(0xFF27272A); // Zinc 800
   static const Color surfaceHighlight = Color(0xFF3F3F46); // Zinc 700
 
-  // Light Theme Palette (Clean Slate / Alabaster)
-  static const Color lightBackground = Color(0xFFF8FAFC); // Slate 50
+  // Light Theme Palette (Clean Monochrome / Pure Minimalist)
+  static const Color lightBackground = Color(0xFFFAFAFA); // Zinc 50
   static const Color lightSurface = Color(0xFFFFFFFF);    // Pure White
-  static const Color lightSurfaceElevated = Color(0xFFF1F5F9); // Slate 100
-  static const Color lightSurfaceSubtle = Color(0xFFE2E8F0); // Slate 200
-  static const Color lightSurfaceHighlight = Color(0xFFCBD5E1); // Slate 300
+  static const Color lightSurfaceElevated = Color(0xFFF4F4F5); // Zinc 100
+  static const Color lightSurfaceSubtle = Color(0xFFE4E4E7); // Zinc 200
+  static const Color lightSurfaceHighlight = Color(0xFFD4D4D8); // Zinc 300
 
-  // 1px Subtle Borders
+  // 1px Subtle Borders (Dark)
   static const Color border = Color(0x1AFFFFFF); // 10% white
   static const Color borderSubtle = Color(0x0DFFFFFF); // 5% white
   static const Color borderStrong = Color(0x2EFFFFFF); // 18% white
   static const Color borderFocus = Color(0xFFFAFAFA); // Focus ring
 
-  // Light Theme Borders
-  static const Color lightBorder = Color(0xFFE2E8F0); // Slate 200
-  static const Color lightBorderSubtle = Color(0xFFF1F5F9); // Slate 100
-  static const Color lightBorderStrong = Color(0xFFCBD5E1); // Slate 300
-  static const Color lightBorderFocus = Color(0xFF0F172A); // Slate 900
+  // Light Theme Borders (Clean Zinc Neutral)
+  static const Color lightBorder = Color(0xFFE4E4E7); // Zinc 200
+  static const Color lightBorderSubtle = Color(0xFFF4F4F5); // Zinc 100
+  static const Color lightBorderStrong = Color(0xFFD4D4D8); // Zinc 300
+  static const Color lightBorderFocus = Color(0xFF18181B); // Zinc 900
 
   // Typography & Foreground (Dark)
   static const Color textPrimary = Color(0xFFFAFAFA); // Zinc 50
@@ -36,20 +37,20 @@ class AppColors {
   static const Color textMuted = Color(0xFF71717A); // Zinc 500
   static const Color textInverse = Color(0xFF09090B); // Zinc 950
 
-  // Typography & Foreground (Light)
-  static const Color lightTextPrimary = Color(0xFF0F172A); // Slate 900
-  static const Color lightTextSecondary = Color(0xFF475569); // Slate 600
-  static const Color lightTextMuted = Color(0xFF94A3B8); // Slate 400
+  // Typography & Foreground (Light - Pure Black/Zinc, No Blue)
+  static const Color lightTextPrimary = Color(0xFF09090B); // Zinc 950
+  static const Color lightTextSecondary = Color(0xFF52525B); // Zinc 600
+  static const Color lightTextMuted = Color(0xFF71717A); // Zinc 500
   static const Color lightTextInverse = Color(0xFFFFFFFF); // Pure White
 
-  // Accents & Signals
-  static const Color accentPrimary = Color(0xFF6366F1); // Indigo 500 (Codex/Claude primary)
-  static const Color accentIndigo = Color(0xFF4F46E5); // Indigo 600
-  static const Color accentCyan = Color(0xFF06B6D4); // Cyan 500
+  // Accents & Signals (Monochrome Focused)
+  static const Color accentPrimary = Color(0xFFFAFAFA); // Monochrome default
+  static const Color accentIndigo = Color(0xFF18181B);
+  static const Color accentCyan = Color(0xFF71717A);
   static const Color accentSuccess = Color(0xFF10B981); // Emerald 500
   static const Color accentWarning = Color(0xFFF59E0B); // Amber 500
   static const Color accentDanger = Color(0xFFEF4444); // Red 500
-  static const Color accentPurple = Color(0xFF8B5CF6); // Violet 500
+  static const Color accentPurple = Color(0xFF71717A);
 
   // Diff Colors
   static const Color diffAddBg = Color(0x1A10B981); // Emerald 10%
@@ -87,4 +88,10 @@ class AppColors {
 
   static Color muted(BuildContext context) =>
       isDark(context) ? textMuted : lightTextMuted;
+
+  static Color accent(BuildContext context) =>
+      isDark(context) ? textPrimary : lightTextPrimary;
+
+  static Color primary(BuildContext context) =>
+      isDark(context) ? textPrimary : lightTextPrimary;
 }

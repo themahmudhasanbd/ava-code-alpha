@@ -461,24 +461,101 @@ other non-default provider fields are not supported"
     }
 
     /// If `env_key` is Some, returns the API key for this provider if present
-    /// (and non-empty) in the environment. If `env_key` is required but
+    /// in the environment or saved in auth.json. If `env_key` is required but
     /// cannot be found, returns an error.
     pub fn api_key(&self) -> CodexResult<Option<String>> {
         match &self.env_key {
             Some(env_key) => {
-                let api_key = std::env::var(env_key)
-                    .ok()
-                    .filter(|v| !v.trim().is_empty())
-                    .ok_or_else(|| {
-                        CodexErr::EnvVar(EnvVarError {
-                            var: env_key.clone(),
-                            instructions: self.env_key_instructions.clone(),
-                        })
-                    })?;
-                Ok(Some(api_key))
+                // 1. Check direct environment variable
+                if let Ok(val) = std::env::var(env_key) {
+                    let trimmed = val.trim();
+                    if !trimmed.is_empty() {
+                        return Ok(Some(trimmed.to_string()));
+                    }
+                }
+
+                // 2. Check saved auth.json credentials
+                if let Some(token) = Self::find_token_in_auth_storage(env_key) {
+                    return Ok(Some(token));
+                }
+
+                Err(CodexErr::EnvVar(EnvVarError {
+                    var: env_key.clone(),
+                    instructions: self.env_key_instructions.clone(),
+                }))
             }
             None => Ok(None),
         }
+    }
+
+    /// Searches for token in standard auth.json credential locations
+    fn find_token_in_auth_storage(env_key: &str) -> Option<String> {
+        let mut candidate_paths = Vec::new();
+
+        if let Ok(home_env) = std::env::var("AVA_CODE_HOME")
+            .or_else(|_| std::env::var("AVA_HOME"))
+            .or_else(|_| std::env::var("CODEX_HOME"))
+        {
+            candidate_paths.push(std::path::PathBuf::from(home_env).join("auth.json"));
+        }
+
+        if let Some(home) = dirs::home_dir() {
+            candidate_paths.push(home.join(".ava-code").join("auth.json"));
+            candidate_paths.push(home.join(".config").join("ava").join("auth.json"));
+            candidate_paths.push(home.join(".codex").join("auth.json"));
+        }
+
+        for path in candidate_paths {
+            if let Ok(content) = std::fs::read_to_string(&path) {
+                if let Ok(val) = serde_json::from_str::<serde_json::Value>(&content) {
+                    // 1. Check exact key match (e.g. "ANTIGRAVITY_API_KEY", "OPENAI_API_KEY", "CUSTOM_API_KEY")
+                    if let Some(token) = val.get(env_key).and_then(|v| v.as_str()) {
+                        let trimmed = token.trim();
+                        if !trimmed.is_empty() {
+                            return Some(trimmed.to_string());
+                        }
+                    }
+
+                    // 2. Check "access_token" or nested "tokens.access_token" (Google Antigravity OAuth)
+                    if env_key == "ANTIGRAVITY_API_KEY" || env_key == "OPENAI_API_KEY" {
+                        if let Some(token) = val.get("access_token").and_then(|v| v.as_str()) {
+                            let trimmed = token.trim();
+                            if !trimmed.is_empty() {
+                                return Some(trimmed.to_string());
+                            }
+                        }
+                        if let Some(token) = val
+                            .get("tokens")
+                            .and_then(|t| t.get("access_token"))
+                            .and_then(|v| v.as_str())
+                        {
+                            let trimmed = token.trim();
+                            if !trimmed.is_empty() {
+                                return Some(trimmed.to_string());
+                            }
+                        }
+                    }
+
+                    // 3. Check "api_key"
+                    if let Some(token) = val.get("api_key").and_then(|v| v.as_str()) {
+                        let trimmed = token.trim();
+                        if !trimmed.is_empty() {
+                            return Some(trimmed.to_string());
+                        }
+                    }
+
+                    // 4. Check "OPENAI_API_KEY"
+                    if let Some(token) = val.get("OPENAI_API_KEY").and_then(|v| v.as_str()) {
+                        let trimmed = token.trim();
+                        if !trimmed.is_empty() {
+                            return Some(trimmed.to_string());
+                        }
+                    }
+                }
+            }
+        }
+
+        None
     }
 
     /// Effective maximum number of request retries for this provider.
@@ -659,16 +736,7 @@ pub fn built_in_model_providers(
         P::create_amazon_bedrock_runtime_provider(/*aws*/ None);
 
     [
-        (OPENAI_PROVIDER_ID, openai_provider),
-        (
-            ANTIGRAVITY_PROVIDER_ID,
-            create_antigravity_provider(),
-        ),
-        (AMAZON_BEDROCK_PROVIDER_ID, amazon_bedrock_provider),
-        (
-            AMAZON_BEDROCK_RUNTIME_PROVIDER_ID,
-            amazon_bedrock_runtime_provider,
-        ),
+        (ANTIGRAVITY_PROVIDER_ID, create_antigravity_provider()),
         (
             OLLAMA_OSS_PROVIDER_ID,
             create_oss_provider(DEFAULT_OLLAMA_PORT, WireApi::Responses),
@@ -817,16 +885,46 @@ pub fn create_antigravity_provider() -> ModelProviderInfo {
             [
                 (
                     "User-Agent".to_string(),
-                    "antigravity/ide/2.5.5 darwin/arm64".to_string(),
+                    RedactedString::from("antigravity/ide/2.5.5 darwin/arm64"),
                 ),
                 (
                     "X-Goog-Api-Client".to_string(),
-                    "gl-node/22.21.1".to_string(),
+                    RedactedString::from("gl-node/22.21.1"),
                 ),
             ]
             .into_iter()
             .collect(),
         ),
+        env_http_headers: None,
+        request_max_retries: Some(5),
+        stream_max_retries: Some(5),
+        stream_idle_timeout_ms: None,
+        websocket_connect_timeout_ms: None,
+        requires_openai_auth: false,
+        supports_websockets: false,
+        supports_standalone_web_search: true,
+    }
+}
+
+pub fn create_custom_provider(
+    name: &str,
+    base_url: &str,
+    env_key: Option<&str>,
+    wire_api: WireApi,
+) -> ModelProviderInfo {
+    ModelProviderInfo {
+        name: name.to_string(),
+        base_url: Some(base_url.to_string()),
+        model_catalog_url: None,
+        env_key: env_key.map(str::to_string),
+        env_key_instructions: None,
+        experimental_bearer_token: None,
+        auth: None,
+        gateway_oauth: None,
+        aws: None,
+        wire_api,
+        query_params: None,
+        http_headers: None,
         env_http_headers: None,
         request_max_retries: Some(5),
         stream_max_retries: Some(5),

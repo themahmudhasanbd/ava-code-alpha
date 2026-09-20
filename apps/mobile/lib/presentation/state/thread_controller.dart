@@ -4,7 +4,7 @@ import '../../core/network/json_rpc_client.dart';
 import '../../data/models/thread_model.dart';
 import '../../data/models/turn_item_model.dart';
 
-/// Manages threads, conversation turns, streaming tokens, and tool executions
+/// Manages threads, conversation turns, streaming tokens, and live agent executions
 class ThreadController extends ChangeNotifier {
   final JsonRpcClient? _rpcClient;
   final List<ThreadModel> _threads = [];
@@ -17,8 +17,10 @@ class ThreadController extends ChangeNotifier {
   List<TurnItemModel> get items => List.unmodifiable(_items);
   bool get isStreaming => _isStreaming;
 
-  ThreadController({JsonRpcClient? rpcClient}) : _rpcClient = rpcClient {
-    _initializeDefaultThreads();
+  ThreadController({JsonRpcClient? rpcClient}) : _rpcClient = rpcClient;
+
+  Future<void> init() async {
+    await loadThreadsFromApi();
   }
 
   Future<void> loadThreadsFromApi() async {
@@ -26,7 +28,7 @@ class ThreadController extends ChangeNotifier {
     if (rpc == null) return;
     try {
       final list = await rpc.getThreads();
-      if (list != null && list.isNotEmpty) {
+      if (list != null) {
         _threads.clear();
         for (final item in list) {
           if (item is Map<String, dynamic>) {
@@ -35,86 +37,54 @@ class ThreadController extends ChangeNotifier {
         }
         if (_threads.isNotEmpty) {
           _activeThread = _threads.first;
+          await _loadThreadMessages(_activeThread!.id);
+        } else {
+          _activeThread = null;
+          _items.clear();
         }
         notifyListeners();
       }
     } catch (_) {}
   }
 
-  void _initializeDefaultThreads() {
-    _threads.addAll([
-      ThreadModel(
-        id: 'th_01_core',
-        title: 'AvA Code Alpha Core Architecture',
-        workingDirectory: '/var/www/ava-code-alpha',
-        model: 'gemini-3.7-flash-tiered',
-        provider: 'antigravity',
-        updatedAt: DateTime.now().subtract(const Duration(minutes: 15)),
-        turnCount: 4,
-      ),
-      ThreadModel(
-        id: 'th_02_auth',
-        title: 'Flutter Native Mobile Client',
-        workingDirectory: '/var/www/ava-code-alpha/apps/mobile',
-        model: 'gemini-3.7-flash-tiered',
-        provider: 'antigravity',
-        updatedAt: DateTime.now().subtract(const Duration(hours: 2)),
-        turnCount: 7,
-      ),
-    ]);
-    _activeThread = _threads.first;
-    _loadSampleTurnItems();
+  Future<void> _loadThreadMessages(String threadId) async {
+    final rpc = _rpcClient;
+    if (rpc == null) return;
+    try {
+      final res = await rpc.call('thread/read', {'threadId': threadId});
+      if (res.isSuccess && res.result is Map<String, dynamic>) {
+        final rawMessages = res.result['messages'];
+        _items.clear();
+        if (rawMessages is List) {
+          for (final msg in rawMessages) {
+            if (msg is Map<String, dynamic>) {
+              final role = msg['role']?.toString() ?? 'agent';
+              final content = msg['content']?.toString() ?? '';
+              _items.add(
+                TurnItemModel(
+                  id: 'msg_${DateTime.now().millisecondsSinceEpoch}_${_items.length}',
+                  type: role == 'user' ? TurnItemType.userPrompt : TurnItemType.agentMessage,
+                  title: role == 'user' ? 'User' : 'AvA Agent',
+                  content: content,
+                  timestamp: msg['timestamp'] != null
+                      ? DateTime.tryParse(msg['timestamp'].toString()) ?? DateTime.now()
+                      : DateTime.now(),
+                  status: ItemStatus.completed,
+                ),
+              );
+            }
+          }
+        }
+        notifyListeners();
+      }
+    } catch (_) {}
   }
 
-  void _loadSampleTurnItems() {
-    _items.clear();
-    _items.addAll([
-      TurnItemModel(
-        id: 'turn-1',
-        type: TurnItemType.userPrompt,
-        title: 'User Prompt',
-        content: 'Configure Google Antigravity Provider and setup Flutter Mobile App for AvA Code Alpha.',
-        timestamp: DateTime.now().subtract(const Duration(minutes: 12)),
-      ),
-      TurnItemModel(
-        id: 'turn-2',
-        type: TurnItemType.reasoning,
-        title: 'Reasoning process',
-        content: 'Analyzing AvA monorepo structure. Google Antigravity (Cloud Code PA) provider is configured with client ID 1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com. Setting up Flutter app with Clean Layered Architecture and Shadcn UI system.',
-        timestamp: DateTime.now().subtract(const Duration(minutes: 11)),
-      ),
-      TurnItemModel(
-        id: 'turn-3',
-        type: TurnItemType.commandExecution,
-        title: 'execute_command',
-        content: 'cargo check -p codex-model-provider-info',
-        secondaryContent: '   Compiling codex-model-provider-info v0.1.0\n   Finished dev [unoptimized + debuginfo] target(s) in 2.14s',
-        status: ItemStatus.completed,
-        timestamp: DateTime.now().subtract(const Duration(minutes: 10)),
-      ),
-      TurnItemModel(
-        id: 'turn-4',
-        type: TurnItemType.fileChange,
-        title: 'Edited lib.rs',
-        content: 'Registered ANTIGRAVITY_PROVIDER_ID and create_antigravity_provider()',
-        secondaryContent: '@@ -638,6 +638,10 @@\n+pub const ANTIGRAVITY_PROVIDER_ID: &str = "antigravity";\n [OPENAI_PROVIDER_ID, openai_provider],\n+(ANTIGRAVITY_PROVIDER_ID, create_antigravity_provider()),',
-        status: ItemStatus.completed,
-        timestamp: DateTime.now().subtract(const Duration(minutes: 9)),
-      ),
-      TurnItemModel(
-        id: 'turn-5',
-        type: TurnItemType.agentMessage,
-        title: 'AvA Agent',
-        content: 'Google Antigravity Provider has been natively registered in `ava-rs/model-provider-info` and active model is set to `gemini-3.7-flash-tiered`. All tests passed.',
-        timestamp: DateTime.now().subtract(const Duration(minutes: 8)),
-      ),
-    ]);
-  }
-
-  void selectThread(ThreadModel thread) {
+  Future<void> selectThread(ThreadModel thread) async {
     _activeThread = thread;
-    _loadSampleTurnItems();
+    _items.clear();
     notifyListeners();
+    await _loadThreadMessages(thread.id);
   }
 
   Future<void> createNewThread({
@@ -123,11 +93,35 @@ class ThreadController extends ChangeNotifier {
     String? model,
     String? provider,
   }) async {
+    final cleanTitle = title.trim().isEmpty ? 'New Session' : title.trim();
+    final rpc = _rpcClient;
+
+    if (rpc != null) {
+      try {
+        final res = await rpc.createThread(
+          title: cleanTitle,
+          provider: provider ?? 'antigravity',
+          model: model ?? 'gemini-3.7-flash',
+          workingDirectory: workingDirectory ?? '/var/www/ava-code-alpha',
+        );
+
+        if (res != null && res['thread'] is Map<String, dynamic>) {
+          final created = ThreadModel.fromJson(res['thread'] as Map<String, dynamic>);
+          _threads.insert(0, created);
+          _activeThread = created;
+          _items.clear();
+          notifyListeners();
+          return;
+        }
+      } catch (_) {}
+    }
+
+    // Local fallback creation
     final newThread = ThreadModel(
       id: 'th_${DateTime.now().millisecondsSinceEpoch}',
-      title: title.isEmpty ? 'New Session' : title,
+      title: cleanTitle,
       workingDirectory: workingDirectory ?? '/var/www/ava-code-alpha',
-      model: model ?? 'gemini-3.7-flash-tiered',
+      model: model ?? 'gemini-3.7-flash',
       provider: provider ?? 'antigravity',
       updatedAt: DateTime.now(),
       turnCount: 0,
@@ -136,28 +130,15 @@ class ThreadController extends ChangeNotifier {
     _activeThread = newThread;
     _items.clear();
     notifyListeners();
-
-    final rpc = _rpcClient;
-    if (rpc != null) {
-      try {
-        await rpc.createThread(
-          title: newThread.title,
-          provider: newThread.provider,
-          model: newThread.model,
-          workingDirectory: newThread.workingDirectory,
-        );
-      } catch (_) {}
-    }
   }
 
   Future<void> deleteThread(String threadId) async {
     _threads.removeWhere((t) => t.id == threadId);
     if (_activeThread?.id == threadId) {
       _activeThread = _threads.isNotEmpty ? _threads.first : null;
+      _items.clear();
       if (_activeThread != null) {
-        _loadSampleTurnItems();
-      } else {
-        _items.clear();
+        await _loadThreadMessages(_activeThread!.id);
       }
     }
     notifyListeners();
@@ -170,9 +151,14 @@ class ThreadController extends ChangeNotifier {
     }
   }
 
-  /// Sends a prompt and streams turn execution from App Server
+  /// Sends a prompt and executes turn on the server
   Future<void> sendPrompt(String prompt) async {
     if (prompt.trim().isEmpty) return;
+
+    // Auto-create thread if none is active
+    if (_activeThread == null) {
+      await createNewThread(title: prompt.trim().split('\n').first);
+    }
 
     final userItem = TurnItemModel(
       id: 'usr_${DateTime.now().millisecondsSinceEpoch}',
@@ -185,47 +171,21 @@ class ThreadController extends ChangeNotifier {
     _isStreaming = true;
     notifyListeners();
 
-    // Add streaming reasoning thought
+    // Add streaming reasoning thought indicator
     final thoughtItem = TurnItemModel(
       id: 'thg_${DateTime.now().millisecondsSinceEpoch}',
       type: TurnItemType.reasoning,
       title: 'Reasoning process',
-      content: 'Connecting to Google Antigravity (Cloud Code PA) via JSON-RPC v2...\nPlanning turn execution for request...',
+      content: 'Dispatching turn execution to AvA Engine...',
       timestamp: DateTime.now(),
+      status: ItemStatus.inProgress,
     );
     _items.add(thoughtItem);
     notifyListeners();
 
-    // Send turn to server API
-    String? apiResponseText;
-    String? apiReasoning;
-    final rpc = _rpcClient;
-    final active = _activeThread;
-    if (rpc != null && active != null) {
-      try {
-        final res = await rpc.sendTurn(
-          threadId: active.id,
-          prompt: prompt.trim(),
-        );
-        if (res != null) {
-          apiResponseText = res['response']?.toString();
-          apiReasoning = res['reasoning']?.toString();
-        }
-      } catch (_) {}
-    }
-
-    if (apiReasoning != null && apiReasoning.isNotEmpty) {
-      final tIdx = _items.indexWhere((i) => i.id == thoughtItem.id);
-      if (tIdx != -1) {
-        _items[tIdx] = _items[tIdx].copyWith(content: apiReasoning);
-      }
-    }
-
-    await Future.delayed(const Duration(milliseconds: 400));
-
-    // Add streaming agent response
+    // Add agent message container
     final agentMessageId = 'msg_${DateTime.now().millisecondsSinceEpoch}';
-    final initialAgentMessage = TurnItemModel(
+    final agentMessage = TurnItemModel(
       id: agentMessageId,
       type: TurnItemType.agentMessage,
       title: 'AvA Agent',
@@ -233,37 +193,78 @@ class ThreadController extends ChangeNotifier {
       status: ItemStatus.inProgress,
       timestamp: DateTime.now(),
     );
-    _items.add(initialAgentMessage);
+    _items.add(agentMessage);
     notifyListeners();
 
-    final responseText = apiResponseText ??
-        'I am processing your instruction with **Google Antigravity** (`${_activeThread?.model ?? "gemini-3.7-flash-tiered"}`).\n\n'
-        '1. Verified native Rust engine status: **Active**\n'
-        '2. Validated session authentication: `mahmudhasan`\n'
-        '3. App Server JSON-RPC v2 streaming: **Connected**\n\n'
-        'All systems are operational and ready for agentic execution.';
+    final rpc = _rpcClient;
+    final active = _activeThread;
 
-    // Chunk text stream for realistic UI rendering
-    final words = responseText.split(' ');
-    String accumulated = '';
-    for (int i = 0; i < words.length; i++) {
-      accumulated += (i == 0 ? '' : ' ') + words[i];
-      if (i % 3 == 0 || i == words.length - 1) {
-        await Future.delayed(const Duration(milliseconds: 35));
-        final idx = _items.indexWhere((i) => i.id == agentMessageId);
-        if (idx != -1) {
-          _items[idx] = _items[idx].copyWith(
-            content: accumulated,
-            status: ItemStatus.inProgress,
-          );
+    if (rpc != null && active != null) {
+      try {
+        final res = await rpc.sendTurn(
+          threadId: active.id,
+          prompt: prompt.trim(),
+        );
+
+        if (res != null) {
+          final responseText = res['response']?.toString() ?? 'Operation completed.';
+          final reasoningText = res['reasoning']?.toString();
+
+          // Update thought
+          final tIdx = _items.indexWhere((i) => i.id == thoughtItem.id);
+          if (tIdx != -1) {
+            _items[tIdx] = _items[tIdx].copyWith(
+              content: reasoningText ?? 'Turn executed successfully.',
+              status: ItemStatus.completed,
+            );
+          }
+
+          // Update agent message
+          final msgIdx = _items.indexWhere((i) => i.id == agentMessageId);
+          if (msgIdx != -1) {
+            _items[msgIdx] = _items[msgIdx].copyWith(
+              content: responseText,
+              status: ItemStatus.completed,
+            );
+          }
+
+          // Update active thread turn count
+          final thIdx = _threads.indexWhere((t) => t.id == active.id);
+          if (thIdx != -1) {
+            _threads[thIdx] = ThreadModel(
+              id: active.id,
+              title: active.title,
+              workingDirectory: active.workingDirectory,
+              model: res['model']?.toString() ?? active.model,
+              provider: active.provider,
+              updatedAt: DateTime.now(),
+              turnCount: (res['turnCount'] as int?) ?? (active.turnCount + 1),
+            );
+            _activeThread = _threads[thIdx];
+          }
+
+          _isStreaming = false;
           notifyListeners();
+          return;
+        }
+      } catch (err) {
+        final msgIdx = _items.indexWhere((i) => i.id == agentMessageId);
+        if (msgIdx != -1) {
+          _items[msgIdx] = _items[msgIdx].copyWith(
+            content: 'Error communicating with engine: $err',
+            status: ItemStatus.failed,
+          );
         }
       }
     }
 
-    final finalIdx = _items.indexWhere((i) => i.id == agentMessageId);
-    if (finalIdx != -1) {
-      _items[finalIdx] = _items[finalIdx].copyWith(status: ItemStatus.completed);
+    final tIdx = _items.indexWhere((i) => i.id == thoughtItem.id);
+    if (tIdx != -1) {
+      _items[tIdx] = _items[tIdx].copyWith(status: ItemStatus.completed);
+    }
+    final msgIdx = _items.indexWhere((i) => i.id == agentMessageId);
+    if (msgIdx != -1) {
+      _items[msgIdx] = _items[msgIdx].copyWith(status: ItemStatus.completed);
     }
     _isStreaming = false;
     notifyListeners();

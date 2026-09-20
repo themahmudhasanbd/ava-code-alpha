@@ -5,7 +5,7 @@ import '../../core/storage/secure_storage_service.dart';
 class ThemeController extends ChangeNotifier {
   static const String _storageKeyTheme = 'ava_app_theme_mode';
   final SecureStorageService _storage;
-  ThemeMode _themeMode = ThemeMode.dark;
+  ThemeMode _themeMode = ThemeMode.light;
 
   ThemeMode get themeMode => _themeMode;
   bool get isDarkMode => _themeMode == ThemeMode.dark;
@@ -14,10 +14,10 @@ class ThemeController extends ChangeNotifier {
 
   Future<void> init() async {
     final savedMode = await _storage.getString(_storageKeyTheme);
-    if (savedMode == 'light') {
-      _themeMode = ThemeMode.light;
-    } else {
+    if (savedMode == 'dark') {
       _themeMode = ThemeMode.dark;
+    } else {
+      _themeMode = ThemeMode.light;
     }
     notifyListeners();
   }

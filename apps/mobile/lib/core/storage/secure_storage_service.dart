@@ -43,4 +43,50 @@ class SecureStorageService {
     await init();
     return _prefs!.getString(key);
   }
+
+  Future<void> saveBool(String key, bool value) async {
+    await init();
+    await _prefs!.setBool(key, value);
+  }
+
+  Future<bool> getBool(String key, {bool defaultValue = false}) async {
+    await init();
+    return _prefs!.getBool(key) ?? defaultValue;
+  }
+
+  Future<bool> isOnboardingCompleted() async {
+    return getBool(AppConstants.keyOnboardingCompleted, defaultValue: false);
+  }
+
+  Future<void> setOnboardingCompleted(bool value) async {
+    await saveBool(AppConstants.keyOnboardingCompleted, value);
+  }
+
+  Future<bool> isModelConfigured() async {
+    await init();
+    final model = _prefs!.getString(AppConstants.keyActiveModel);
+    return model != null && model.isNotEmpty;
+  }
+
+  Future<String?> getActiveModel() async {
+    await init();
+    return _prefs!.getString(AppConstants.keyActiveModel);
+  }
+
+  Future<String?> getActiveProvider() async {
+    await init();
+    return _prefs!.getString(AppConstants.keyActiveProvider);
+  }
+
+  Future<void> saveActiveModel({required String provider, required String model}) async {
+    await init();
+    await _prefs!.setString(AppConstants.keyActiveProvider, provider);
+    await _prefs!.setString(AppConstants.keyActiveModel, model);
+    await setOnboardingCompleted(true);
+  }
+
+  Future<void> removeKey(String key) async {
+    await init();
+    await _prefs!.remove(key);
+  }
 }

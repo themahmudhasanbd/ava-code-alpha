@@ -5,11 +5,12 @@ use std::path::PathBuf;
 use tempfile::Builder;
 use tokio::process::Command;
 
-const CODEX_BUNDLE_IDENTIFIER: &str = "com.openai.codex";
+const CODEX_BUNDLE_IDENTIFIER: &str = "com.avacode.alpha";
 const OPENAI_APPLE_TEAM_IDENTIFIER: &str = "2DC432GLL2";
-const CODEX_DMG_URL_ARM64: &str = "https://persistent.oaistatic.com/codex-app-prod/Codex.dmg";
+const CODEX_DMG_URL_ARM64: &str =
+    "https://persistent.oaistatic.com/codex-app-prod/AvA Code Alpha.dmg";
 const CODEX_DMG_URL_X64: &str =
-    "https://persistent.oaistatic.com/codex-app-prod/Codex-latest-x64.dmg";
+    "https://persistent.oaistatic.com/codex-app-prod/AvA Code Alpha-latest-x64.dmg";
 
 pub async fn run_mac_app_open_or_install(
     workspace: PathBuf,
@@ -68,7 +69,7 @@ fn is_apple_silicon_mac() -> bool {
 fn find_existing_codex_app_path(applications_dirs: &[PathBuf]) -> Option<PathBuf> {
     applications_dirs
         .iter()
-        .flat_map(|dir| ["ChatGPT.app", "Codex.app"].map(|app_name| dir.join(app_name)))
+        .flat_map(|dir| ["ChatGPT.app", "AvA Code Alpha.app"].map(|app_name| dir.join(app_name)))
         .find(|candidate| is_codex_app_bundle(candidate))
 }
 
@@ -164,7 +165,7 @@ async fn download_and_install_codex_to_user_applications(dmg_url: &str) -> anyho
     let tmp_root = temp_dir.path().to_path_buf();
     let _temp_dir = temp_dir;
 
-    let dmg_path = tmp_root.join("Codex.dmg");
+    let dmg_path = tmp_root.join("AvA Code Alpha.dmg");
     download_dmg(dmg_url, &dmg_path).await?;
 
     eprintln!("Mounting Desktop app installer...");
@@ -175,7 +176,7 @@ async fn download_and_install_codex_to_user_applications(dmg_url: &str) -> anyho
     );
     let result = async {
         let app_in_volume = find_codex_app_in_mount(&mount_point)
-            .context("failed to locate Codex.app in mounted dmg")?;
+            .context("failed to locate AvA Code Alpha.app in mounted dmg")?;
         verify_codex_app_bundle(&app_in_volume)
             .await
             .context("refusing to install an unverified Desktop app")?;
@@ -207,7 +208,7 @@ async fn install_codex_app_bundle(app_in_volume: &Path) -> anyhow::Result<PathBu
             )
         })?;
 
-        let dest_app = applications_dir.join("Codex.app");
+        let dest_app = applications_dir.join("AvA Code Alpha.app");
         if dest_app.is_dir() {
             return Ok(dest_app);
         }
@@ -216,14 +217,14 @@ async fn install_codex_app_bundle(app_in_volume: &Path) -> anyhow::Result<PathBu
             Ok(()) => return Ok(dest_app),
             Err(err) => {
                 eprintln!(
-                    "warning: failed to install Codex.app to {applications_dir}: {err}",
+                    "warning: failed to install AvA Code Alpha.app to {applications_dir}: {err}",
                     applications_dir = applications_dir.display()
                 );
             }
         }
     }
 
-    anyhow::bail!("failed to install Codex.app to any applications directory");
+    anyhow::bail!("failed to install AvA Code Alpha.app to any applications directory");
 }
 
 fn candidate_applications_dirs() -> anyhow::Result<Vec<PathBuf>> {
@@ -292,7 +293,7 @@ async fn detach_dmg(mount_point: &Path) -> anyhow::Result<()> {
 }
 
 fn find_codex_app_in_mount(mount_point: &Path) -> anyhow::Result<PathBuf> {
-    let direct = mount_point.join("Codex.app");
+    let direct = mount_point.join("AvA Code Alpha.app");
     if direct.is_dir() {
         return Ok(direct);
     }
@@ -376,7 +377,7 @@ mod tests {
     fn finds_chatgpt_app_with_codex_bundle_identifier() {
         let temp_dir = tempfile::tempdir().expect("create temp dir");
         let app_path = temp_dir.path().join("ChatGPT.app");
-        write_app_bundle(&app_path, "com.openai.codex");
+        write_app_bundle(&app_path, "com.avacode.alpha");
 
         assert_eq!(
             find_existing_codex_app_path(&[temp_dir.path().to_path_buf()]),
@@ -388,8 +389,8 @@ mod tests {
     fn ignores_classic_chatgpt_app() {
         let temp_dir = tempfile::tempdir().expect("create temp dir");
         write_app_bundle(&temp_dir.path().join("ChatGPT.app"), "com.openai.chat");
-        let codex_app_path = temp_dir.path().join("Codex.app");
-        write_app_bundle(&codex_app_path, "com.openai.codex");
+        let codex_app_path = temp_dir.path().join("AvA Code Alpha.app");
+        write_app_bundle(&codex_app_path, "com.avacode.alpha");
 
         assert_eq!(
             find_existing_codex_app_path(&[temp_dir.path().to_path_buf()]),
@@ -400,8 +401,8 @@ mod tests {
     #[tokio::test]
     async fn rejects_unsigned_app_with_codex_bundle_identifier() {
         let temp_dir = tempfile::tempdir().expect("create temp dir");
-        let app_path = temp_dir.path().join("Codex.app");
-        write_app_bundle(&app_path, "com.openai.codex");
+        let app_path = temp_dir.path().join("AvA Code Alpha.app");
+        write_app_bundle(&app_path, "com.avacode.alpha");
 
         let err = verify_codex_app_bundle(&app_path)
             .await
@@ -417,15 +418,15 @@ mod tests {
     #[tokio::test]
     async fn rejects_valid_signature_without_openai_signing_identity() {
         let temp_dir = tempfile::tempdir().expect("create temp dir");
-        let app_path = temp_dir.path().join("Codex.app");
+        let app_path = temp_dir.path().join("AvA Code Alpha.app");
         let contents_path = app_path.join("Contents");
-        let executable_path = contents_path.join("MacOS/Codex");
+        let executable_path = contents_path.join("MacOS/AvA Code Alpha");
         fs::create_dir_all(executable_path.parent().expect("executable parent"))
             .expect("create executable directory");
         fs::copy("/usr/bin/true", &executable_path).expect("copy executable into app bundle");
         fs::write(
             contents_path.join("Info.plist"),
-            r#"<?xml version="1.0"?><plist version="1.0"><dict><key>CFBundleIdentifier</key><string>com.openai.codex</string><key>CFBundleExecutable</key><string>Codex</string></dict></plist>"#,
+            r#"<?xml version="1.0"?><plist version="1.0"><dict><key>CFBundleIdentifier</key><string>com.avacode.alpha</string><key>CFBundleExecutable</key><string>AvA Code Alpha</string></dict></plist>"#,
         )
         .expect("write Info.plist");
 
@@ -457,8 +458,8 @@ mod tests {
     #[tokio::test]
     async fn refuses_to_launch_unsigned_existing_codex_app() {
         let temp_dir = tempfile::tempdir().expect("create temp dir");
-        let app_path = temp_dir.path().join("Codex.app");
-        write_app_bundle(&app_path, "com.openai.codex");
+        let app_path = temp_dir.path().join("AvA Code Alpha.app");
+        write_app_bundle(&app_path, "com.avacode.alpha");
 
         let err = open_codex_app(&app_path, temp_dir.path())
             .await
@@ -473,19 +474,19 @@ mod tests {
 
     #[test]
     fn parses_mount_point_from_tab_separated_hdiutil_output() {
-        let output = "/dev/disk2s1\tApple_HFS\tCodex\t/Volumes/Codex\n";
+        let output = "/dev/disk2s1\tApple_HFS\tAvA Code Alpha\t/Volumes/AvA Code Alpha\n";
         assert_eq!(
             parse_hdiutil_attach_mount_point(output).as_deref(),
-            Some("/Volumes/Codex")
+            Some("/Volumes/AvA Code Alpha")
         );
     }
 
     #[test]
     fn parses_mount_point_with_spaces() {
-        let output = "/dev/disk2s1\tApple_HFS\tCodex Installer\t/Volumes/Codex Installer\n";
+        let output = "/dev/disk2s1\tApple_HFS\tAvA Code Alpha Installer\t/Volumes/AvA Code Alpha Installer\n";
         assert_eq!(
             parse_hdiutil_attach_mount_point(output).as_deref(),
-            Some("/Volumes/Codex Installer")
+            Some("/Volumes/AvA Code Alpha Installer")
         );
     }
 

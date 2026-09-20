@@ -16,9 +16,11 @@ workspace = true
 codex-api = { workspace = true }
 codex-protocol = { workspace = true }
 codex-utils-redacted-string = { workspace = true }
+dirs = { workspace = true }
 http = { workspace = true }
 schemars = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
 url = { workspace = true }
 
 [dev-dependencies]

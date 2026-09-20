@@ -36,14 +36,14 @@ pub use windows_glob::windows_deny_read_glob_scan;
 const PROTECTED_METADATA_GIT_PATH_NAME: &str = ".git";
 const PROTECTED_METADATA_AGENTS_PATH_NAME: &str = ".agents";
 const PROTECTED_METADATA_AVA_PATH_NAME: &str = ".ava";
-const PROTECTED_METADATA_CODEX_PATH_NAME: &str = ".codex";
+const PROTECTED_METADATA_AVA_CODE_PATH_NAME: &str = ".ava-code";
 
 /// Top-level workspace metadata paths that stay protected under writable roots.
 pub const PROTECTED_METADATA_PATH_NAMES: &[&str] = &[
     PROTECTED_METADATA_GIT_PATH_NAME,
     PROTECTED_METADATA_AGENTS_PATH_NAME,
     PROTECTED_METADATA_AVA_PATH_NAME,
-    PROTECTED_METADATA_CODEX_PATH_NAME,
+    PROTECTED_METADATA_AVA_CODE_PATH_NAME,
 ];
 
 /// Returns true when a path basename is one of the protected workspace metadata names.
@@ -849,7 +849,10 @@ impl FileSystemSandboxPolicy {
 
         append_default_read_only_project_root_subpath_if_no_explicit_rule(&mut entries, ".git");
         append_default_read_only_project_root_subpath_if_no_explicit_rule(&mut entries, ".agents");
-        append_default_read_only_project_root_subpath_if_no_explicit_rule(&mut entries, ".codex");
+        append_default_read_only_project_root_subpath_if_no_explicit_rule(
+            &mut entries,
+            ".ava-code",
+        );
         for writable_root in writable_roots {
             for protected_path in default_read_only_subpaths_for_writable_root(
                 writable_root,
@@ -1582,8 +1585,8 @@ impl FileSystemSandboxPolicy {
             // as separate WritableRoot values and are checked independently.
             // Preserve symlink path components that live under the writable root
             // so downstream sandboxes can still mask the symlink inode itself.
-            // Example: if `<root>/.codex -> <root>/decoy`, bwrap must still see
-            // `<root>/.codex`, not only the resolved `<root>/decoy`.
+            // Example: if `<root>/.ava-code -> <root>/decoy`, bwrap must still see
+            // `<root>/.ava-code`, not only the resolved `<root>/decoy`.
             read_only_subpaths.extend(
                 prepared_entries
                     .iter()
@@ -1639,7 +1642,7 @@ impl FileSystemSandboxPolicy {
                 protected_metadata_names,
                 root,
                 // Preserve literal in-root protected paths like `.git` and
-                // `.codex` so downstream sandboxes can still detect and mask
+                // `.ava-code` so downstream sandboxes can still detect and mask
                 // the symlink itself instead of only its resolved target.
                 read_only_subpaths: dedup_absolute_paths(
                     read_only_subpaths,
@@ -2258,11 +2261,11 @@ pub(crate) fn default_read_only_subpaths_for_writable_root(
         subpaths.push(top_level_agents);
     }
 
-    // Keep top-level project metadata under .codex read-only to the agent by
+    // Keep top-level project metadata under .ava-code read-only to the agent by
     // default. For the workspace root itself, protect it even before the
     // directory exists so first-time creation still goes through the
     // protected-path approval flow.
-    let top_level_codex = writable_root.join(PROTECTED_METADATA_CODEX_PATH_NAME);
+    let top_level_codex = writable_root.join(PROTECTED_METADATA_AVA_CODE_PATH_NAME);
     if protect_missing_dot_codex || top_level_codex.as_path().is_dir() {
         subpaths.push(top_level_codex);
     }
@@ -2829,7 +2832,7 @@ mod tests {
             FileSystemSandboxEntry::new(cwd.clone().into(), FileSystemAccessMode::Write),
             FileSystemSandboxEntry::new(path("file:///C:/").into(), FileSystemAccessMode::Deny),
             FileSystemSandboxEntry::new(
-                path("file:///C:/workspace/.codex").into(),
+                path("file:///C:/workspace/.ava-code").into(),
                 FileSystemAccessMode::Read,
             ),
             unreadable_glob_entry(r"C:\workspace\**\*.env".to_string()),
@@ -2851,10 +2854,10 @@ mod tests {
                 &prepared,
             ));
         }
-        assert!(!policy.can_write_path(&path("file:///C:/workspace/.codex/config"), &context));
+        assert!(!policy.can_write_path(&path("file:///C:/workspace/.ava-code/config"), &context));
         assert_eq!(
-            policy.metadata_write_denial(&path("file:///C:/workspace/.codex/config"), &context),
-            Some(".codex"),
+            policy.metadata_write_denial(&path("file:///C:/workspace/.ava-code/config"), &context),
+            Some(".ava-code"),
         );
     }
 
@@ -3049,7 +3052,7 @@ mod tests {
             cwd.path().canonicalize().expect("canonicalize cwd"),
         )
         .expect("absolute canonical root");
-        let expected_dot_codex = expected_root.join(".codex");
+        let expected_dot_codex = expected_root.join(".ava-code");
 
         let policy = FileSystemSandboxPolicy::restricted(vec![FileSystemSandboxEntry {
             path: FileSystemPath::Special {
@@ -3197,7 +3200,7 @@ mod tests {
                 ),
                 FileSystemSandboxEntry::skip_missing_path(
                     FileSystemPath::Special {
-                        value: FileSystemSpecialPath::project_roots(Some(".codex".into())),
+                        value: FileSystemSpecialPath::project_roots(Some(".ava-code".into())),
                     },
                     FileSystemAccessMode::Read,
                 ),
@@ -3234,7 +3237,7 @@ mod tests {
             cwd.path().canonicalize().expect("canonicalize cwd"),
         )
         .expect("absolute canonical root");
-        let explicit_dot_codex = expected_root.join(".codex");
+        let explicit_dot_codex = expected_root.join(".ava-code");
 
         let policy = FileSystemSandboxPolicy::restricted(vec![
             FileSystemSandboxEntry {
@@ -3261,14 +3264,14 @@ mod tests {
         assert!(
             !workspace_root
                 .protected_metadata_names
-                .contains(&".codex".to_string()),
-            "explicit .codex rule should remove the metadata-name protection"
+                .contains(&".ava-code".to_string()),
+            "explicit .ava-code rule should remove the metadata-name protection"
         );
         assert!(
             !workspace_root
                 .read_only_subpaths
                 .contains(&explicit_dot_codex),
-            "explicit .codex rule should win over the default protected carveout"
+            "explicit .ava-code rule should win over the default protected carveout"
         );
         assert!(policy.can_write_local_path_with_cwd(
             explicit_dot_codex.join("config.toml").as_path(),
@@ -3281,7 +3284,7 @@ mod tests {
         let cwd = TempDir::new().expect("tempdir");
         let dot_git_config = cwd.path().join(".git").join("config");
         let dot_agents_config = cwd.path().join(".agents").join("config");
-        let dot_codex_config = cwd.path().join(".codex").join("config.toml");
+        let dot_codex_config = cwd.path().join(".ava-code").join("config.toml");
         let root = AbsolutePathBuf::from_absolute_path(cwd.path()).expect("absolute cwd");
         let file_system_policy =
             FileSystemSandboxPolicy::restricted(vec![FileSystemSandboxEntry {
@@ -3301,7 +3304,7 @@ mod tests {
             vec![
                 ".git".to_string(),
                 ".agents".to_string(),
-                ".codex".to_string(),
+                ".ava-code".to_string(),
             ]
         );
         assert!(!writable_roots[0].is_path_writable(&dot_git_config));
@@ -3381,7 +3384,7 @@ mod tests {
         );
         assert!(
             !file_system_policy
-                .can_write_local_path_with_cwd(Path::new(".codex/config.toml"), relative_cwd,)
+                .can_write_local_path_with_cwd(Path::new(".ava-code/config.toml"), relative_cwd,)
         );
         assert!(!file_system_policy.can_write_local_path_with_cwd(
             Path::new(".agents/skills/example/SKILL.md"),
@@ -3396,10 +3399,10 @@ mod tests {
         let real_root = cwd.path().join("real");
         let link_root = cwd.path().join("link");
         let blocked = real_root.join("blocked");
-        let codex_dir = real_root.join(".codex");
+        let codex_dir = real_root.join(".ava-code");
 
         fs::create_dir_all(&blocked).expect("create blocked");
-        fs::create_dir_all(&codex_dir).expect("create .codex");
+        fs::create_dir_all(&codex_dir).expect("create .ava-code");
         symlink_dir(&real_root, &link_root).expect("create symlinked root");
 
         let link_root =
@@ -3407,7 +3410,7 @@ mod tests {
         let link_blocked = link_root.join("blocked");
         let expected_root = link_root.clone();
         let expected_blocked = link_blocked.clone();
-        let expected_codex = link_root.join(".codex");
+        let expected_codex = link_root.join(".ava-code");
 
         let policy = FileSystemSandboxPolicy::restricted(vec![
             FileSystemSandboxEntry {
@@ -3450,11 +3453,11 @@ mod tests {
         let link_root = cwd.path().join("link");
         let blocked = real_root.join("blocked");
         let agents_dir = real_root.join(".agents");
-        let codex_dir = real_root.join(".codex");
+        let codex_dir = real_root.join(".ava-code");
 
         fs::create_dir_all(&blocked).expect("create blocked");
         fs::create_dir_all(&agents_dir).expect("create .agents");
-        fs::create_dir_all(&codex_dir).expect("create .codex");
+        fs::create_dir_all(&codex_dir).expect("create .ava-code");
         symlink_dir(&real_root, &link_root).expect("create symlinked cwd");
 
         let link_blocked =
@@ -3463,7 +3466,7 @@ mod tests {
             AbsolutePathBuf::from_absolute_path(&link_root).expect("absolute symlinked root");
         let expected_blocked = link_blocked.clone();
         let expected_agents = expected_root.join(".agents");
-        let expected_codex = expected_root.join(".codex");
+        let expected_codex = expected_root.join(".ava-code");
 
         let policy = FileSystemSandboxPolicy::restricted(vec![
             FileSystemSandboxEntry {
@@ -3522,18 +3525,18 @@ mod tests {
         let cwd = TempDir::new().expect("tempdir");
         let root = cwd.path().join("root");
         let decoy = root.join("decoy-codex");
-        let dot_codex = root.join(".codex");
+        let dot_codex = root.join(".ava-code");
         fs::create_dir_all(&decoy).expect("create decoy");
-        symlink_dir(&decoy, &dot_codex).expect("create .codex symlink");
+        symlink_dir(&decoy, &dot_codex).expect("create .ava-code symlink");
 
         let root = AbsolutePathBuf::from_absolute_path(&root).expect("absolute root");
         let expected_dot_codex = AbsolutePathBuf::from_absolute_path(
             root.as_path()
                 .canonicalize()
                 .expect("canonicalize root")
-                .join(".codex"),
+                .join(".ava-code"),
         )
-        .expect("absolute .codex symlink");
+        .expect("absolute .ava-code symlink");
         let unexpected_decoy =
             AbsolutePathBuf::from_absolute_path(decoy.canonicalize().expect("canonicalize decoy"))
                 .expect("absolute canonical decoy");
@@ -3714,10 +3717,10 @@ mod tests {
         let real_tmpdir = cwd.path().join("real-tmpdir");
         let link_tmpdir = cwd.path().join("link-tmpdir");
         let blocked = real_tmpdir.join("blocked");
-        let codex_dir = real_tmpdir.join(".codex");
+        let codex_dir = real_tmpdir.join(".ava-code");
 
         fs::create_dir_all(&blocked).expect("create blocked");
-        fs::create_dir_all(&codex_dir).expect("create .codex");
+        fs::create_dir_all(&codex_dir).expect("create .ava-code");
         symlink_dir(&real_tmpdir, &link_tmpdir).expect("create symlinked tmpdir");
 
         let link_blocked =
@@ -3725,7 +3728,7 @@ mod tests {
         let expected_root =
             AbsolutePathBuf::from_absolute_path(&link_tmpdir).expect("absolute symlinked tmpdir");
         let expected_blocked = link_blocked.clone();
-        let expected_codex = expected_root.join(".codex");
+        let expected_codex = expected_root.join(".ava-code");
 
         unsafe {
             std::env::set_var("TMPDIR", &link_tmpdir);

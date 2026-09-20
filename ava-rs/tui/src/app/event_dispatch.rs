@@ -2229,6 +2229,46 @@ impl App {
                     }
                 }
             }
+            AppEvent::PersistProviderSelection { provider, model } => {
+                let mut edits = vec![
+                    crate::config_update::replace_config_value(
+                        "model_provider",
+                        serde_json::Value::String(provider.clone()),
+                    ),
+                ];
+                if let Some(model_name) = &model {
+                    edits.push(crate::config_update::replace_config_value(
+                        "model",
+                        serde_json::Value::String(model_name.clone()),
+                    ));
+                }
+                match self
+                    .persist_model_defaults(
+                        app_server.request_handle(),
+                        edits,
+                        "model provider",
+                    )
+                    .await
+                {
+                    Ok(()) => {
+                        let hint = model.as_ref().map(|m| format!("Default model: {m}"));
+                        self.chat_widget.add_info_message(
+                            format!("AI Provider set to `{provider}`"),
+                            hint,
+                        );
+                    }
+                    Err(err) => {
+                        let error = format_config_error(&err);
+                        tracing::error!(
+                            error = %error,
+                            "failed to persist provider selection"
+                        );
+                        self.chat_widget.add_error_message(format!(
+                            "Failed to save default provider: {error}"
+                        ));
+                    }
+                }
+            }
             AppEvent::SelectSessionModel { model, effort } => {
                 self.select_session_model(app_server, model, effort).await;
             }

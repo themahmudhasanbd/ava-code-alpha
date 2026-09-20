@@ -51,39 +51,9 @@ const M = (name: string, reasoning = true, context = 1048576, output = 65536): M
   limit: { context, output },
 });
 
-export const ANTIGRAVITY_MODELS: Record<string, ModelDef> = {
-  "gemini-3.7-flash-high": M("Gemini 3.7 Flash (High)", true, 1048576, 65536),
-  "gemini-3.7-flash-medium": M("Gemini 3.7 Flash (Medium)", true, 1048576, 65536),
-  "gemini-3.7-flash-low": M("Gemini 3.7 Flash (Low)", true, 1048576, 65536),
-  "gemini-3.7-flash-tiered": M("Gemini 3.7 Flash (Tiered)", true, 1048576, 65536),
-  "gemini-3.8-flash-high": M("Gemini 3.8 Flash (High)", true, 1048576, 65536),
-  "gemini-3.8-flash-medium": M("Gemini 3.8 Flash (Medium)", true, 1048576, 65536),
-  "gemini-3.8-flash-low": M("Gemini 3.8 Flash (Low)", true, 1048576, 65536),
-  "gemini-3.8-flash-tiered": M("Gemini 3.8 Flash (Tiered)", true, 1048576, 65536),
-  "claude-opus-4-6-thinking": M("Claude Opus 4.6 (Thinking)", true, 250000, 65536),
-  "claude-sonnet-4-6": M("Claude Sonnet 4.6 (Thinking)", true, 250000, 65536),
-  "gemini-pro-agent": M("Gemini 3.1 Pro (High)", true, 1048576, 65536),
-  "gemini-3.1-pro-low": M("Gemini 3.1 Pro (Low)", true, 1048576, 65536),
-  "gemini-3.1-flash-lite": M("Gemini 3.1 Flash Lite", true, 1048576, 65536),
-  "gemini-3-flash": M("Gemini 3 Flash", true, 1048576, 65536),
-  "gemini-2.5-pro": M("Gemini 2.5 Pro", true, 1048576, 65536),
-  "gemini-2.5-flash": M("Gemini 2.5 Flash", true, 1048576, 65536),
-  "gpt-oss-120b-medium": M("GPT-OSS 120B (Medium)", true, 131072, 32768),
-};
+export const ANTIGRAVITY_MODELS: Record<string, ModelDef> = {};
 
-export const ANTIGRAVITY_MODEL_ALIASES: Record<string, string> = {
-  "gemini-3.7-flash": "gemini-3.7-flash-tiered",
-  "gemini-3.7-flash-high": "gemini-3.7-flash-tiered",
-  "gemini-3.7-flash-medium": "gemini-3.7-flash-tiered",
-  "gemini-3.7-flash-low": "gemini-3.7-flash-tiered",
-  "gemini-3.1-pro-high": "gemini-pro-agent",
-  "gpt-oss-120b": "gpt-oss-120b-medium",
-  "gemini-claude-sonnet-4-5": "claude-sonnet-4-6",
-  "gemini-claude-sonnet-4-5-thinking": "claude-sonnet-4-6",
-  "gemini-claude-opus-4-5-thinking": "claude-opus-4-6-thinking",
-  "gemini-2.0-flash": "gemini-2.5-flash",
-  "gemini-2.0-flash-001": "gemini-2.5-flash",
-};
+export const ANTIGRAVITY_MODEL_ALIASES: Record<string, string> = {};
 
 export interface TokenResponse {
   access_token: string;

@@ -22,11 +22,11 @@ use std::sync::atomic::Ordering;
 use std::time::Duration;
 use std::time::Instant;
 
-use crate::client_tool_catalog::ClientToolCatalog;
 use crate::apps::normalize_codex_apps_callable_name;
 use crate::apps::normalize_codex_apps_callable_namespace;
 use crate::apps::normalize_codex_apps_tool_title;
 use crate::apps::prepare_openai_file_params_for_model;
+use crate::client_tool_catalog::ClientToolCatalog;
 use crate::elicitation::ElicitationRequestManager;
 use crate::executor_environment_http_client::ExecutorEnvironmentHttpClient;
 use crate::mcp::CODEX_APPS_MCP_SERVER_NAME;

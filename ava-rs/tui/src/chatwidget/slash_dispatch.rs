@@ -448,6 +448,10 @@ impl ChatWidget {
             SlashCommand::Quit | SlashCommand::Exit => {
                 self.request_quit_without_confirmation();
             }
+            SlashCommand::Connect => {
+                self.open_provider_connect_popup();
+                self.defer_input_until_settings_applied();
+            }
             SlashCommand::Logout => {
                 self.app_event_tx.send(AppEvent::Logout);
             }
@@ -1259,6 +1263,7 @@ impl ChatWidget {
             | SlashCommand::Memories
             | SlashCommand::Quit
             | SlashCommand::Exit
+            | SlashCommand::Connect
             | SlashCommand::Logout
             | SlashCommand::Mention
             | SlashCommand::Skills

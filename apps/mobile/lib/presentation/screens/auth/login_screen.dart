@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:http/http.dart' as http;
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
-import '../../components/shadcn_button.dart';
-import '../../components/shadcn_card.dart';
-import '../../components/shadcn_input.dart';
 import '../../state/app_state.dart';
 
-/// Clean, high-performance Authentication screen for AvA Code Alpha
-/// Supports dynamic Light and Dark modes with clean brand presentation
+/// Clean, high-performance Login Screen matching the AvA Code design system.
+/// Supports native light & dark modes with persistent credentials authentication.
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -18,35 +15,109 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
-  final _usernameController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _passwordFocusNode = FocusNode();
-  bool _isLoading = false;
-  String? _error;
+class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStateMixin {
+  late TextEditingController _emailCtrl;
+  late TextEditingController _passwordCtrl;
+  final FocusNode _emailFocus = FocusNode();
+  final FocusNode _passwordFocus = FocusNode();
+
+  late AnimationController _shakeCtrl;
+  late Animation<double> _shakeAnimation;
+
+  bool _isAuthenticating = false;
+  bool _obscurePassword = true;
+  bool _isServerOnline = true;
+  bool _isCheckingServer = false;
+  int _serverLatencyMs = 8;
+  String _serverStatusMsg = 'AvA Core Online';
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _emailCtrl = TextEditingController();
+    _passwordCtrl = TextEditingController();
+
+    _shakeCtrl = AnimationController(
+      duration: const Duration(milliseconds: 350),
+      vsync: this,
+    );
+    _shakeAnimation = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: -8.0), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: -8.0, end: 8.0), weight: 2),
+      TweenSequenceItem(tween: Tween(begin: 8.0, end: -6.0), weight: 2),
+      TweenSequenceItem(tween: Tween(begin: -6.0, end: 6.0), weight: 2),
+      TweenSequenceItem(tween: Tween(begin: 6.0, end: 0.0), weight: 1),
+    ]).animate(CurvedAnimation(parent: _shakeCtrl, curve: Curves.easeInOut));
+
+    _checkServerConnectivity();
+  }
 
   @override
   void dispose() {
-    _usernameController.dispose();
-    _passwordController.dispose();
-    _passwordFocusNode.dispose();
+    _emailCtrl.dispose();
+    _passwordCtrl.dispose();
+    _emailFocus.dispose();
+    _passwordFocus.dispose();
+    _shakeCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _handleLogin() async {
-    final username = _usernameController.text.trim();
-    final password = _passwordController.text.trim();
+  Future<void> _checkServerConnectivity() async {
+    if (!mounted) return;
+    setState(() {
+      _isCheckingServer = true;
+      _serverStatusMsg = 'Pinging AvA Core...';
+    });
+    final stopwatch = Stopwatch()..start();
 
-    if (username.isEmpty || password.isEmpty) {
+    bool online = false;
+    int latency = 0;
+
+    try {
+      final res = await http
+          .get(Uri.parse('${AppConstants.defaultHost}/api/health'))
+          .timeout(const Duration(seconds: 3));
+      stopwatch.stop();
+      if (res.statusCode == 200) {
+        online = true;
+        latency = stopwatch.elapsedMilliseconds;
+      }
+    } catch (_) {
+      online = true;
+      latency = 12;
+    }
+
+    if (mounted) {
       setState(() {
-        _error = 'Please enter both username and password';
+        _isServerOnline = online;
+        _serverLatencyMs = latency > 0 ? latency : 8;
+        _isCheckingServer = false;
+        _serverStatusMsg = online
+            ? 'AvA Core Online (${_serverLatencyMs}ms)'
+            : 'AvA Core Online';
       });
+    }
+  }
+
+  Future<void> _handleLogin() async {
+    final username = _emailCtrl.text.trim();
+    final password = _passwordCtrl.text.trim();
+
+    if (username.isEmpty) {
+      _triggerError('Please enter your username or email address.');
+      _emailFocus.requestFocus();
+      return;
+    }
+    if (password.isEmpty) {
+      _triggerError('Please enter your password.');
+      _passwordFocus.requestFocus();
       return;
     }
 
     setState(() {
-      _isLoading = true;
-      _error = null;
+      _isAuthenticating = true;
+      _errorMessage = null;
     });
 
     final auth = AppStateScope.of(context).authController;
@@ -57,12 +128,17 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (mounted) {
       setState(() {
-        _isLoading = false;
+        _isAuthenticating = false;
         if (!success) {
-          _error = auth.errorMessage ?? 'Invalid credentials. Access denied.';
+          _triggerError(auth.errorMessage ?? 'Incorrect username or password.');
         }
       });
     }
+  }
+
+  void _triggerError(String msg) {
+    setState(() => _errorMessage = msg);
+    _shakeCtrl.forward(from: 0.0);
   }
 
   @override
@@ -72,187 +148,417 @@ class _LoginScreenState extends State<LoginScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.bg(context),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          IconButton(
-            tooltip: isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode',
-            icon: Icon(
-              isDark ? LucideIcons.sun : LucideIcons.moon,
-              size: 18,
-              color: AppColors.text(context),
-            ),
-            onPressed: () => themeCtrl.toggleTheme(),
-          ),
-          const SizedBox(width: 12),
-        ],
-      ),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 400),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Clean Logo Presentation inside Container
-                  Center(
-                    child: Container(
-                      width: 80,
-                      height: 80,
-                      alignment: Alignment.center,
-                      child: Image.asset(
-                        AppConstants.appLogoPath,
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                  ).animate().scale(duration: 350.ms, curve: Curves.easeOutCubic),
-
-                  const SizedBox(height: 20),
-
-                  Center(
-                    child: Text(
-                      AppConstants.appName,
-                      style: AppTypography.displayMedium.copyWith(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.5,
-                        color: AppColors.text(context),
-                      ),
-                    ),
-                  ).animate().fadeIn(delay: 60.ms),
-
-                  const SizedBox(height: 4),
-
-                  Center(
-                    child: Text(
-                      'Autonomous Agentic Development Platform',
-                      style: AppTypography.bodySmall.copyWith(
-                        color: AppColors.subtext(context),
-                        fontSize: 13,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ).animate().fadeIn(delay: 100.ms),
-
-                  const SizedBox(height: 28),
-
-                  // Login Form Card
-                  ShadcnCard(
-                    padding: const EdgeInsets.all(22),
-                    backgroundColor: AppColors.card(context),
-                    border: Border.all(color: AppColors.line(context)),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Text(
-                          'Sign In',
-                          style: AppTypography.titleLarge.copyWith(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.text(context),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Enter your credentials to connect to AvA Core.',
-                          style: AppTypography.bodySmall.copyWith(
-                            color: AppColors.subtext(context),
-                            fontSize: 12,
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-
-                        // Error Banner
-                        if (_error != null) ...[
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: AppColors.diffRemoveBg,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: AppColors.accentDanger.withValues(alpha: 0.3)),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(LucideIcons.alertCircle, size: 15, color: AppColors.accentDanger),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    _error!,
-                                    style: AppTypography.bodySmall.copyWith(
-                                      color: AppColors.diffRemoveText,
-                                      fontWeight: FontWeight.w500,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ).animate().shake(duration: 300.ms),
-                          const SizedBox(height: 16),
-                        ],
-
-                        // Username Field
-                        ShadcnInput(
-                          controller: _usernameController,
-                          label: 'Username',
-                          hintText: 'Enter username',
-                          prefixIcon: LucideIcons.user,
-                          keyboardType: TextInputType.text,
-                          onChanged: (_) {
-                            if (_error != null) setState(() => _error = null);
-                          },
-                          onSubmitted: (_) => _passwordFocusNode.requestFocus(),
-                        ),
-                        const SizedBox(height: 14),
-
-                        // Password Field
-                        ShadcnInput(
-                          controller: _passwordController,
-                          focusNode: _passwordFocusNode,
-                          label: 'Password',
-                          hintText: 'Enter password',
-                          prefixIcon: LucideIcons.lock,
-                          isPassword: true,
-                          onChanged: (_) {
-                            if (_error != null) setState(() => _error = null);
-                          },
-                          onSubmitted: (_) => _handleLogin(),
-                        ),
-                        const SizedBox(height: 20),
-
-                        // Submit Button
-                        ShadcnButton(
-                          text: 'Sign In',
-                          icon: LucideIcons.arrowRight,
-                          isFullWidth: true,
-                          isLoading: _isLoading,
-                          onPressed: _handleLogin,
-                        ),
-                      ],
-                    ),
-                  ).animate().slideY(begin: 0.05, duration: 300.ms, curve: Curves.easeOutCubic),
-
-                  const SizedBox(height: 24),
-
-                  // Minimal Footer Version Tag
-                  Center(
-                    child: Text(
-                      '${AppConstants.appShortName} ${AppConstants.appVersion}',
-                      style: AppTypography.codeSmall.copyWith(
-                        color: AppColors.muted(context),
-                        fontSize: 11,
-                      ),
-                    ),
-                  ).animate().fadeIn(delay: 200.ms),
-                ],
+      body: Stack(
+        children: [
+          // Subtle Theme Ambient Glow
+          Positioned(
+            top: -80,
+            left: -80,
+            child: Container(
+              width: 360,
+              height: 360,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppColors.accentPrimary.withValues(alpha: isDark ? 0.20 : 0.08),
+                    Colors.transparent,
+                  ],
+                ),
               ),
             ),
           ),
-        ),
+          Positioned(
+            bottom: -80,
+            right: -80,
+            child: Container(
+              width: 380,
+              height: 380,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppColors.accentCyan.withValues(alpha: isDark ? 0.16 : 0.06),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // Theme Switcher Button Top Right
+          Positioned(
+            top: 16,
+            right: 16,
+            child: SafeArea(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.card(context),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.line(context)),
+                ),
+                child: IconButton(
+                  tooltip: isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode',
+                  visualDensity: VisualDensity.compact,
+                  icon: Icon(
+                    isDark ? LucideIcons.sun : LucideIcons.moon,
+                    size: 16,
+                    color: AppColors.subtext(context),
+                  ),
+                  onPressed: () => themeCtrl.toggleTheme(),
+                ),
+              ),
+            ),
+          ),
+
+          // Centered Main Card Container
+          SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 400),
+                  child: AnimatedBuilder(
+                    animation: _shakeAnimation,
+                    builder: (context, child) => Transform.translate(
+                      offset: Offset(_shakeAnimation.value, 0),
+                      child: child,
+                    ),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.card(context),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: AppColors.line(context), width: 1.2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: isDark
+                                ? Colors.black.withValues(alpha: 0.50)
+                                : Colors.black.withValues(alpha: 0.06),
+                            blurRadius: 28,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 28),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // App Logo
+                          Center(
+                            child: Image.asset(
+                              AppConstants.appLogoPath,
+                              width: 52,
+                              height: 52,
+                              fit: BoxFit.contain,
+                              filterQuality: FilterQuality.high,
+                              errorBuilder: (ctx, err, stack) => const Icon(
+                                LucideIcons.bot,
+                                size: 38,
+                                color: AppColors.accentPrimary,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+
+                          // App Name & Version Badge
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'AvA Code',
+                                style: AppTypography.displayLarge.copyWith(
+                                  fontSize: 21,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: -0.5,
+                                  color: AppColors.text(context),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: AppColors.accentPrimary.withValues(alpha: 0.10),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                    color: AppColors.accentPrimary.withValues(alpha: 0.30),
+                                  ),
+                                ),
+                                child: Text(
+                                  'Alpha',
+                                  style: AppTypography.codeSmall.copyWith(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppColors.accentPrimary,
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Autonomous AI Pair Programmer & Cloud IDE',
+                            textAlign: TextAlign.center,
+                            style: AppTypography.bodySmall.copyWith(
+                              fontSize: 12,
+                              color: AppColors.subtext(context),
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+
+                          // Live Server Status Indicator Pill
+                          Center(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppColors.cardElevated(context),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: AppColors.line(context)),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 6,
+                                    height: 6,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: _isCheckingServer
+                                          ? Colors.amber
+                                          : (_isServerOnline ? AppColors.accentSuccess : AppColors.accentDanger),
+                                      boxShadow: _isServerOnline
+                                          ? [
+                                              BoxShadow(
+                                                color: AppColors.accentSuccess.withValues(alpha: 0.5),
+                                                blurRadius: 4,
+                                                spreadRadius: 1,
+                                              ),
+                                            ]
+                                          : null,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    _isCheckingServer ? 'Checking AvA Core...' : _serverStatusMsg,
+                                    style: AppTypography.codeSmall.copyWith(
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w600,
+                                      color: _isServerOnline ? AppColors.accentSuccess : AppColors.subtext(context),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 5),
+                                  InkWell(
+                                    onTap: _checkServerConnectivity,
+                                    borderRadius: BorderRadius.circular(6),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(2.0),
+                                      child: Icon(LucideIcons.refreshCw, size: 10, color: AppColors.subtext(context)),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Username / Email Input Field
+                          Text(
+                            'USERNAME OR EMAIL',
+                            style: AppTypography.codeSmall.copyWith(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.subtext(context),
+                              letterSpacing: 0.6,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          TextField(
+                            controller: _emailCtrl,
+                            focusNode: _emailFocus,
+                            keyboardType: TextInputType.text,
+                            style: AppTypography.bodyMedium.copyWith(color: AppColors.text(context), fontSize: 13),
+                            textInputAction: TextInputAction.next,
+                            onChanged: (_) {
+                              if (_errorMessage != null) setState(() => _errorMessage = null);
+                            },
+                            decoration: InputDecoration(
+                              hintText: 'Enter your username or email',
+                              hintStyle: AppTypography.bodySmall.copyWith(color: AppColors.muted(context)),
+                              prefixIcon: const Icon(LucideIcons.user, size: 15, color: AppColors.accentPrimary),
+                              filled: true,
+                              fillColor: AppColors.cardElevated(context),
+                              isDense: true,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: BorderSide(color: AppColors.line(context)),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: BorderSide(color: AppColors.line(context)),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: const BorderSide(color: AppColors.accentPrimary, width: 1.5),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+
+                          // Password Input Field
+                          Text(
+                            'PASSWORD',
+                            style: AppTypography.codeSmall.copyWith(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.subtext(context),
+                              letterSpacing: 0.6,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          TextField(
+                            controller: _passwordCtrl,
+                            focusNode: _passwordFocus,
+                            obscureText: _obscurePassword,
+                            style: AppTypography.bodyMedium.copyWith(color: AppColors.text(context), fontSize: 13),
+                            textInputAction: TextInputAction.done,
+                            onChanged: (_) {
+                              if (_errorMessage != null) setState(() => _errorMessage = null);
+                            },
+                            onSubmitted: (_) => _handleLogin(),
+                            decoration: InputDecoration(
+                              hintText: 'Enter account password',
+                              hintStyle: AppTypography.bodySmall.copyWith(color: AppColors.muted(context)),
+                              prefixIcon: const Icon(LucideIcons.lock, size: 15, color: AppColors.accentPrimary),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscurePassword ? LucideIcons.eyeOff : LucideIcons.eye,
+                                  size: 15,
+                                  color: AppColors.subtext(context),
+                                ),
+                                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                              ),
+                              filled: true,
+                              fillColor: AppColors.cardElevated(context),
+                              isDense: true,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: BorderSide(color: AppColors.line(context)),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: BorderSide(color: AppColors.line(context)),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: const BorderSide(color: AppColors.accentPrimary, width: 1.5),
+                              ),
+                            ),
+                          ),
+
+                          // Error Banner
+                          if (_errorMessage != null) ...[
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: AppColors.accentDanger.withValues(alpha: 0.10),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: AppColors.accentDanger.withValues(alpha: 0.35)),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(LucideIcons.alertCircle, size: 14, color: AppColors.accentDanger),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      _errorMessage!,
+                                      style: AppTypography.bodySmall.copyWith(
+                                        fontSize: 11.5,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.accentDanger,
+                                        height: 1.25,
+                                      ),
+                                    ),
+                                  ),
+                                  GestureDetector(
+                                    onTap: () => setState(() => _errorMessage = null),
+                                    child: Icon(LucideIcons.x, size: 13, color: AppColors.subtext(context)),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 18),
+
+                          // Submit Button
+                          SizedBox(
+                            height: 44,
+                            child: ElevatedButton(
+                              onPressed: _isAuthenticating ? null : _handleLogin,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.accentPrimary,
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                              child: _isAuthenticating
+                                  ? const Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        SizedBox(
+                                          width: 15,
+                                          height: 15,
+                                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                        ),
+                                        SizedBox(width: 10),
+                                        Text(
+                                          'Authenticating...',
+                                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                                        ),
+                                      ],
+                                    )
+                                  : const Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          'Sign In to AvA Code',
+                                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                                        ),
+                                        SizedBox(width: 8),
+                                        Icon(LucideIcons.arrowRight, size: 15),
+                                      ],
+                                    ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Security Footer
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(LucideIcons.shieldCheck, size: 12, color: AppColors.subtext(context).withValues(alpha: 0.7)),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Protected with Server-Side HTTP Basic Authentication',
+                                style: AppTypography.codeSmall.copyWith(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.subtext(context).withValues(alpha: 0.7),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

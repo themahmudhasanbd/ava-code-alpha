@@ -103,4 +103,5 @@ __pycache__/
 .packages
 .ava/
 .ava-code/
+ava-cli/bin/
 

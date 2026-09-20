@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../data/models/turn_item_model.dart';
@@ -67,29 +68,51 @@ class _ChatScreenState extends State<ChatScreen> {
         return Scaffold(
           backgroundColor: AppColors.background,
           appBar: AppBar(
-            title: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            title: Row(
               children: [
-                Text(
-                  activeThread?.title ?? 'AvA Code Alpha',
-                  style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.w600),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                Container(
+                  width: 28,
+                  height: 28,
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceElevated,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Image.asset(AppConstants.appLogoPath, fit: BoxFit.contain),
                 ),
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    const ShadcnBadge(
-                      label: 'Antigravity',
-                      variant: ShadcnBadgeVariant.antigravity,
-                      showDot: true,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      providerCtrl.activeModelId,
-                      style: AppTypography.codeSmall,
-                    ),
-                  ],
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        activeThread?.title ?? AppConstants.appName,
+                        style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.w600),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          const ShadcnBadge(
+                            label: 'Antigravity',
+                            variant: ShadcnBadgeVariant.antigravity,
+                            showDot: true,
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              providerCtrl.activeModelId,
+                              style: AppTypography.codeSmall,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -138,17 +161,18 @@ class _ChatScreenState extends State<ChatScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 56,
-              height: 56,
+              width: 64,
+              height: 64,
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: AppColors.surfaceElevated,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.border),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: AppColors.borderStrong),
               ),
-              child: const Icon(LucideIcons.bot, size: 28, color: AppColors.textPrimary),
+              child: Image.asset(AppConstants.appLogoPath, fit: BoxFit.contain),
             ),
             const SizedBox(height: 16),
-            Text('AvA Code Alpha is Ready', style: AppTypography.titleLarge),
+            Text('${AppConstants.appName} is Ready', style: AppTypography.titleLarge),
             const SizedBox(height: 6),
             Text(
               'Connected to native Google Antigravity provider (`gemini-3.7-flash-tiered`). Send an instruction to begin.',

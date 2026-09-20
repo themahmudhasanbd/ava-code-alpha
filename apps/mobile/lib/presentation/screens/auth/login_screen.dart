@@ -75,24 +75,24 @@ class _LoginScreenState extends State<LoginScreen> {
                 // Logo & Header
                 Center(
                   child: Container(
-                    width: 64,
-                    height: 64,
+                    width: 72,
+                    height: 72,
+                    padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       color: AppColors.surfaceElevated,
-                      borderRadius: BorderRadius.circular(18),
+                      borderRadius: BorderRadius.circular(20),
                       border: Border.all(color: AppColors.borderStrong, width: 1),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.accentPrimary.withValues(alpha: 0.12),
-                          blurRadius: 32,
-                          offset: const Offset(0, 8),
+                          color: AppColors.accentPrimary.withValues(alpha: 0.15),
+                          blurRadius: 36,
+                          offset: const Offset(0, 10),
                         ),
                       ],
                     ),
-                    child: const Icon(
-                      LucideIcons.cpu,
-                      size: 30,
-                      color: AppColors.textPrimary,
+                    child: Image.asset(
+                      AppConstants.appLogoPath,
+                      fit: BoxFit.contain,
                     ),
                   ),
                 ).animate().scale(duration: 400.ms, curve: Curves.easeOutBack),
@@ -106,7 +106,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 6),
                 Center(
                   child: Text(
-                    'Autonomous Agentic Coding System',
+                    AppConstants.appTagline,
                     style: AppTypography.bodyMedium,
                   ),
                 ).animate().fadeIn(delay: 150.ms),

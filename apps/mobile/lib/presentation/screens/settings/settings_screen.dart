@@ -107,6 +107,79 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 20),
 
+          const SizedBox(height: 20),
+
+          // About App Branding Section
+          ShadcnCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceElevated,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Image.asset(AppConstants.appLogoPath, fit: BoxFit.contain),
+                    ),
+                    const SizedBox(width: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(AppConstants.appName, style: AppTypography.titleMedium),
+                        Text(
+                          '${AppConstants.appVersion} (Build ${AppConstants.appBuildNumber})',
+                          style: AppTypography.codeSmall.copyWith(color: AppColors.textMuted),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  AppConstants.appDescription,
+                  style: AppTypography.bodySmall,
+                ),
+                const SizedBox(height: 8),
+                const Divider(),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Developer', style: AppTypography.bodySmall),
+                    Text(
+                      AppConstants.developer,
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('License', style: AppTypography.bodySmall),
+                    Text(
+                      'Proprietary Alpha',
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.accentPrimary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
           // Sign Out Button
           ShadcnButton(
             text: 'Sign Out of AvA Core',
@@ -119,8 +192,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           Center(
             child: Text(
-              '${AppConstants.appName} ${AppConstants.appVersion}',
-              style: AppTypography.codeSmall.copyWith(color: AppColors.textMuted),
+              AppConstants.appCopyright,
+              style: AppTypography.codeSmall.copyWith(color: AppColors.textMuted, fontSize: 10),
             ),
           ),
         ],

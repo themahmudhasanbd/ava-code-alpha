@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../components/shadcn_badge.dart';
@@ -9,6 +9,31 @@ import '../../state/app_state.dart';
 /// Manage AI Model Providers, Antigravity OAuth tokens, and Model Catalog
 class ProvidersScreen extends StatelessWidget {
   const ProvidersScreen({super.key});
+
+  String _getProviderAsset(String id) {
+    switch (id.toLowerCase()) {
+      case 'antigravity':
+        return AppConstants.providerAntigravity;
+      case 'google':
+      case 'gemini':
+        return AppConstants.providerGemini;
+      case 'anthropic':
+      case 'claude':
+        return AppConstants.providerAnthropic;
+      case 'openai':
+        return AppConstants.providerOpenai;
+      case 'groq':
+        return AppConstants.providerGroq;
+      case 'deepseek':
+        return AppConstants.providerDeepseek;
+      case 'ollama':
+        return AppConstants.providerOllama;
+      case 'mistral':
+        return AppConstants.providerMistral;
+      default:
+        return AppConstants.providerCustom;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,14 +67,24 @@ class ProvidersScreen extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        const Icon(LucideIcons.sparkles, size: 18, color: AppColors.accentPrimary),
-                        const SizedBox(width: 8),
+                        Container(
+                          width: 28,
+                          height: 28,
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceElevated,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppColors.accentPrimary.withValues(alpha: 0.4)),
+                          ),
+                          child: Image.asset(AppConstants.providerAntigravity, fit: BoxFit.contain),
+                        ),
+                        const SizedBox(width: 10),
                         Text('Google Antigravity Provider', style: AppTypography.titleMedium),
                         const Spacer(),
                         const ShadcnBadge(label: 'Active Default', variant: ShadcnBadgeVariant.success),
                       ],
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 8),
                     Text(
                       'Direct high-speed connection to Google Cloud Code PA. Supports Gemini 3.7 Flash Tiered, Gemini 3.8, Gemini 3.1 Pro, and Claude Opus/Sonnet.',
                       style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
@@ -78,6 +113,18 @@ class ProvidersScreen extends StatelessWidget {
                       children: [
                         Row(
                           children: [
+                            Container(
+                              width: 28,
+                              height: 28,
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: AppColors.surfaceSubtle,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: AppColors.border),
+                              ),
+                              child: Image.asset(_getProviderAsset(provider.id), fit: BoxFit.contain),
+                            ),
+                            const SizedBox(width: 10),
                             Text(provider.name, style: AppTypography.titleMedium),
                             const Spacer(),
                             if (provider.isConnected)
@@ -86,7 +133,7 @@ class ProvidersScreen extends StatelessWidget {
                               const ShadcnBadge(label: 'Configured', variant: ShadcnBadgeVariant.neutral),
                           ],
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 6),
                         Text(provider.description, style: AppTypography.bodySmall),
                         const SizedBox(height: 12),
 

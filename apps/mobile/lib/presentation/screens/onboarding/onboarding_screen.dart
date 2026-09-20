@@ -4,13 +4,12 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
-import '../../components/shadcn_badge.dart';
 import '../../components/shadcn_button.dart';
+import '../../components/shadcn_card.dart';
 import '../../state/app_state.dart';
 
-/// Clean, dynamic Onboarding Screen.
-/// Displays live providers and discovered models, allowing seamless setup
-/// without hardcoded dummy catalogs.
+/// Clean Onboarding Screen.
+/// Informs the user to configure their AI models and routes directly to the Models screen.
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -20,39 +19,14 @@ class OnboardingScreen extends StatefulWidget {
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
   bool _isFinishing = false;
-  String _selectedProvider = 'antigravity';
-  String _selectedModel = 'gemini-3.7-flash';
 
-  Future<void> _proceedWithModel({int targetTab = 0}) async {
+  Future<void> _proceedToModelConfiguration() async {
     setState(() => _isFinishing = true);
     final scope = AppStateScope.of(context);
     final auth = scope.authController;
-    final providerCtrl = scope.providerController;
 
-    providerCtrl.setModel(_selectedModel, _selectedProvider);
-
+    // Finish onboarding and navigate directly to Models & Providers tab (tab 4)
     await auth.finishOnboarding(
-      provider: _selectedProvider,
-      model: _selectedModel,
-      targetTab: targetTab,
-    );
-
-    if (mounted) {
-      setState(() => _isFinishing = false);
-    }
-  }
-
-  Future<void> _openDetailedProviderSetup() async {
-    setState(() => _isFinishing = true);
-    final scope = AppStateScope.of(context);
-    final auth = scope.authController;
-    final providerCtrl = scope.providerController;
-
-    providerCtrl.setModel(_selectedModel, _selectedProvider);
-
-    await auth.finishOnboarding(
-      provider: _selectedProvider,
-      model: _selectedModel,
       targetTab: 4,
     );
 
@@ -63,41 +37,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final scope = AppStateScope.of(context);
-    final themeCtrl = scope.themeController;
-    final providerCtrl = scope.providerController;
+    final themeCtrl = AppStateScope.of(context).themeController;
     final isDark = AppColors.isDark(context);
-    final providers = providerCtrl.providers;
-
-    // Collect all dynamic options from providers
-    final List<Map<String, dynamic>> dynamicOptions = [];
-    for (final p in providers) {
-      if (p.models.isNotEmpty) {
-        for (final m in p.models) {
-          dynamicOptions.add({
-            'provider': p.id,
-            'model': m,
-            'title': m,
-            'providerName': p.name,
-            'desc': '${p.name} configured model',
-            'badge': p.id == 'antigravity' ? 'Antigravity' : p.name,
-            'badgeVariant': p.id == 'antigravity' ? ShadcnBadgeVariant.antigravity : ShadcnBadgeVariant.outline,
-            'icon': LucideIcons.cpu,
-          });
-        }
-      } else {
-        dynamicOptions.add({
-          'provider': p.id,
-          'model': 'default',
-          'title': p.name,
-          'providerName': p.name,
-          'desc': p.description.isNotEmpty ? p.description : 'Connect ${p.name} endpoint',
-          'badge': p.isConnected ? 'Connected' : 'Setup Required',
-          'badgeVariant': p.isConnected ? ShadcnBadgeVariant.success : ShadcnBadgeVariant.warning,
-          'icon': p.id == 'antigravity' ? LucideIcons.sparkles : LucideIcons.plug,
-        });
-      }
-    }
 
     return Scaffold(
       backgroundColor: AppColors.bg(context),
@@ -135,20 +76,21 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 520),
+              constraints: const BoxConstraints(maxWidth: 480),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  // Logo container
                   Center(
                     child: Container(
-                      width: 72,
-                      height: 72,
-                      padding: const EdgeInsets.all(14),
+                      width: 76,
+                      height: 76,
+                      padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: AppColors.card(context),
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(22),
                         border: Border.all(
                           color: AppColors.line(context),
                           width: 1.5,
@@ -167,11 +109,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     ),
                   ).animate().scale(duration: 350.ms, curve: Curves.easeOutCubic),
 
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 22),
 
                   Center(
                     child: Text(
-                      'Configure Model Provider',
+                      'Welcome to ${AppConstants.appName}',
                       style: AppTypography.displayMedium.copyWith(
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
@@ -182,146 +124,75 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     ),
                   ).animate().fadeIn(delay: 80.ms),
 
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 8),
 
                   Center(
                     child: Text(
-                      'Choose a primary AI provider for autonomous coding. All models are discovered live from connected endpoints.',
+                      'Autonomous Multi-Turn AI Agentic Engineering Platform',
                       style: AppTypography.bodySmall.copyWith(
                         color: AppColors.subtext(context),
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w400,
-                        height: 1.4,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
                       ),
                       textAlign: TextAlign.center,
                     ),
                   ).animate().fadeIn(delay: 120.ms),
 
-                  const SizedBox(height: 22),
+                  const SizedBox(height: 28),
 
-                  // Dynamic Options
-                  ...dynamicOptions.map((opt) {
-                    final isSelected = _selectedProvider == opt['provider'];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: InkWell(
-                        onTap: () {
-                          setState(() {
-                            _selectedProvider = opt['provider'] as String;
-                            _selectedModel = opt['model'] as String;
-                          });
-                        },
-                        borderRadius: BorderRadius.circular(12),
-                        child: Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? (isDark ? AppColors.surfaceElevated : AppColors.lightSurfaceElevated)
-                                : AppColors.card(context),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: isSelected
-                                  ? (isDark ? AppColors.borderFocus : AppColors.lightBorderFocus)
-                                  : AppColors.line(context),
-                              width: isSelected ? 1.8 : 1.0,
+                  // Prompt to configure model
+                  ShadcnCard(
+                    padding: const EdgeInsets.all(18),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: isDark ? AppColors.surfaceElevated : AppColors.lightSurfaceElevated,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: AppColors.line(context)),
+                              ),
+                              child: Icon(LucideIcons.cpu, size: 16, color: AppColors.text(context)),
                             ),
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                width: 36,
-                                height: 36,
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? (isDark ? AppColors.surfaceHighlight : AppColors.lightSurfaceSubtle)
-                                      : (isDark ? AppColors.surfaceSubtle : AppColors.lightSurfaceElevated),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Icon(
-                                  opt['icon'] as IconData,
-                                  size: 18,
-                                  color: AppColors.text(context),
-                                ),
+                            const SizedBox(width: 10),
+                            Text(
+                              'AI Model Setup Required',
+                              style: AppTypography.titleMedium.copyWith(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.text(context),
                               ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Flexible(
-                                          child: Text(
-                                            opt['title'] as String,
-                                            style: AppTypography.titleMedium.copyWith(
-                                              fontSize: 14,
-                                              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                                              color: AppColors.text(context),
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        ShadcnBadge(
-                                          label: opt['badge'] as String,
-                                          variant: opt['badgeVariant'] as ShadcnBadgeVariant,
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      opt['desc'] as String,
-                                      style: AppTypography.bodySmall.copyWith(
-                                        color: AppColors.subtext(context),
-                                        fontSize: 11.5,
-                                        height: 1.3,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Container(
-                                width: 20,
-                                height: 20,
-                                margin: const EdgeInsets.only(top: 2),
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: isSelected ? (isDark ? Colors.white : Colors.black) : AppColors.line(context),
-                                    width: isSelected ? 6 : 1.5,
-                                  ),
-                                  color: Colors.transparent,
-                                ),
-                              ),
-                            ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          'Before launching your coding workspace, please connect an AI provider or select a model. You can configure Google Antigravity (OAuth), Claude, OpenAI, DeepSeek, Groq, or local Ollama endpoints.',
+                          style: AppTypography.bodySmall.copyWith(
+                            color: AppColors.subtext(context),
+                            fontSize: 12.5,
+                            height: 1.45,
                           ),
                         ),
-                      ),
-                    );
-                  }),
+                      ],
+                    ),
+                  ).animate().fadeIn(delay: 160.ms),
 
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 24),
 
+                  // Primary Action: Navigate to Configure Models Screen
                   ShadcnButton(
-                    text: 'Activate & Launch Workspace',
+                    text: 'Configure AI Models & Providers',
                     icon: LucideIcons.arrowRight,
                     size: ShadcnButtonSize.lg,
                     isFullWidth: true,
                     isLoading: _isFinishing,
-                    onPressed: () => _proceedWithModel(targetTab: 0),
+                    onPressed: _proceedToModelConfiguration,
                   ).animate().fadeIn(delay: 200.ms),
-
-                  const SizedBox(height: 10),
-
-                  ShadcnButton(
-                    text: 'Manage & Connect Providers',
-                    icon: LucideIcons.settings2,
-                    variant: ShadcnButtonVariant.outline,
-                    size: ShadcnButtonSize.md,
-                    isFullWidth: true,
-                    onPressed: _isFinishing ? null : _openDetailedProviderSetup,
-                  ).animate().fadeIn(delay: 240.ms),
                 ],
               ),
             ),

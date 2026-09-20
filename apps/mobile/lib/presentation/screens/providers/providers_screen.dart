@@ -102,10 +102,10 @@ class _ProvidersScreenState extends State<ProvidersScreen> {
                   height: 28,
                   padding: const EdgeInsets.all(5),
                   decoration: BoxDecoration(
-                    color: AppColors.accentPrimary.withValues(alpha: 0.12),
+                    color: AppColors.cardElevated(context),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(LucideIcons.cpu, size: 16, color: AppColors.accentPrimary),
+                  child: Icon(LucideIcons.cpu, size: 16, color: AppColors.text(context)),
                 ),
                 const SizedBox(width: 10),
                 Text(
@@ -122,17 +122,17 @@ class _ProvidersScreenState extends State<ProvidersScreen> {
               IconButton(
                 tooltip: 'Reload Providers & Models',
                 icon: _isReloading
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 16,
                         height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.accentPrimary),
+                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.text(context)),
                       )
-                    : const Icon(LucideIcons.rotateCw, size: 18, color: AppColors.accentPrimary),
+                    : Icon(LucideIcons.rotateCw, size: 18, color: AppColors.text(context)),
                 onPressed: _isReloading ? null : () => _handleReload(providerCtrl),
               ),
               IconButton(
                 tooltip: 'Add Custom API Connector',
-                icon: const Icon(LucideIcons.plusCircle, size: 18, color: AppColors.accentPrimary),
+                icon: Icon(LucideIcons.plusCircle, size: 18, color: AppColors.text(context)),
                 onPressed: () => _openCustomConnectorModal(context),
               ),
               const SizedBox(width: 8),
@@ -270,7 +270,7 @@ class _ProvidersScreenState extends State<ProvidersScreen> {
       children: [
         Row(
           children: [
-            const Icon(LucideIcons.layers, size: 14, color: AppColors.accentPrimary),
+            Icon(LucideIcons.layers, size: 14, color: AppColors.text(context)),
             const SizedBox(width: 8),
             Text(
               'AI PROVIDERS & CONNECTIONS',
@@ -301,7 +301,7 @@ class _ProvidersScreenState extends State<ProvidersScreen> {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isAntigravity
-                    ? AppColors.accentPrimary.withValues(alpha: 0.35)
+                    ? (isDark ? AppColors.borderFocus : AppColors.lightBorderFocus)
                     : AppColors.line(context),
               ),
             ),
@@ -492,7 +492,7 @@ class _ProvidersScreenState extends State<ProvidersScreen> {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: isAntigravity
-              ? AppColors.accentPrimary.withValues(alpha: 0.3)
+              ? (isDark ? AppColors.borderFocus : AppColors.lightBorderFocus)
               : AppColors.line(context),
         ),
       ),
@@ -525,7 +525,7 @@ class _ProvidersScreenState extends State<ProvidersScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: AppColors.accentPrimary.withValues(alpha: 0.1),
+                  color: AppColors.cardElevated(context),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -533,7 +533,7 @@ class _ProvidersScreenState extends State<ProvidersScreen> {
                   style: AppTypography.codeSmall.copyWith(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.accentPrimary,
+                    color: AppColors.subtext(context),
                   ),
                 ),
               ),
@@ -555,7 +555,9 @@ class _ProvidersScreenState extends State<ProvidersScreen> {
                     : (isDark ? AppColors.bg(context) : const Color(0xFFFAFAFA)),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: isSelected ? AppColors.accentPrimary : AppColors.line(context),
+                  color: isSelected
+                      ? (isDark ? AppColors.borderFocus : AppColors.lightBorderFocus)
+                      : AppColors.line(context),
                   width: isSelected ? 1.5 : 1.0,
                 ),
               ),
@@ -573,7 +575,7 @@ class _ProvidersScreenState extends State<ProvidersScreen> {
                                 style: AppTypography.titleMedium.copyWith(
                                   fontSize: 13,
                                   fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                                  color: isSelected ? AppColors.accentPrimary : AppColors.text(context),
+                                  color: AppColors.text(context),
                                 ),
                               ),
                             ),
@@ -582,7 +584,7 @@ class _ProvidersScreenState extends State<ProvidersScreen> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
                                 decoration: BoxDecoration(
-                                  color: AppColors.accentPrimary.withValues(alpha: 0.12),
+                                  color: AppColors.cardElevated(context),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
@@ -590,7 +592,7 @@ class _ProvidersScreenState extends State<ProvidersScreen> {
                                   style: AppTypography.codeSmall.copyWith(
                                     fontSize: 9,
                                     fontWeight: FontWeight.w700,
-                                    color: AppColors.accentPrimary,
+                                    color: AppColors.subtext(context),
                                   ),
                                 ),
                               ),
@@ -615,9 +617,11 @@ class _ProvidersScreenState extends State<ProvidersScreen> {
                     onPressed: () => onSelectModel(mId, provider.id),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: isSelected
-                          ? AppColors.accentPrimary
+                          ? (isDark ? AppColors.textPrimary : AppColors.lightTextPrimary)
                           : (isDark ? AppColors.surfaceSubtle : AppColors.lightSurfaceElevated),
-                      foregroundColor: isSelected ? Colors.white : AppColors.text(context),
+                      foregroundColor: isSelected
+                          ? (isDark ? AppColors.textInverse : AppColors.lightTextInverse)
+                          : AppColors.text(context),
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       minimumSize: const Size(64, 32),
@@ -627,7 +631,7 @@ class _ProvidersScreenState extends State<ProvidersScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         if (isSelected) ...[
-                          const Icon(LucideIcons.check, size: 12, color: Colors.white),
+                          Icon(LucideIcons.check, size: 12, color: isDark ? AppColors.textInverse : AppColors.lightTextInverse),
                           const SizedBox(width: 4),
                         ],
                         Text(
@@ -635,7 +639,9 @@ class _ProvidersScreenState extends State<ProvidersScreen> {
                           style: AppTypography.codeSmall.copyWith(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
-                            color: isSelected ? Colors.white : AppColors.text(context),
+                            color: isSelected
+                                ? (isDark ? AppColors.textInverse : AppColors.lightTextInverse)
+                                : AppColors.text(context),
                           ),
                         ),
                       ],
@@ -722,7 +728,7 @@ class _ProvidersScreenState extends State<ProvidersScreen> {
                         height: 36,
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                          color: AppColors.accentPrimary.withValues(alpha: 0.12),
+                          color: AppColors.cardElevated(context),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Image.asset(_getProviderAsset(provider.id), fit: BoxFit.contain),
@@ -913,10 +919,10 @@ class _ProvidersScreenState extends State<ProvidersScreen> {
                         width: 36,
                         height: 36,
                         decoration: BoxDecoration(
-                          color: AppColors.accentPrimary.withValues(alpha: 0.12),
+                          color: AppColors.cardElevated(context),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(LucideIcons.plug, size: 18, color: AppColors.accentPrimary),
+                        child: Icon(LucideIcons.plug, size: 18, color: AppColors.text(context)),
                       ),
                       const SizedBox(width: 12),
                       Expanded(

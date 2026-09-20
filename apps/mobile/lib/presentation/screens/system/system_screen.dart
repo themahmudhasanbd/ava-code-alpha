@@ -173,10 +173,10 @@ class _SystemScreenState extends State<SystemScreen> {
 
           Expanded(
             child: _isLoading
-                ? const Center(
+                ? Center(
                     child: CircularProgressIndicator(
                       strokeWidth: 2.5,
-                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.accentPrimary),
+                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.text(context)),
                     ),
                   )
                 : ListView(
@@ -198,10 +198,10 @@ class _SystemScreenState extends State<SystemScreen> {
                                 Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: AppColors.accentPrimary.withValues(alpha: 0.15),
+                                    color: AppColors.cardElevated(context),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
-                                  child: const Icon(LucideIcons.server, size: 18, color: AppColors.accentPrimary),
+                                  child: Icon(LucideIcons.server, size: 18, color: AppColors.text(context)),
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
@@ -268,7 +268,7 @@ class _SystemScreenState extends State<SystemScreen> {
                                       style: AppTypography.codeSmall.copyWith(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w700,
-                                        color: AppColors.accentPrimary,
+                                        color: AppColors.text(context),
                                       ),
                                     ),
                                   ],
@@ -280,7 +280,7 @@ class _SystemScreenState extends State<SystemScreen> {
                                     value: memUsagePct / 100.0,
                                     backgroundColor: isDark ? AppColors.surfaceElevated : AppColors.lightSurfaceElevated,
                                     valueColor: AlwaysStoppedAnimation<Color>(
-                                      memUsagePct > 85 ? AppColors.accentDanger : AppColors.accentPrimary,
+                                      memUsagePct > 85 ? AppColors.accentDanger : AppColors.text(context),
                                     ),
                                     minHeight: 6,
                                   ),

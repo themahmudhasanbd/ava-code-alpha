@@ -44,7 +44,7 @@ class _ThinkingAccordionState extends State<ThinkingAccordion> {
                   Icon(
                     widget.isLive ? LucideIcons.sparkles : LucideIcons.brain,
                     size: 14,
-                    color: widget.isLive ? AppColors.accentPurple : AppColors.muted(context),
+                    color: widget.isLive ? AppColors.text(context) : AppColors.muted(context),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
@@ -60,8 +60,8 @@ class _ThinkingAccordionState extends State<ThinkingAccordion> {
                     Container(
                       width: 6,
                       height: 6,
-                      decoration: const BoxDecoration(
-                        color: AppColors.accentPurple,
+                      decoration: BoxDecoration(
+                        color: AppColors.text(context),
                         shape: BoxShape.circle,
                       ),
                     ),

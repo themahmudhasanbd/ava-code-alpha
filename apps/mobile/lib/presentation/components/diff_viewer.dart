@@ -67,7 +67,7 @@ class DiffViewer extends StatelessWidget {
                   lineBg = AppColors.diffRemoveBg;
                   lineFg = AppColors.diffRemoveText;
                 } else if (line.startsWith('@@')) {
-                  lineFg = AppColors.accentCyan;
+                  lineFg = AppColors.muted(context);
                 }
 
                 return Container(

@@ -28,7 +28,7 @@ class ThreadsScreen extends StatelessWidget {
         ),
         title: Row(
           children: [
-            const Icon(LucideIcons.plusCircle, size: 18, color: AppColors.accentPrimary),
+            Icon(LucideIcons.plusCircle, size: 18, color: AppColors.text(context)),
             const SizedBox(width: 8),
             Text(
               'Create Session Thread',
@@ -80,8 +80,8 @@ class ThreadsScreen extends StatelessWidget {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.accentPrimary,
-              foregroundColor: Colors.white,
+              backgroundColor: isDark ? AppColors.textPrimary : AppColors.lightTextPrimary,
+              foregroundColor: isDark ? AppColors.textInverse : AppColors.lightTextInverse,
             ),
             onPressed: () {
               Navigator.pop(ctx);
@@ -156,7 +156,7 @@ class ThreadsScreen extends StatelessWidget {
               // Screen Header Section
               Row(
                 children: [
-                  const Icon(LucideIcons.gitBranch, size: 16, color: AppColors.accentPrimary),
+                  Icon(LucideIcons.gitBranch, size: 16, color: AppColors.text(context)),
                   const SizedBox(width: 8),
                   Text(
                     'Workspace Threads',

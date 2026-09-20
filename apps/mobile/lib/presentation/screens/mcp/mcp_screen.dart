@@ -104,7 +104,7 @@ class _McpScreenState extends State<McpScreen> {
             ),
             child: Row(
               children: [
-                const Icon(LucideIcons.plugZap, size: 15, color: AppColors.accentPrimary),
+                Icon(LucideIcons.plugZap, size: 15, color: AppColors.text(context)),
                 const SizedBox(width: 8),
                 Text(
                   'MCP Tools & Protocol Servers',
@@ -126,10 +126,10 @@ class _McpScreenState extends State<McpScreen> {
 
           Expanded(
             child: _isLoading
-                ? const Center(
+                ? Center(
                     child: CircularProgressIndicator(
                       strokeWidth: 2.5,
-                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.accentPrimary),
+                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.text(context)),
                     ),
                   )
                 : ListView(
@@ -166,10 +166,10 @@ class _McpScreenState extends State<McpScreen> {
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: AppColors.accentPrimary.withValues(alpha: 0.12),
+                                  color: AppColors.cardElevated(context),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: const Icon(LucideIcons.network, size: 16, color: AppColors.accentPrimary),
+                                child: Icon(LucideIcons.network, size: 16, color: AppColors.text(context)),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -240,7 +240,7 @@ class _McpScreenState extends State<McpScreen> {
                             children: [
                               Row(
                                 children: [
-                                  const Icon(LucideIcons.wrench, size: 14, color: AppColors.accentCyan),
+                                  Icon(LucideIcons.wrench, size: 14, color: AppColors.text(context)),
                                   const SizedBox(width: 6),
                                   Text(
                                     tool['name']!,

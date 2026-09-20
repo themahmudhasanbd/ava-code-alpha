@@ -415,28 +415,8 @@ class _FilesScreenState extends State<FilesScreen> {
     }
   }
 
-  Color _getFileColor(String fileName, bool isDirectory) {
-    if (isDirectory) return const Color(0xFF60A5FA); // Blue
-    final ext = fileName.split('.').last.toLowerCase();
-    switch (ext) {
-      case 'dart':
-        return const Color(0xFF00B4AB);
-      case 'rs':
-        return const Color(0xFFF97316);
-      case 'ts':
-      case 'js':
-      case 'tsx':
-      case 'jsx':
-        return const Color(0xFFFACC15);
-      case 'json':
-      case 'yaml':
-      case 'toml':
-        return const Color(0xFFA78BFA);
-      case 'md':
-        return AppColors.accentSuccess;
-      default:
-        return AppColors.textSecondary;
-    }
+  Color _getFileColor(BuildContext context, String fileName, bool isDirectory) {
+    return isDirectory ? AppColors.text(context) : AppColors.subtext(context);
   }
 
   @override
@@ -474,10 +454,10 @@ class _FilesScreenState extends State<FilesScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: AppColors.accentPrimary.withValues(alpha: 0.1),
+                      color: AppColors.cardElevated(context),
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    child: const Icon(LucideIcons.server, size: 14, color: AppColors.accentPrimary),
+                    child: Icon(LucideIcons.server, size: 14, color: AppColors.text(context)),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -493,7 +473,7 @@ class _FilesScreenState extends State<FilesScreen> {
                             style: AppTypography.codeSmall.copyWith(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
-                              color: segments.isEmpty ? AppColors.accentPrimary : AppColors.muted(context),
+                              color: segments.isEmpty ? AppColors.text(context) : AppColors.muted(context),
                             ),
                           ),
                         ),
@@ -590,7 +570,7 @@ class _FilesScreenState extends State<FilesScreen> {
                   child: IconButton(
                     tooltip: 'New File',
                     visualDensity: VisualDensity.compact,
-                    icon: const Icon(LucideIcons.filePlus, size: 16, color: AppColors.accentPrimary),
+                    icon: Icon(LucideIcons.filePlus, size: 16, color: AppColors.text(context)),
                     onPressed: _createNewFile,
                   ),
                 ),
@@ -647,10 +627,10 @@ class _FilesScreenState extends State<FilesScreen> {
           // File List / Grid View
           Expanded(
             child: _isLoading
-                ? const Center(
+                ? Center(
                     child: CircularProgressIndicator(
                       strokeWidth: 2.5,
-                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.accentPrimary),
+                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.text(context)),
                     ),
                   )
                 : filteredFiles.isEmpty
@@ -669,7 +649,7 @@ class _FilesScreenState extends State<FilesScreen> {
                       )
                     : RefreshIndicator(
                         onRefresh: () => _loadDirectory(_currentPath),
-                        color: AppColors.accentPrimary,
+                        color: AppColors.text(context),
                         child: _isGridView
                             ? GridView.builder(
                                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
@@ -696,29 +676,37 @@ class _FilesScreenState extends State<FilesScreen> {
 
   Widget _buildFilterChip(String key, String label, IconData icon) {
     final isSelected = _activeFilterCategory == key;
+    final isDark = AppColors.isDark(context);
+
     return Padding(
       padding: const EdgeInsets.only(right: 6),
       child: FilterChip(
         avatar: Icon(
           icon,
           size: 13,
-          color: isSelected ? Colors.white : AppColors.subtext(context),
+          color: isSelected
+              ? (isDark ? AppColors.textInverse : AppColors.lightTextInverse)
+              : AppColors.subtext(context),
         ),
         label: Text(
           label,
           style: AppTypography.codeSmall.copyWith(
             fontSize: 11,
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-            color: isSelected ? Colors.white : AppColors.text(context),
+            color: isSelected
+                ? (isDark ? AppColors.textInverse : AppColors.lightTextInverse)
+                : AppColors.text(context),
           ),
         ),
         selected: isSelected,
-        selectedColor: AppColors.accentPrimary,
+        selectedColor: isDark ? AppColors.textPrimary : AppColors.lightTextPrimary,
         backgroundColor: AppColors.card(context),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
           side: BorderSide(
-            color: isSelected ? AppColors.accentPrimary : AppColors.line(context),
+            color: isSelected
+                ? (isDark ? AppColors.textPrimary : AppColors.lightTextPrimary)
+                : AppColors.line(context),
           ),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
@@ -732,7 +720,7 @@ class _FilesScreenState extends State<FilesScreen> {
     final isDir = file['isDirectory'] == true;
     final size = file['size'] as int? ?? 0;
     final fullPath = file['path']?.toString() ?? (_currentPath == '/' ? '/$name' : '$_currentPath/$name');
-    final fileColor = _getFileColor(name, isDir);
+    final fileColor = _getFileColor(context, name, isDir);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
@@ -837,7 +825,7 @@ class _FilesScreenState extends State<FilesScreen> {
     final isDir = file['isDirectory'] == true;
     final size = file['size'] as int? ?? 0;
     final fullPath = file['path']?.toString() ?? (_currentPath == '/' ? '/$name' : '$_currentPath/$name');
-    final fileColor = _getFileColor(name, isDir);
+    final fileColor = _getFileColor(context, name, isDir);
 
     return GestureDetector(
       onTap: () {

@@ -161,7 +161,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppColors.accentPrimary.withValues(alpha: isDark ? 0.20 : 0.08),
+                    AppColors.text(context).withValues(alpha: isDark ? 0.08 : 0.03),
                     Colors.transparent,
                   ],
                 ),
@@ -178,7 +178,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppColors.accentCyan.withValues(alpha: isDark ? 0.16 : 0.06),
+                    AppColors.muted(context).withValues(alpha: isDark ? 0.06 : 0.02),
                     Colors.transparent,
                   ],
                 ),
@@ -251,10 +251,10 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                               height: 52,
                               fit: BoxFit.contain,
                               filterQuality: FilterQuality.high,
-                              errorBuilder: (ctx, err, stack) => const Icon(
+                              errorBuilder: (ctx, err, stack) => Icon(
                                 LucideIcons.bot,
                                 size: 38,
-                                color: AppColors.accentPrimary,
+                                color: AppColors.text(context),
                               ),
                             ),
                           ),
@@ -277,10 +277,10 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: AppColors.accentPrimary.withValues(alpha: 0.10),
+                                  color: AppColors.cardElevated(context),
                                   borderRadius: BorderRadius.circular(6),
                                   border: Border.all(
-                                    color: AppColors.accentPrimary.withValues(alpha: 0.30),
+                                    color: AppColors.line(context),
                                   ),
                                 ),
                                 child: Text(
@@ -288,7 +288,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                   style: AppTypography.codeSmall.copyWith(
                                     fontSize: 10,
                                     fontWeight: FontWeight.w800,
-                                    color: AppColors.accentPrimary,
+                                    color: AppColors.text(context),
                                     letterSpacing: 0.3,
                                   ),
                                 ),
@@ -384,7 +384,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                             decoration: InputDecoration(
                               hintText: 'Enter your username or email',
                               hintStyle: AppTypography.bodySmall.copyWith(color: AppColors.muted(context)),
-                              prefixIcon: const Icon(LucideIcons.user, size: 15, color: AppColors.accentPrimary),
+                              prefixIcon: Icon(LucideIcons.user, size: 15, color: AppColors.subtext(context)),
                               filled: true,
                               fillColor: AppColors.cardElevated(context),
                               isDense: true,
@@ -399,7 +399,10 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(10),
-                                borderSide: const BorderSide(color: AppColors.accentPrimary, width: 1.5),
+                                borderSide: BorderSide(
+                                  color: isDark ? AppColors.borderFocus : AppColors.lightBorderFocus,
+                                  width: 1.5,
+                                ),
                               ),
                             ),
                           ),
@@ -429,7 +432,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                             decoration: InputDecoration(
                               hintText: 'Enter account password',
                               hintStyle: AppTypography.bodySmall.copyWith(color: AppColors.muted(context)),
-                              prefixIcon: const Icon(LucideIcons.lock, size: 15, color: AppColors.accentPrimary),
+                              prefixIcon: Icon(LucideIcons.lock, size: 15, color: AppColors.subtext(context)),
                               suffixIcon: IconButton(
                                 icon: Icon(
                                   _obscurePassword ? LucideIcons.eyeOff : LucideIcons.eye,
@@ -452,7 +455,10 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(10),
-                                borderSide: const BorderSide(color: AppColors.accentPrimary, width: 1.5),
+                                borderSide: BorderSide(
+                                  color: isDark ? AppColors.borderFocus : AppColors.lightBorderFocus,
+                                  width: 1.5,
+                                ),
                               ),
                             ),
                           ),
@@ -498,22 +504,25 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                             child: ElevatedButton(
                               onPressed: _isAuthenticating ? null : _handleLogin,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.accentPrimary,
-                                foregroundColor: Colors.white,
+                                backgroundColor: isDark ? AppColors.textPrimary : AppColors.lightTextPrimary,
+                                foregroundColor: isDark ? AppColors.textInverse : AppColors.lightTextInverse,
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                               ),
                               child: _isAuthenticating
-                                  ? const Row(
+                                  ? Row(
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
                                         SizedBox(
                                           width: 15,
                                           height: 15,
-                                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                          child: CircularProgressIndicator(
+                                            color: isDark ? AppColors.textInverse : AppColors.lightTextInverse,
+                                            strokeWidth: 2,
+                                          ),
                                         ),
-                                        SizedBox(width: 10),
-                                        Text(
+                                        const SizedBox(width: 10),
+                                        const Text(
                                           'Authenticating...',
                                           style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                                         ),

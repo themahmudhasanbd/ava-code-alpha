@@ -13,7 +13,7 @@ enum ShadcnBadgeVariant {
   defaultVariant,
 }
 
-/// Minimalist pill badge for model names, statuses, and providers
+/// Minimalist monochrome pill badge for model names, statuses, and providers
 class ShadcnBadge extends StatelessWidget {
   final String label;
   final IconData? icon;
@@ -40,8 +40,10 @@ class ShadcnBadge extends StatelessWidget {
     switch (variant) {
       case ShadcnBadgeVariant.neutral:
       case ShadcnBadgeVariant.defaultVariant:
+      case ShadcnBadgeVariant.secondary:
+      case ShadcnBadgeVariant.antigravity:
         bg = isDark ? AppColors.surfaceElevated : AppColors.lightSurfaceElevated;
-        fg = AppColors.subtext(context);
+        fg = AppColors.text(context);
         dotColor = AppColors.subtext(context);
         border = Border.all(color: AppColors.line(context), width: 1);
         break;
@@ -49,37 +51,25 @@ class ShadcnBadge extends StatelessWidget {
         bg = Colors.transparent;
         fg = AppColors.subtext(context);
         dotColor = AppColors.subtext(context);
-        border = Border.all(color: isDark ? AppColors.borderStrong : AppColors.lightBorderStrong, width: 1);
-        break;
-      case ShadcnBadgeVariant.secondary:
-        bg = isDark ? const Color(0x20FFFFFF) : const Color(0xFFF1F5F9);
-        fg = AppColors.text(context);
-        dotColor = AppColors.accentPrimary;
-        border = Border.all(color: AppColors.line(context), width: 0.8);
+        border = Border.all(color: AppColors.line(context), width: 1);
         break;
       case ShadcnBadgeVariant.success:
         bg = AppColors.diffAddBg;
         fg = AppColors.diffAddText;
         dotColor = AppColors.accentSuccess;
-        border = Border.all(color: AppColors.accentSuccess.withValues(alpha: 0.3), width: 1);
+        border = Border.all(color: AppColors.accentSuccess.withValues(alpha: 0.25), width: 1);
         break;
       case ShadcnBadgeVariant.warning:
-        bg = AppColors.accentWarning.withValues(alpha: 0.12);
+        bg = isDark ? const Color(0x20F59E0B) : const Color(0x15F59E0B);
         fg = AppColors.accentWarning;
         dotColor = AppColors.accentWarning;
-        border = Border.all(color: AppColors.accentWarning.withValues(alpha: 0.3), width: 1);
+        border = Border.all(color: AppColors.accentWarning.withValues(alpha: 0.25), width: 1);
         break;
       case ShadcnBadgeVariant.danger:
         bg = AppColors.diffRemoveBg;
         fg = AppColors.diffRemoveText;
         dotColor = AppColors.accentDanger;
-        border = Border.all(color: AppColors.accentDanger.withValues(alpha: 0.3), width: 1);
-        break;
-      case ShadcnBadgeVariant.antigravity:
-        bg = AppColors.accentPrimary.withValues(alpha: 0.15);
-        fg = isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB);
-        dotColor = AppColors.accentPrimary;
-        border = Border.all(color: AppColors.accentPrimary.withValues(alpha: 0.35), width: 1);
+        border = Border.all(color: AppColors.accentDanger.withValues(alpha: 0.25), width: 1);
         break;
     }
 

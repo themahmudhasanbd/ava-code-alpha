@@ -112,7 +112,7 @@ class _ConnectProviderSheetState extends State<ConnectProviderSheet> {
 
               Row(
                 children: [
-                  const Icon(LucideIcons.plugZap, size: 18, color: AppColors.accentPrimary),
+                  Icon(LucideIcons.plugZap, size: 18, color: AppColors.text(context)),
                   const SizedBox(width: 10),
                   Text(
                     '/connect — Provider Setup',
@@ -162,12 +162,12 @@ class _ConnectProviderSheetState extends State<ConnectProviderSheet> {
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                         decoration: BoxDecoration(
                           color: isActive
-                              ? AppColors.accentPrimary.withValues(alpha: 0.12)
+                              ? AppColors.cardElevated(context)
                               : (isDark ? const Color(0xFF27272A) : const Color(0xFFF8FAFC)),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: isActive
-                                ? AppColors.accentPrimary
+                                ? (isDark ? AppColors.borderFocus : AppColors.lightBorderFocus)
                                 : (isDark ? const Color(0x25FFFFFF) : const Color(0xFFE2E8F0)),
                             width: isActive ? 1.5 : 1,
                           ),
@@ -181,8 +181,8 @@ class _ConnectProviderSheetState extends State<ConnectProviderSheet> {
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
                                 color: isActive
-                                    ? AppColors.accentPrimary
-                                    : AppColors.text(context),
+                                    ? AppColors.text(context)
+                                    : AppColors.subtext(context),
                               ),
                             ),
                           ],
@@ -297,8 +297,8 @@ class _ConnectProviderSheetState extends State<ConnectProviderSheet> {
                 child: ElevatedButton(
                   onPressed: _connecting ? null : _connect,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.accentPrimary,
-                    foregroundColor: Colors.white,
+                    backgroundColor: isDark ? AppColors.textPrimary : AppColors.lightTextPrimary,
+                    foregroundColor: isDark ? AppColors.textInverse : AppColors.lightTextInverse,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -306,12 +306,12 @@ class _ConnectProviderSheetState extends State<ConnectProviderSheet> {
                     elevation: 0,
                   ),
                   child: _connecting
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 18,
                           height: 18,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: Colors.white,
+                            color: isDark ? AppColors.textInverse : AppColors.lightTextInverse,
                           ),
                         )
                       : Row(
@@ -323,7 +323,6 @@ class _ConnectProviderSheetState extends State<ConnectProviderSheet> {
                               _discoveredModels != null ? 'Apply & Connect' : 'Test & Load Models',
                               style: AppTypography.bodyMedium.copyWith(
                                 fontWeight: FontWeight.w600,
-                                color: Colors.white,
                               ),
                             ),
                           ],
@@ -399,7 +398,10 @@ class _ConnectProviderSheetState extends State<ConnectProviderSheet> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: AppColors.accentPrimary, width: 1.5),
+              borderSide: BorderSide(
+                color: isDark ? AppColors.borderFocus : AppColors.lightBorderFocus,
+                width: 1.5,
+              ),
             ),
           ),
         ),

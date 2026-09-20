@@ -363,10 +363,10 @@ class _ChatPromptBoxState extends State<ChatPromptBox> {
                           height: 32,
                           padding: const EdgeInsets.symmetric(horizontal: 10),
                           decoration: BoxDecoration(
-                            color: isDark ? const Color(0x203B82F6) : const Color(0x152563EB),
+                            color: AppColors.cardElevated(context),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: isDark ? const Color(0x403B82F6) : const Color(0x302563EB),
+                              color: AppColors.line(context),
                               width: 0.8,
                             ),
                           ),
@@ -376,8 +376,8 @@ class _ChatPromptBoxState extends State<ChatPromptBox> {
                               Container(
                                 width: 5,
                                 height: 5,
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFF3B82F6),
+                                decoration: BoxDecoration(
+                                  color: AppColors.subtext(context),
                                   shape: BoxShape.circle,
                                 ),
                               ),
@@ -387,7 +387,7 @@ class _ChatPromptBoxState extends State<ChatPromptBox> {
                                 style: AppTypography.codeSmall.copyWith(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
-                                  color: isDark ? const Color(0xFF93C5FD) : const Color(0xFF2563EB),
+                                  color: AppColors.subtext(context),
                                 ),
                               ),
                             ],
@@ -405,8 +405,8 @@ class _ChatPromptBoxState extends State<ChatPromptBox> {
                               if (_isVoiceRecording) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                    backgroundColor: AppColors.accentPrimary,
-                                    content: Text('Voice input listening...', style: AppTypography.bodySmall),
+                                    backgroundColor: AppColors.cardElevated(context),
+                                    content: Text('Voice input listening...', style: AppTypography.bodySmall.copyWith(color: AppColors.text(context))),
                                     duration: const Duration(seconds: 2),
                                   ),
                                 );
@@ -446,18 +446,15 @@ class _ChatPromptBoxState extends State<ChatPromptBox> {
                               shape: BoxShape.circle,
                               gradient: widget.isStreaming
                                   ? PromptTheme.stopButtonGradient
-                                  : (_hasText ? PromptTheme.primarySendGradient : null),
+                                  : (_hasText ? PromptTheme.sendGradientFor(context) : null),
                               color: (!widget.isStreaming && !_hasText)
-                                  ? (isDark ? const Color(0x28FFFFFF) : const Color(0xFFE2E8F0))
+                                  ? (isDark ? const Color(0x28FFFFFF) : const Color(0xFFE4E4E7))
                                   : null,
                               boxShadow: (widget.isStreaming || _hasText)
                                   ? [
                                       BoxShadow(
-                                        color: (widget.isStreaming
-                                                ? const Color(0xFFEF4444)
-                                                : PromptTheme.primary)
-                                            .withValues(alpha: 0.35),
-                                        blurRadius: 10,
+                                        color: Colors.black.withValues(alpha: 0.25),
+                                        blurRadius: 8,
                                         offset: const Offset(0, 2),
                                       ),
                                     ]
@@ -468,7 +465,7 @@ class _ChatPromptBoxState extends State<ChatPromptBox> {
                               size: 16,
                               color: (!widget.isStreaming && !_hasText)
                                   ? (isDark ? AppColors.textMuted : AppColors.lightTextMuted)
-                                  : Colors.white,
+                                  : (isDark ? Colors.black : Colors.white),
                             ),
                           ),
                         ),

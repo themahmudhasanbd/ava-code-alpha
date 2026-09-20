@@ -325,17 +325,17 @@ class _TerminalScreenState extends State<TerminalScreen> {
 
                         switch (type) {
                           case 'input':
-                            textColor = const Color(0xFF38BDF8);
+                            textColor = isDark ? const Color(0xFFFAFAFA) : const Color(0xFF09090B);
                             weight = FontWeight.w700;
                             break;
                           case 'stderr':
                             textColor = const Color(0xFFEF4444);
                             break;
                           case 'system':
-                            textColor = const Color(0xFF818CF8);
+                            textColor = const Color(0xFFA1A1AA);
                             break;
                           default:
-                            textColor = const Color(0xFFE2E8F0);
+                            textColor = const Color(0xFFE4E4E7);
                         }
 
                         return Padding(
@@ -436,10 +436,10 @@ class _TerminalScreenState extends State<TerminalScreen> {
                       ),
                       child: Row(
                         children: [
-                          const Text(
+                          Text(
                             '\$ ',
                             style: TextStyle(
-                              color: Color(0xFF38BDF8),
+                              color: AppColors.text(context),
                               fontWeight: FontWeight.w700,
                               fontSize: 13,
                               fontFamily: 'JetBrainsMono',
@@ -454,7 +454,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
                                 fontSize: 12.5,
                                 fontFamily: 'JetBrainsMono',
                               ),
-                              cursorColor: const Color(0xFF38BDF8),
+                              cursorColor: isDark ? Colors.white : Colors.black,
                               decoration: InputDecoration(
                                 hintText: 'Type bash command...',
                                 hintStyle: AppTypography.codeSmall.copyWith(color: AppColors.muted(context)),
@@ -472,18 +472,21 @@ class _TerminalScreenState extends State<TerminalScreen> {
                   const SizedBox(width: 8),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF6366F1),
-                      foregroundColor: Colors.white,
+                      backgroundColor: isDark ? AppColors.textPrimary : AppColors.lightTextPrimary,
+                      foregroundColor: isDark ? AppColors.textInverse : AppColors.lightTextInverse,
                       elevation: 0,
                       padding: const EdgeInsets.all(10),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                     onPressed: _isExecuting ? null : () => _runCommand(),
                     child: _isExecuting
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 16,
                             height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: isDark ? AppColors.textInverse : AppColors.lightTextInverse,
+                            ),
                           )
                         : const Icon(LucideIcons.play, size: 16),
                   ),

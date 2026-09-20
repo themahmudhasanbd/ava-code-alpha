@@ -41,7 +41,7 @@ class AppShellHeader extends StatelessWidget implements PreferredSizeWidget {
               children: [
                 Row(
                   children: [
-                    const Icon(LucideIcons.sparkles, size: 18, color: AppColors.accentPrimary),
+                    Icon(LucideIcons.sparkles, size: 18, color: AppColors.text(context)),
                     const SizedBox(width: 8),
                     Text(
                       'Select AI Model',
@@ -73,7 +73,7 @@ class AppShellHeader extends StatelessWidget implements PreferredSizeWidget {
                           Icon(
                             isSelected ? LucideIcons.checkCircle2 : LucideIcons.circle,
                             size: 16,
-                            color: isSelected ? AppColors.accentPrimary : AppColors.muted(context),
+                            color: isSelected ? AppColors.text(context) : AppColors.muted(context),
                           ),
                           const SizedBox(width: 10),
                           Expanded(

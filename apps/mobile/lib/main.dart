@@ -12,6 +12,7 @@ import 'presentation/screens/main_navigation_shell.dart';
 import 'presentation/state/app_state.dart';
 import 'presentation/state/auth_controller.dart';
 import 'presentation/state/provider_controller.dart';
+import 'presentation/state/theme_controller.dart';
 import 'presentation/state/thread_controller.dart';
 
 void main() async {
@@ -29,6 +30,9 @@ void main() async {
 
   final storage = SecureStorageService();
   await storage.init();
+
+  final themeController = ThemeController(storage: storage);
+  await themeController.init();
 
   final rpcClient = JsonRpcClient();
   final authRepo = AuthRepository(storage: storage, rpcClient: rpcClient);
@@ -48,6 +52,7 @@ void main() async {
       authController: authController,
       threadController: threadController,
       providerController: providerController,
+      themeController: themeController,
       rpcClient: rpcClient,
     ),
   );
@@ -58,6 +63,7 @@ class AvaMobileApp extends StatelessWidget {
   final AuthController authController;
   final ThreadController threadController;
   final ProviderController providerController;
+  final ThemeController themeController;
   final JsonRpcClient rpcClient;
 
   const AvaMobileApp({
@@ -66,6 +72,7 @@ class AvaMobileApp extends StatelessWidget {
     required this.authController,
     required this.threadController,
     required this.providerController,
+    required this.themeController,
     required this.rpcClient,
   });
 
@@ -76,12 +83,20 @@ class AvaMobileApp extends StatelessWidget {
       authController: authController,
       threadController: threadController,
       providerController: providerController,
+      themeController: themeController,
       rpcClient: rpcClient,
-      child: MaterialApp(
-        title: AppConstants.appName,
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.darkTheme,
-        home: const AuthGate(),
+      child: ListenableBuilder(
+        listenable: themeController,
+        builder: (context, _) {
+          return MaterialApp(
+            title: AppConstants.appName,
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: themeController.themeMode,
+            home: const AuthGate(),
+          );
+        },
       ),
     );
   }
@@ -106,23 +121,23 @@ class AuthGate extends StatelessWidget {
           case AuthStatus.authenticating:
           case AuthStatus.uninitialized:
             return Scaffold(
-              backgroundColor: AppColors.background,
+              backgroundColor: AppColors.bg(context),
               body: Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const SizedBox(
+                    SizedBox(
                       width: 28,
                       height: 28,
                       child: CircularProgressIndicator(
                         strokeWidth: 2.5,
-                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.textPrimary),
+                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.text(context)),
                       ),
                     ),
                     const SizedBox(height: 16),
                     Text(
                       'Connecting to AvA Core...',
-                      style: AppTypography.codeSmall,
+                      style: AppTypography.codeSmall.copyWith(color: AppColors.subtext(context)),
                     ),
                   ],
                 ),

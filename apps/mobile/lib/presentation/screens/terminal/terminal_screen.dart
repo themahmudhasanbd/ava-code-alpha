@@ -112,16 +112,18 @@ class _TerminalScreenState extends State<TerminalScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppColors.isDark(context);
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.bg(context),
       body: Column(
         children: [
           // Sub-header bar
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: const BoxDecoration(
-              color: AppColors.surface,
-              border: Border(bottom: BorderSide(color: Color(0x18FFFFFF), width: 1)),
+            decoration: BoxDecoration(
+              color: AppColors.card(context),
+              border: Border(bottom: BorderSide(color: AppColors.line(context), width: 1)),
             ),
             child: Row(
               children: [
@@ -129,14 +131,18 @@ class _TerminalScreenState extends State<TerminalScreen> {
                 const SizedBox(width: 8),
                 Text(
                   'Host Terminal Shell',
-                  style: AppTypography.titleMedium.copyWith(fontSize: 14, fontWeight: FontWeight.w600),
+                  style: AppTypography.titleMedium.copyWith(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.text(context),
+                  ),
                 ),
                 const SizedBox(width: 8),
                 const ShadcnBadge(label: 'Live Bash', variant: ShadcnBadgeVariant.success, showDot: true),
                 const Spacer(),
                 IconButton(
                   tooltip: 'Clear Output',
-                  icon: const Icon(LucideIcons.trash2, size: 15, color: AppColors.textSecondary),
+                  icon: Icon(LucideIcons.trash2, size: 15, color: AppColors.subtext(context)),
                   onPressed: _clearLogs,
                 ),
               ],
@@ -146,15 +152,15 @@ class _TerminalScreenState extends State<TerminalScreen> {
           // Working Directory Badge
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            color: AppColors.surfaceElevated,
+            color: AppColors.cardElevated(context),
             child: Row(
               children: [
-                const Icon(LucideIcons.folder, size: 12, color: AppColors.textMuted),
+                Icon(LucideIcons.folder, size: 12, color: AppColors.muted(context)),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     'CWD: $_cwd',
-                    style: AppTypography.codeSmall.copyWith(fontSize: 10.5, color: AppColors.textSecondary),
+                    style: AppTypography.codeSmall.copyWith(fontSize: 10.5, color: AppColors.subtext(context)),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -170,7 +176,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
               decoration: BoxDecoration(
                 color: const Color(0xFF0C0C0F),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.border),
+                border: Border.all(color: AppColors.line(context)),
               ),
               child: ListView.builder(
                 controller: _scrollController,
@@ -227,12 +233,12 @@ class _TerminalScreenState extends State<TerminalScreen> {
                 final cmd = _quickCommands[i];
                 return ActionChip(
                   labelPadding: const EdgeInsets.symmetric(horizontal: 6),
-                  backgroundColor: AppColors.surfaceElevated,
-                  side: const BorderSide(color: AppColors.border, width: 0.8),
+                  backgroundColor: isDark ? AppColors.surfaceElevated : AppColors.lightSurfaceElevated,
+                  side: BorderSide(color: AppColors.line(context), width: 0.8),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                   label: Text(
                     cmd,
-                    style: AppTypography.codeSmall.copyWith(fontSize: 11, color: AppColors.textPrimary),
+                    style: AppTypography.codeSmall.copyWith(fontSize: 11, color: AppColors.text(context)),
                   ),
                   onPressed: _isExecuting ? null : () => _runCommand(cmd),
                 );
@@ -252,9 +258,9 @@ class _TerminalScreenState extends State<TerminalScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       decoration: BoxDecoration(
-                        color: AppColors.surfaceElevated,
+                        color: isDark ? AppColors.surfaceElevated : AppColors.lightSurfaceElevated,
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: AppColors.borderStrong),
+                        border: Border.all(color: AppColors.lineStrong(context)),
                       ),
                       child: Row(
                         children: [
@@ -269,11 +275,11 @@ class _TerminalScreenState extends State<TerminalScreen> {
                           Expanded(
                             child: TextField(
                               controller: _cmdController,
-                              style: AppTypography.codeSmall.copyWith(color: AppColors.textPrimary),
+                              style: AppTypography.codeSmall.copyWith(color: AppColors.text(context)),
                               cursorColor: AppColors.accentCyan,
                               decoration: InputDecoration(
                                 hintText: 'Enter command (e.g. git status, pm2 list)...',
-                                hintStyle: AppTypography.codeSmall.copyWith(color: AppColors.textMuted),
+                                hintStyle: AppTypography.codeSmall.copyWith(color: AppColors.muted(context)),
                                 border: InputBorder.none,
                                 isDense: true,
                                 contentPadding: const EdgeInsets.symmetric(vertical: 12),

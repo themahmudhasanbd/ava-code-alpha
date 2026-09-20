@@ -34,13 +34,13 @@ class SecureStorageService {
     await _prefs!.remove(AppConstants.keyAuthUser);
   }
 
-  Future<void> saveServerUrl(String url) async {
+  Future<void> saveString(String key, String value) async {
     await init();
-    await _prefs!.setString(AppConstants.keyServerUrl, url);
+    await _prefs!.setString(key, value);
   }
 
-  Future<String> getServerUrl() async {
+  Future<String?> getString(String key) async {
     await init();
-    return _prefs!.getString(AppConstants.keyServerUrl) ?? AppConstants.defaultHost;
+    return _prefs!.getString(key);
   }
 }

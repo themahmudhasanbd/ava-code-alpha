@@ -50,23 +50,27 @@ class _SystemScreenState extends State<SystemScreen> {
   }
 
   Future<void> _restartService(String processName) async {
+    final isDark = AppColors.isDark(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF18181B),
+        backgroundColor: isDark ? const Color(0xFF18181B) : Colors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: Color(0x40FFFFFF)),
+          side: BorderSide(color: AppColors.line(context)),
         ),
-        title: Text('Restart Service', style: AppTypography.titleMedium),
+        title: Text(
+          'Restart Service',
+          style: AppTypography.titleMedium.copyWith(color: AppColors.text(context)),
+        ),
         content: Text(
           'Are you sure you want to restart "$processName"?',
-          style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
+          style: AppTypography.bodyMedium.copyWith(color: AppColors.subtext(context)),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Cancel', style: AppTypography.bodyMedium.copyWith(color: AppColors.textMuted)),
+            child: Text('Cancel', style: AppTypography.bodyMedium.copyWith(color: AppColors.muted(context))),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -122,6 +126,7 @@ class _SystemScreenState extends State<SystemScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppColors.isDark(context);
     final host = _stats?['host']?.toString() ?? 'ad.mahmudscanvas.site';
     final platform = _stats?['platform']?.toString() ?? 'linux';
     final arch = _stats?['arch']?.toString() ?? 'x64';
@@ -134,15 +139,15 @@ class _SystemScreenState extends State<SystemScreen> {
     final processes = _stats?['processes'] as List<dynamic>? ?? [];
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.bg(context),
       body: Column(
         children: [
           // Sub-header bar
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: const BoxDecoration(
-              color: AppColors.surface,
-              border: Border(bottom: BorderSide(color: Color(0x18FFFFFF), width: 1)),
+            decoration: BoxDecoration(
+              color: AppColors.card(context),
+              border: Border(bottom: BorderSide(color: AppColors.line(context), width: 1)),
             ),
             child: Row(
               children: [
@@ -150,12 +155,16 @@ class _SystemScreenState extends State<SystemScreen> {
                 const SizedBox(width: 8),
                 Text(
                   'Host & Service Monitor',
-                  style: AppTypography.titleMedium.copyWith(fontSize: 14, fontWeight: FontWeight.w600),
+                  style: AppTypography.titleMedium.copyWith(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.text(context),
+                  ),
                 ),
                 const Spacer(),
                 IconButton(
                   tooltip: 'Refresh Metrics',
-                  icon: const Icon(LucideIcons.refreshCw, size: 15, color: AppColors.textSecondary),
+                  icon: Icon(LucideIcons.refreshCw, size: 15, color: AppColors.subtext(context)),
                   onPressed: () => _loadStats(),
                 ),
               ],
@@ -177,9 +186,9 @@ class _SystemScreenState extends State<SystemScreen> {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: AppColors.surface,
+                          color: AppColors.card(context),
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: AppColors.border),
+                          border: Border.all(color: AppColors.line(context)),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -201,11 +210,15 @@ class _SystemScreenState extends State<SystemScreen> {
                                     children: [
                                       Text(
                                         host,
-                                        style: AppTypography.titleMedium.copyWith(fontSize: 14, fontWeight: FontWeight.w700),
+                                        style: AppTypography.titleMedium.copyWith(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.text(context),
+                                        ),
                                       ),
                                       Text(
                                         '$platform • $arch • $cpus vCPUs',
-                                        style: AppTypography.codeSmall.copyWith(fontSize: 11, color: AppColors.textMuted),
+                                        style: AppTypography.codeSmall.copyWith(fontSize: 11, color: AppColors.muted(context)),
                                       ),
                                     ],
                                   ),
@@ -214,13 +227,14 @@ class _SystemScreenState extends State<SystemScreen> {
                               ],
                             ),
                             const SizedBox(height: 16),
-                            const Divider(color: Color(0x15FFFFFF), height: 1),
+                            Divider(color: AppColors.line(context), height: 1),
                             const SizedBox(height: 14),
                             // Metrics Grid
                             Row(
                               children: [
                                 Expanded(
                                   child: _buildMetricTile(
+                                    context: context,
                                     label: 'OS Uptime',
                                     value: _formatUptime(uptime),
                                     icon: LucideIcons.clock,
@@ -229,6 +243,7 @@ class _SystemScreenState extends State<SystemScreen> {
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: _buildMetricTile(
+                                    context: context,
                                     label: 'RAM Used',
                                     value: '$usedMb / $totalMb MB',
                                     icon: LucideIcons.hardDrive,
@@ -244,8 +259,18 @@ class _SystemScreenState extends State<SystemScreen> {
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text('Memory Utilization', style: AppTypography.codeSmall.copyWith(fontSize: 11, color: AppColors.textSecondary)),
-                                    Text('$memUsagePct%', style: AppTypography.codeSmall.copyWith(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.accentPrimary)),
+                                    Text(
+                                      'Memory Utilization',
+                                      style: AppTypography.codeSmall.copyWith(fontSize: 11, color: AppColors.subtext(context)),
+                                    ),
+                                    Text(
+                                      '$memUsagePct%',
+                                      style: AppTypography.codeSmall.copyWith(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.accentPrimary,
+                                      ),
+                                    ),
                                   ],
                                 ),
                                 const SizedBox(height: 6),
@@ -253,7 +278,7 @@ class _SystemScreenState extends State<SystemScreen> {
                                   borderRadius: BorderRadius.circular(6),
                                   child: LinearProgressIndicator(
                                     value: memUsagePct / 100.0,
-                                    backgroundColor: AppColors.surfaceElevated,
+                                    backgroundColor: isDark ? AppColors.surfaceElevated : AppColors.lightSurfaceElevated,
                                     valueColor: AlwaysStoppedAnimation<Color>(
                                       memUsagePct > 85 ? AppColors.accentDanger : AppColors.accentPrimary,
                                     ),
@@ -277,13 +302,13 @@ class _SystemScreenState extends State<SystemScreen> {
                             style: AppTypography.codeSmall.copyWith(
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
-                              color: AppColors.textMuted,
+                              color: AppColors.muted(context),
                               letterSpacing: 0.8,
                             ),
                           ),
                           Text(
                             '${processes.length} Active',
-                            style: AppTypography.codeSmall.copyWith(fontSize: 10, color: AppColors.textSecondary),
+                            style: AppTypography.codeSmall.copyWith(fontSize: 10, color: AppColors.subtext(context)),
                           ),
                         ],
                       ),
@@ -301,9 +326,9 @@ class _SystemScreenState extends State<SystemScreen> {
                           margin: const EdgeInsets.only(bottom: 8),
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: AppColors.surface,
+                            color: AppColors.card(context),
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: AppColors.border),
+                            border: Border.all(color: AppColors.line(context)),
                           ),
                           child: Row(
                             children: [
@@ -322,11 +347,15 @@ class _SystemScreenState extends State<SystemScreen> {
                                   children: [
                                     Text(
                                       pName,
-                                      style: AppTypography.titleMedium.copyWith(fontSize: 13, fontWeight: FontWeight.w600),
+                                      style: AppTypography.titleMedium.copyWith(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.text(context),
+                                      ),
                                     ),
                                     Text(
                                       'RAM: ${pMem}MB • CPU: $pCpu% • Restarts: $pRestarts',
-                                      style: AppTypography.codeSmall.copyWith(fontSize: 10, color: AppColors.textMuted),
+                                      style: AppTypography.codeSmall.copyWith(fontSize: 10, color: AppColors.muted(context)),
                                     ),
                                   ],
                                 ),
@@ -338,7 +367,7 @@ class _SystemScreenState extends State<SystemScreen> {
                               const SizedBox(width: 6),
                               IconButton(
                                 tooltip: 'Restart Service',
-                                icon: const Icon(LucideIcons.rotateCw, size: 14, color: AppColors.textSecondary),
+                                icon: Icon(LucideIcons.rotateCw, size: 14, color: AppColors.subtext(context)),
                                 onPressed: () => _restartService(pName),
                               ),
                             ],
@@ -354,27 +383,36 @@ class _SystemScreenState extends State<SystemScreen> {
   }
 
   Widget _buildMetricTile({
+    required BuildContext context,
     required String label,
     required String value,
     required IconData icon,
   }) {
+    final isDark = AppColors.isDark(context);
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: AppColors.surfaceElevated,
+        color: isDark ? AppColors.surfaceElevated : AppColors.lightSurfaceElevated,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: AppColors.line(context)),
       ),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: AppColors.textSecondary),
+          Icon(icon, size: 16, color: AppColors.subtext(context)),
           const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: AppTypography.codeSmall.copyWith(fontSize: 10, color: AppColors.textMuted)),
-                Text(value, style: AppTypography.codeSmall.copyWith(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+                Text(label, style: AppTypography.codeSmall.copyWith(fontSize: 10, color: AppColors.muted(context))),
+                Text(
+                  value,
+                  style: AppTypography.codeSmall.copyWith(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.text(context),
+                  ),
+                ),
               ],
             ),
           ),

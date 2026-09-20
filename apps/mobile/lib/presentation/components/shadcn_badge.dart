@@ -35,25 +35,27 @@ class ShadcnBadge extends StatelessWidget {
     Color dotColor;
     Border? border;
 
+    final isDark = AppColors.isDark(context);
+
     switch (variant) {
       case ShadcnBadgeVariant.neutral:
       case ShadcnBadgeVariant.defaultVariant:
-        bg = AppColors.surfaceElevated;
-        fg = AppColors.textSecondary;
-        dotColor = AppColors.textSecondary;
-        border = Border.all(color: AppColors.border, width: 1);
+        bg = isDark ? AppColors.surfaceElevated : AppColors.lightSurfaceElevated;
+        fg = AppColors.subtext(context);
+        dotColor = AppColors.subtext(context);
+        border = Border.all(color: AppColors.line(context), width: 1);
         break;
       case ShadcnBadgeVariant.outline:
         bg = Colors.transparent;
-        fg = AppColors.textSecondary;
-        dotColor = AppColors.textSecondary;
-        border = Border.all(color: AppColors.borderStrong, width: 1);
+        fg = AppColors.subtext(context);
+        dotColor = AppColors.subtext(context);
+        border = Border.all(color: isDark ? AppColors.borderStrong : AppColors.lightBorderStrong, width: 1);
         break;
       case ShadcnBadgeVariant.secondary:
-        bg = const Color(0x20FFFFFF);
-        fg = AppColors.textPrimary;
+        bg = isDark ? const Color(0x20FFFFFF) : const Color(0xFFF1F5F9);
+        fg = AppColors.text(context);
         dotColor = AppColors.accentPrimary;
-        border = Border.all(color: const Color(0x30FFFFFF), width: 0.8);
+        border = Border.all(color: AppColors.line(context), width: 0.8);
         break;
       case ShadcnBadgeVariant.success:
         bg = AppColors.diffAddBg;
@@ -75,7 +77,7 @@ class ShadcnBadge extends StatelessWidget {
         break;
       case ShadcnBadgeVariant.antigravity:
         bg = AppColors.accentPrimary.withValues(alpha: 0.15);
-        fg = const Color(0xFF60A5FA); // Blue 400
+        fg = isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB);
         dotColor = AppColors.accentPrimary;
         border = Border.all(color: AppColors.accentPrimary.withValues(alpha: 0.35), width: 1);
         break;

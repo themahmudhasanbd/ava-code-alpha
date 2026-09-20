@@ -32,7 +32,7 @@ class _ChatPromptBoxState extends State<ChatPromptBox> {
     '✨ Refactor Auth Flow',
     '⚡ Run Cargo Check',
     '🔍 Inspect Git Diff',
-    '🚀 Verify Antigravity Engine',
+    '🚀 Run Test Suite',
   ];
 
   bool _hasText = false;
@@ -59,12 +59,16 @@ class _ChatPromptBoxState extends State<ChatPromptBox> {
   }
 
   void _showToolsModal(BuildContext context) {
+    final isDark = AppColors.isDark(context);
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF18181B),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        side: BorderSide(color: Color(0x30FFFFFF), width: 1),
+      backgroundColor: isDark ? const Color(0xFF18181B) : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        side: BorderSide(
+          color: isDark ? const Color(0x30FFFFFF) : const Color(0xFFE2E8F0),
+          width: 1,
+        ),
       ),
       builder: (ctx) => SafeArea(
         child: Padding(
@@ -77,14 +81,17 @@ class _ChatPromptBoxState extends State<ChatPromptBox> {
                 children: [
                   const Icon(LucideIcons.settings2, size: 18, color: AppColors.accentPrimary),
                   const SizedBox(width: 8),
-                  Text('Active MCP Tools & Capabilities', style: AppTypography.titleMedium),
+                  Text(
+                    'Workspace Tools & Capabilities',
+                    style: AppTypography.titleMedium.copyWith(color: AppColors.text(context)),
+                  ),
                 ],
               ),
               const SizedBox(height: 16),
-              _buildToolItem(LucideIcons.fileCode, 'Filesystem Explorer', 'Read/write files under workspace root'),
-              _buildToolItem(LucideIcons.terminal, 'Bash Shell Terminal', 'Execute commands inside sandboxed environment'),
-              _buildToolItem(LucideIcons.sparkles, 'Google Antigravity Bridge', 'Multi-agent reasoning with Gemini 3.7 Flash'),
-              _buildToolItem(LucideIcons.database, 'MySQL / DB Schema', 'Direct database query & migration inspection'),
+              _buildToolItem(context, LucideIcons.fileCode, 'File System Tools', 'Read, search, create, and patch files'),
+              _buildToolItem(context, LucideIcons.terminal, 'Bash Terminal', 'Execute commands inside sandboxed workspace'),
+              _buildToolItem(context, LucideIcons.sparkles, 'Autonomous Engine', 'Multi-step reasoning and automated execution'),
+              _buildToolItem(context, LucideIcons.database, 'Database Engine', 'Direct database query and schema analysis'),
             ],
           ),
         ),
@@ -92,7 +99,8 @@ class _ChatPromptBoxState extends State<ChatPromptBox> {
     );
   }
 
-  Widget _buildToolItem(IconData icon, String title, String desc) {
+  Widget _buildToolItem(BuildContext context, IconData icon, String title, String desc) {
+    final isDark = AppColors.isDark(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
@@ -100,9 +108,9 @@ class _ChatPromptBoxState extends State<ChatPromptBox> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.surfaceElevated,
+              color: isDark ? AppColors.surfaceElevated : AppColors.lightSurfaceElevated,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.border),
+              border: Border.all(color: AppColors.line(context)),
             ),
             child: Icon(icon, size: 16, color: AppColors.accentPrimary),
           ),
@@ -111,8 +119,19 @@ class _ChatPromptBoxState extends State<ChatPromptBox> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
-                Text(desc, style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
+                Text(
+                  title,
+                  style: AppTypography.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.text(context),
+                  ),
+                ),
+                Text(
+                  desc,
+                  style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.subtext(context),
+                  ),
+                ),
               ],
             ),
           ),
@@ -132,10 +151,10 @@ class _ChatPromptBoxState extends State<ChatPromptBox> {
   void _showAttachModal(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        backgroundColor: const Color(0xFF18181B),
+        backgroundColor: AppColors.isDark(context) ? const Color(0xFF18181B) : const Color(0xFF0F172A),
         content: Text(
-          'Workspace filesystem active. You can reference files directly using @/path in your instruction.',
-          style: AppTypography.bodySmall.copyWith(color: AppColors.textPrimary),
+          'Workspace filesystem active. Reference files using @path in your prompt.',
+          style: AppTypography.bodySmall.copyWith(color: Colors.white),
         ),
         duration: const Duration(seconds: 3),
       ),
@@ -144,6 +163,8 @@ class _ChatPromptBoxState extends State<ChatPromptBox> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppColors.isDark(context);
+
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 4, 14, 14),
       decoration: const BoxDecoration(
@@ -152,7 +173,7 @@ class _ChatPromptBoxState extends State<ChatPromptBox> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // 1. Dynamic Suggestion Pills (Old Style)
+          // 1. Suggestion Pills
           if (!widget.isStreaming && widget.controller.text.isEmpty)
             Container(
               height: 32,
@@ -173,9 +194,12 @@ class _ChatPromptBoxState extends State<ChatPromptBox> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: const Color(0xCC18181D),
+                        color: isDark ? const Color(0xCC18181D) : const Color(0xFFF1F5F9),
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0x30FFFFFF), width: 0.8),
+                        border: Border.all(
+                          color: isDark ? const Color(0x30FFFFFF) : const Color(0xFFCBD5E1),
+                          width: 0.8,
+                        ),
                       ),
                       child: Center(
                         child: Text(
@@ -183,7 +207,7 @@ class _ChatPromptBoxState extends State<ChatPromptBox> {
                           style: AppTypography.codeSmall.copyWith(
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
-                            color: AppColors.textSecondary,
+                            color: AppColors.subtext(context),
                           ),
                         ),
                       ),
@@ -193,21 +217,21 @@ class _ChatPromptBoxState extends State<ChatPromptBox> {
               ),
             ),
 
-          // 2. Crystal Transparent Floating Glass Prompt Card
+          // 2. Floating Prompt Card
           ClipRRect(
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(20),
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
               child: Container(
                 padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
                 decoration: BoxDecoration(
-                  color: PromptTheme.cardBg,
-                  borderRadius: BorderRadius.circular(24),
+                  color: PromptTheme.cardBgFor(context),
+                  borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: PromptTheme.borderColor,
+                    color: PromptTheme.borderColorFor(context),
                     width: 1.1,
                   ),
-                  boxShadow: PromptTheme.promptCardShadow,
+                  boxShadow: PromptTheme.promptCardShadowFor(context),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -219,6 +243,7 @@ class _ChatPromptBoxState extends State<ChatPromptBox> {
                       style: AppTypography.bodyLarge.copyWith(
                         fontSize: 14.5,
                         height: 1.4,
+                        color: AppColors.text(context),
                       ),
                       cursorColor: PromptTheme.primary,
                       maxLines: 6,
@@ -226,10 +251,10 @@ class _ChatPromptBoxState extends State<ChatPromptBox> {
                       keyboardType: TextInputType.multiline,
                       decoration: InputDecoration(
                         hintText: widget.isStreaming
-                            ? 'AvA Agent is executing instructions...'
-                            : 'Message AvA Agent (e.g. check cloudflare, build feature)...',
+                            ? 'Agent is executing instructions...'
+                            : 'Ask AvA to build, edit, test or explore code...',
                         hintStyle: AppTypography.bodyMedium.copyWith(
-                          color: const Color(0xFF9CA3AF),
+                          color: AppColors.muted(context),
                           fontSize: 13.5,
                         ),
                         border: InputBorder.none,
@@ -245,7 +270,7 @@ class _ChatPromptBoxState extends State<ChatPromptBox> {
 
                     const SizedBox(height: 8),
 
-                    // Bottom Action Toolbar Row (Old Layout: [+] [Tools] [Workspace] ... [Mic] [Send])
+                    // Bottom Action Toolbar Row: [+] [Tools] [Workspace] ... [Mic] [Send]
                     Row(
                       children: [
                         // Attach Files Button (+)
@@ -257,14 +282,14 @@ class _ChatPromptBoxState extends State<ChatPromptBox> {
                             child: Container(
                               width: 32,
                               height: 32,
-                              decoration: const BoxDecoration(
+                              decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: PromptTheme.buttonBg,
+                                color: PromptTheme.buttonBgFor(context),
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 LucideIcons.plus,
-                                size: 17,
-                                color: AppColors.textPrimary,
+                                size: 16,
+                                color: AppColors.text(context),
                               ),
                             ),
                           ),
@@ -274,7 +299,7 @@ class _ChatPromptBoxState extends State<ChatPromptBox> {
 
                         // Tools Menu Pill
                         Tooltip(
-                          message: 'Explore Tools',
+                          message: 'Workspace Tools',
                           child: InkWell(
                             onTap: () => _showToolsModal(context),
                             borderRadius: BorderRadius.circular(20),
@@ -282,17 +307,20 @@ class _ChatPromptBoxState extends State<ChatPromptBox> {
                               height: 32,
                               padding: const EdgeInsets.symmetric(horizontal: 10),
                               decoration: BoxDecoration(
-                                color: PromptTheme.buttonBg,
+                                color: PromptTheme.buttonBgFor(context),
                                 borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: const Color(0x20FFFFFF), width: 0.8),
+                                border: Border.all(
+                                  color: isDark ? const Color(0x20FFFFFF) : const Color(0xFFE2E8F0),
+                                  width: 0.8,
+                                ),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(
+                                  Icon(
                                     LucideIcons.settings2,
                                     size: 14,
-                                    color: AppColors.textPrimary,
+                                    color: AppColors.text(context),
                                   ),
                                   const SizedBox(width: 5),
                                   Text(
@@ -300,7 +328,7 @@ class _ChatPromptBoxState extends State<ChatPromptBox> {
                                     style: AppTypography.codeSmall.copyWith(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
-                                      color: AppColors.textPrimary,
+                                      color: AppColors.text(context),
                                     ),
                                   ),
                                 ],
@@ -316,9 +344,12 @@ class _ChatPromptBoxState extends State<ChatPromptBox> {
                           height: 32,
                           padding: const EdgeInsets.symmetric(horizontal: 10),
                           decoration: BoxDecoration(
-                            color: const Color(0x203B82F6),
+                            color: isDark ? const Color(0x203B82F6) : const Color(0x152563EB),
                             borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: const Color(0x403B82F6), width: 0.8),
+                            border: Border.all(
+                              color: isDark ? const Color(0x403B82F6) : const Color(0x302563EB),
+                              width: 0.8,
+                            ),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -327,7 +358,7 @@ class _ChatPromptBoxState extends State<ChatPromptBox> {
                                 width: 5,
                                 height: 5,
                                 decoration: const BoxDecoration(
-                                  color: Color(0xFF60A5FA),
+                                  color: Color(0xFF3B82F6),
                                   shape: BoxShape.circle,
                                 ),
                               ),
@@ -337,7 +368,7 @@ class _ChatPromptBoxState extends State<ChatPromptBox> {
                                 style: AppTypography.codeSmall.copyWith(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
-                                  color: const Color(0xFF93C5FD),
+                                  color: isDark ? const Color(0xFF93C5FD) : const Color(0xFF2563EB),
                                 ),
                               ),
                             ],
@@ -356,7 +387,7 @@ class _ChatPromptBoxState extends State<ChatPromptBox> {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     backgroundColor: AppColors.accentPrimary,
-                                    content: Text('Voice recording listening...', style: AppTypography.bodySmall),
+                                    content: Text('Voice input listening...', style: AppTypography.bodySmall),
                                     duration: const Duration(seconds: 2),
                                   ),
                                 );
@@ -368,12 +399,14 @@ class _ChatPromptBoxState extends State<ChatPromptBox> {
                               height: 32,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: _isVoiceRecording ? AppColors.accentDanger : PromptTheme.buttonBg,
+                                color: _isVoiceRecording
+                                    ? AppColors.accentDanger
+                                    : PromptTheme.buttonBgFor(context),
                               ),
                               child: Icon(
                                 LucideIcons.mic,
-                                size: 16,
-                                color: _isVoiceRecording ? Colors.white : AppColors.textPrimary,
+                                size: 15,
+                                color: _isVoiceRecording ? Colors.white : AppColors.text(context),
                               ),
                             ),
                           ),
@@ -381,7 +414,7 @@ class _ChatPromptBoxState extends State<ChatPromptBox> {
 
                         const SizedBox(width: 8),
 
-                        // Send / Stop / Interrupt Button (Original Gradient)
+                        // Send / Stop / Interrupt Button
                         InkWell(
                           onTap: widget.isStreaming
                               ? widget.onInterrupt
@@ -394,11 +427,9 @@ class _ChatPromptBoxState extends State<ChatPromptBox> {
                               shape: BoxShape.circle,
                               gradient: widget.isStreaming
                                   ? PromptTheme.stopButtonGradient
-                                  : (_hasText
-                                      ? PromptTheme.primarySendGradient
-                                      : null),
+                                  : (_hasText ? PromptTheme.primarySendGradient : null),
                               color: (!widget.isStreaming && !_hasText)
-                                  ? const Color(0x28FFFFFF)
+                                  ? (isDark ? const Color(0x28FFFFFF) : const Color(0xFFE2E8F0))
                                   : null,
                               boxShadow: (widget.isStreaming || _hasText)
                                   ? [
@@ -406,7 +437,7 @@ class _ChatPromptBoxState extends State<ChatPromptBox> {
                                         color: (widget.isStreaming
                                                 ? const Color(0xFFEF4444)
                                                 : PromptTheme.primary)
-                                            .withValues(alpha: 0.4),
+                                            .withValues(alpha: 0.35),
                                         blurRadius: 10,
                                         offset: const Offset(0, 2),
                                       ),
@@ -414,12 +445,10 @@ class _ChatPromptBoxState extends State<ChatPromptBox> {
                                   : null,
                             ),
                             child: Icon(
-                              widget.isStreaming
-                                  ? LucideIcons.square
-                                  : LucideIcons.arrowUp,
+                              widget.isStreaming ? LucideIcons.square : LucideIcons.arrowUp,
                               size: 16,
                               color: (!widget.isStreaming && !_hasText)
-                                  ? AppColors.textMuted
+                                  ? (isDark ? AppColors.textMuted : AppColors.lightTextMuted)
                                   : Colors.white,
                             ),
                           ),

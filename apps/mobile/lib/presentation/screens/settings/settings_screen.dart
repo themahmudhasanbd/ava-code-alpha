@@ -30,9 +30,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     final scope = AppStateScope.of(context);
     final auth = scope.authController;
+    final themeCtrl = scope.themeController;
+    final isDark = AppColors.isDark(context);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.bg(context),
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         children: [
@@ -41,13 +43,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
             children: [
               const Icon(LucideIcons.settings, size: 16, color: AppColors.accentPrimary),
               const SizedBox(width: 8),
-              Text('System Preferences', style: AppTypography.titleLarge.copyWith(fontSize: 18)),
+              Text(
+                'System Preferences',
+                style: AppTypography.titleLarge.copyWith(fontSize: 18, color: AppColors.text(context)),
+              ),
             ],
           ),
           const SizedBox(height: 14),
 
           // Authenticated User Profile Card
-
           ShadcnCard(
             child: Row(
               children: [
@@ -55,7 +59,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: AppColors.surfaceSubtle,
+                    color: isDark ? AppColors.surfaceSubtle : AppColors.lightSurfaceElevated,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Icon(LucideIcons.userCheck, size: 22, color: AppColors.accentSuccess),
@@ -65,13 +69,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(auth.session?.username ?? AppConstants.authUsername, style: AppTypography.titleMedium),
+                      Text(
+                        auth.session?.username ?? AppConstants.authUsername,
+                        style: AppTypography.titleMedium.copyWith(color: AppColors.text(context)),
+                      ),
                       const SizedBox(height: 2),
                       Row(
                         children: [
                           const ShadcnBadge(label: 'Developer Tier', variant: ShadcnBadgeVariant.success),
                           const SizedBox(width: 6),
-                          Text('AvA Core Admin', style: AppTypography.bodySmall),
+                          Text(
+                            'AvA Core Admin',
+                            style: AppTypography.bodySmall.copyWith(color: AppColors.subtext(context)),
+                          ),
                         ],
                       ),
                     ],
@@ -82,32 +92,105 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 20),
 
-          // Server Endpoint Settings
-          Text('CORE ENGINE & APP-SERVER', style: AppTypography.codeSmall.copyWith(color: AppColors.textMuted)),
+          // Appearance Theme Mode Selection Card
+          Text('APPEARANCE & THEME', style: AppTypography.codeSmall.copyWith(color: AppColors.muted(context))),
           const SizedBox(height: 10),
 
           ShadcnCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('JSON-RPC 2.0 Host', style: AppTypography.titleMedium),
-                const SizedBox(height: 4),
-                Text(
-                  'Address of the running ava-rs app-server daemon.',
-                  style: AppTypography.bodySmall,
+                Row(
+                  children: [
+                    Icon(
+                      themeCtrl.isDarkMode ? LucideIcons.moon : LucideIcons.sun,
+                      size: 16,
+                      color: AppColors.accentPrimary,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Theme Mode',
+                      style: AppTypography.titleMedium.copyWith(color: AppColors.text(context)),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 12),
-                ShadcnInput(
-                  controller: _serverController,
-                  hintText: 'http://localhost:4096',
-                  prefixIcon: LucideIcons.server,
+                const SizedBox(height: 6),
+                Text(
+                  'Switch between Clean Slate (Light) and Zinc Obsidian (Dark) styles.',
+                  style: AppTypography.bodySmall.copyWith(color: AppColors.subtext(context)),
                 ),
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    const Icon(LucideIcons.shieldCheck, size: 14, color: AppColors.accentSuccess),
-                    const SizedBox(width: 6),
-                    Text('Auto-compaction limit: 900,000 tokens', style: AppTypography.codeSmall),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => themeCtrl.setThemeMode(ThemeMode.dark),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          decoration: BoxDecoration(
+                            color: themeCtrl.themeMode == ThemeMode.dark
+                                ? AppColors.accentPrimary.withValues(alpha: 0.2)
+                                : (isDark ? AppColors.surfaceElevated : AppColors.lightSurfaceElevated),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: themeCtrl.themeMode == ThemeMode.dark
+                                  ? AppColors.accentPrimary
+                                  : AppColors.line(context),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(LucideIcons.moon, size: 14, color: AppColors.accentPrimary),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Dark Mode',
+                                style: AppTypography.codeSmall.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.text(context),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => themeCtrl.setThemeMode(ThemeMode.light),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          decoration: BoxDecoration(
+                            color: themeCtrl.themeMode == ThemeMode.light
+                                ? AppColors.accentPrimary.withValues(alpha: 0.15)
+                                : (isDark ? AppColors.surfaceElevated : AppColors.lightSurfaceElevated),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: themeCtrl.themeMode == ThemeMode.light
+                                  ? AppColors.accentPrimary
+                                  : AppColors.line(context),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(LucideIcons.sun, size: 14, color: AppColors.accentWarning),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Light Mode',
+                                style: AppTypography.codeSmall.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.text(context),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -115,6 +198,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 20),
 
+          // Server Endpoint Settings
+          Text('CORE ENGINE & APP-SERVER', style: AppTypography.codeSmall.copyWith(color: AppColors.muted(context))),
+          const SizedBox(height: 10),
+
+          ShadcnCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'JSON-RPC 2.0 Host',
+                  style: AppTypography.titleMedium.copyWith(color: AppColors.text(context)),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Address of the running ava-rs app-server daemon.',
+                  style: AppTypography.bodySmall.copyWith(color: AppColors.subtext(context)),
+                ),
+                const SizedBox(height: 12),
+                ShadcnInput(
+                  controller: _serverController,
+                  hintText: 'https://ava.mahmudhasan.pro/api',
+                  prefixIcon: LucideIcons.server,
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Icon(LucideIcons.shieldCheck, size: 14, color: AppColors.accentSuccess),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Auto-compaction limit: 900,000 tokens',
+                      style: AppTypography.codeSmall.copyWith(color: AppColors.muted(context)),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 20),
 
           // About App Branding Section
@@ -129,9 +249,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       height: 40,
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: AppColors.surfaceElevated,
+                        color: isDark ? AppColors.surfaceElevated : AppColors.lightSurfaceElevated,
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: AppColors.border),
+                        border: Border.all(color: AppColors.line(context)),
                       ),
                       child: Image.asset(AppConstants.appLogoPath, fit: BoxFit.contain),
                     ),
@@ -139,10 +259,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(AppConstants.appName, style: AppTypography.titleMedium),
+                        Text(
+                          AppConstants.appName,
+                          style: AppTypography.titleMedium.copyWith(color: AppColors.text(context)),
+                        ),
                         Text(
                           '${AppConstants.appVersion} (Build ${AppConstants.appBuildNumber})',
-                          style: AppTypography.codeSmall.copyWith(color: AppColors.textMuted),
+                          style: AppTypography.codeSmall.copyWith(color: AppColors.muted(context)),
                         ),
                       ],
                     ),
@@ -151,19 +274,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 10),
                 Text(
                   AppConstants.appDescription,
-                  style: AppTypography.bodySmall,
+                  style: AppTypography.bodySmall.copyWith(color: AppColors.subtext(context)),
                 ),
                 const SizedBox(height: 8),
-                const Divider(),
+                Divider(color: AppColors.line(context)),
                 const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Developer', style: AppTypography.bodySmall),
+                    Text('Developer', style: AppTypography.bodySmall.copyWith(color: AppColors.subtext(context))),
                     Text(
                       AppConstants.developer,
                       style: AppTypography.bodySmall.copyWith(
-                        color: AppColors.textPrimary,
+                        color: AppColors.text(context),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -173,7 +296,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('License', style: AppTypography.bodySmall),
+                    Text('License', style: AppTypography.bodySmall.copyWith(color: AppColors.subtext(context))),
                     Text(
                       'Proprietary Alpha',
                       style: AppTypography.bodySmall.copyWith(
@@ -201,7 +324,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Center(
             child: Text(
               AppConstants.appCopyright,
-              style: AppTypography.codeSmall.copyWith(color: AppColors.textMuted, fontSize: 10),
+              style: AppTypography.codeSmall.copyWith(color: AppColors.muted(context), fontSize: 10),
             ),
           ),
         ],

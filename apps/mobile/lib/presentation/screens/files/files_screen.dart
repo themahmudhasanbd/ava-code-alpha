@@ -153,15 +153,15 @@ class _FilesScreenState extends State<FilesScreen> {
     }).toList();
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.bg(context),
       body: Column(
         children: [
           // Sub-header bar with breadcrumbs & controls
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: const BoxDecoration(
-              color: AppColors.surface,
-              border: Border(bottom: BorderSide(color: Color(0x18FFFFFF), width: 1)),
+            decoration: BoxDecoration(
+              color: AppColors.card(context),
+              border: Border(bottom: BorderSide(color: AppColors.line(context), width: 1)),
             ),
             child: Row(
               children: [
@@ -177,7 +177,7 @@ class _FilesScreenState extends State<FilesScreen> {
                           style: AppTypography.codeSmall.copyWith(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
+                            color: AppColors.text(context),
                           ),
                         ),
                       ],
@@ -187,12 +187,12 @@ class _FilesScreenState extends State<FilesScreen> {
                 const SizedBox(width: 8),
                 IconButton(
                   tooltip: 'Navigate Up',
-                  icon: const Icon(LucideIcons.arrowUp, size: 16, color: AppColors.textSecondary),
+                  icon: Icon(LucideIcons.arrowUp, size: 16, color: AppColors.subtext(context)),
                   onPressed: _navigateUp,
                 ),
                 IconButton(
                   tooltip: 'Refresh',
-                  icon: const Icon(LucideIcons.refreshCw, size: 16, color: AppColors.textSecondary),
+                  icon: Icon(LucideIcons.refreshCw, size: 16, color: AppColors.subtext(context)),
                   onPressed: () => _loadDirectory(_currentPath),
                 ),
               ],
@@ -206,21 +206,21 @@ class _FilesScreenState extends State<FilesScreen> {
               height: 38,
               padding: const EdgeInsets.symmetric(horizontal: 10),
               decoration: BoxDecoration(
-                color: AppColors.surfaceElevated,
+                color: AppColors.cardElevated(context),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.border),
+                border: Border.all(color: AppColors.line(context)),
               ),
               child: Row(
                 children: [
-                  const Icon(LucideIcons.search, size: 14, color: AppColors.textMuted),
+                  Icon(LucideIcons.search, size: 14, color: AppColors.muted(context)),
                   const SizedBox(width: 8),
                   Expanded(
                     child: TextField(
                       controller: _searchController,
-                      style: AppTypography.bodySmall.copyWith(color: AppColors.textPrimary),
+                      style: AppTypography.bodySmall.copyWith(color: AppColors.text(context)),
                       decoration: InputDecoration(
                         hintText: 'Filter files in active directory...',
-                        hintStyle: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
+                        hintStyle: AppTypography.bodySmall.copyWith(color: AppColors.muted(context)),
                         border: InputBorder.none,
                         isDense: true,
                         contentPadding: EdgeInsets.zero,
@@ -234,7 +234,7 @@ class _FilesScreenState extends State<FilesScreen> {
                         _searchController.clear();
                         setState(() => _searchQuery = '');
                       },
-                      child: const Icon(LucideIcons.x, size: 14, color: AppColors.textMuted),
+                      child: Icon(LucideIcons.x, size: 14, color: AppColors.muted(context)),
                     ),
                 ],
               ),
@@ -255,11 +255,11 @@ class _FilesScreenState extends State<FilesScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(LucideIcons.folderOpen, size: 36, color: AppColors.textMuted),
+                            Icon(LucideIcons.folderOpen, size: 36, color: AppColors.muted(context)),
                             const SizedBox(height: 10),
                             Text(
                               'No files found in this directory',
-                              style: AppTypography.bodyMedium.copyWith(color: AppColors.textMuted),
+                              style: AppTypography.bodyMedium.copyWith(color: AppColors.muted(context)),
                             ),
                           ],
                         ),
@@ -278,9 +278,9 @@ class _FilesScreenState extends State<FilesScreen> {
                           return Container(
                             margin: const EdgeInsets.only(bottom: 6),
                             decoration: BoxDecoration(
-                              color: AppColors.surface,
+                              color: AppColors.card(context),
                               borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: AppColors.border),
+                              border: Border.all(color: AppColors.line(context)),
                             ),
                             child: ListTile(
                               dense: true,
@@ -303,19 +303,19 @@ class _FilesScreenState extends State<FilesScreen> {
                                 style: AppTypography.titleMedium.copyWith(
                                   fontSize: 13,
                                   fontWeight: isDir ? FontWeight.w600 : FontWeight.w500,
-                                  color: isDir ? AppColors.textPrimary : const Color(0xFFE4E4E7),
+                                  color: AppColors.text(context),
                                 ),
                               ),
                               subtitle: isDir
-                                  ? Text('Directory', style: AppTypography.codeSmall.copyWith(fontSize: 10, color: AppColors.textMuted))
+                                  ? Text('Directory', style: AppTypography.codeSmall.copyWith(fontSize: 10, color: AppColors.muted(context)))
                                   : Text(
                                       _formatFileSize(size),
-                                      style: AppTypography.codeSmall.copyWith(fontSize: 10, color: AppColors.textMuted),
+                                      style: AppTypography.codeSmall.copyWith(fontSize: 10, color: AppColors.muted(context)),
                                     ),
                               trailing: isDir
-                                  ? const Icon(LucideIcons.chevronRight, size: 15, color: AppColors.textMuted)
+                                  ? Icon(LucideIcons.chevronRight, size: 15, color: AppColors.muted(context))
                                   : IconButton(
-                                      icon: const Icon(LucideIcons.externalLink, size: 14, color: AppColors.textSecondary),
+                                      icon: Icon(LucideIcons.externalLink, size: 14, color: AppColors.subtext(context)),
                                       onPressed: () => _openFile(fullPath, name),
                                     ),
                               onTap: () {

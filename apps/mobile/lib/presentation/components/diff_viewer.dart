@@ -19,9 +19,9 @@ class DiffViewer extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.background,
+        color: AppColors.bg(context),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(color: AppColors.line(context), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -29,20 +29,20 @@ class DiffViewer extends StatelessWidget {
           // Header Bar
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: const BoxDecoration(
-              color: AppColors.surfaceElevated,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(9)),
-              border: Border(bottom: BorderSide(color: AppColors.border, width: 1)),
+            decoration: BoxDecoration(
+              color: AppColors.cardElevated(context),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(9)),
+              border: Border(bottom: BorderSide(color: AppColors.line(context), width: 1)),
             ),
             child: Row(
               children: [
-                const Icon(Icons.code, size: 14, color: AppColors.textSecondary),
+                Icon(Icons.code, size: 14, color: AppColors.subtext(context)),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     filePath,
                     style: AppTypography.codeSmall.copyWith(
-                      color: AppColors.textPrimary,
+                      color: AppColors.text(context),
                       fontWeight: FontWeight.w600,
                     ),
                     overflow: TextOverflow.ellipsis,
@@ -58,7 +58,7 @@ class DiffViewer extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: lines.map((line) {
                 Color lineBg = Colors.transparent;
-                Color lineFg = AppColors.textSecondary;
+                Color lineFg = AppColors.subtext(context);
 
                 if (line.startsWith('+') && !line.startsWith('+++')) {
                   lineBg = AppColors.diffAddBg;

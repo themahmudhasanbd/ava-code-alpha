@@ -86,34 +86,40 @@ class _ShadcnButtonState extends State<ShadcnButton> with SingleTickerProviderSt
   Widget build(BuildContext context) {
     final isEnabled = widget.onPressed != null && !widget.isLoading;
 
+    final isDark = AppColors.isDark(context);
+
     Color bg;
     Color fg;
     Border? border;
 
     switch (widget.variant) {
       case ShadcnButtonVariant.primary:
-        bg = isEnabled ? AppColors.textPrimary : AppColors.surfaceSubtle;
-        fg = isEnabled ? AppColors.textInverse : AppColors.textMuted;
+        bg = isEnabled
+            ? (isDark ? AppColors.textPrimary : AppColors.lightTextPrimary)
+            : (isDark ? AppColors.surfaceSubtle : AppColors.lightSurfaceSubtle);
+        fg = isEnabled
+            ? (isDark ? AppColors.textInverse : AppColors.lightTextInverse)
+            : (isDark ? AppColors.textMuted : AppColors.lightTextMuted);
         border = null;
         break;
       case ShadcnButtonVariant.secondary:
-        bg = AppColors.surfaceSubtle;
-        fg = AppColors.textPrimary;
-        border = Border.all(color: AppColors.border, width: 1);
+        bg = isDark ? AppColors.surfaceSubtle : AppColors.lightSurfaceSubtle;
+        fg = AppColors.text(context);
+        border = Border.all(color: AppColors.line(context), width: 1);
         break;
       case ShadcnButtonVariant.outline:
         bg = Colors.transparent;
-        fg = AppColors.textPrimary;
-        border = Border.all(color: AppColors.borderStrong, width: 1);
+        fg = AppColors.text(context);
+        border = Border.all(color: AppColors.lineStrong(context), width: 1);
         break;
       case ShadcnButtonVariant.ghost:
         bg = Colors.transparent;
-        fg = AppColors.textSecondary;
+        fg = AppColors.subtext(context);
         border = null;
         break;
       case ShadcnButtonVariant.destructive:
         bg = AppColors.accentDanger;
-        fg = AppColors.textPrimary;
+        fg = Colors.white;
         border = null;
         break;
     }

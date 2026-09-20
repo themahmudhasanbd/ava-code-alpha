@@ -63,21 +63,31 @@ class _ShadcnInputState extends State<ShadcnInput> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppColors.isDark(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
         if (widget.label != null) ...[
-          Text(widget.label!, style: AppTypography.titleMedium.copyWith(fontSize: 13)),
+          Text(
+            widget.label!,
+            style: AppTypography.titleMedium.copyWith(
+              fontSize: 13,
+              color: AppColors.text(context),
+            ),
+          ),
           const SizedBox(height: 6),
         ],
         AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: AppColors.card(context),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: _isFocused ? AppColors.borderFocus : AppColors.borderStrong,
+              color: _isFocused
+                  ? (isDark ? AppColors.borderFocus : AppColors.lightBorderFocus)
+                  : AppColors.lineStrong(context),
               width: _isFocused ? 1.5 : 1.0,
             ),
           ),
@@ -87,8 +97,8 @@ class _ShadcnInputState extends State<ShadcnInput> {
             autofocus: widget.autofocus,
             obscureText: _obscureText,
             keyboardType: widget.keyboardType,
-            style: AppTypography.bodyLarge,
-            cursorColor: AppColors.textPrimary,
+            style: AppTypography.bodyLarge.copyWith(color: AppColors.text(context)),
+            cursorColor: AppColors.text(context),
             onChanged: widget.onChanged,
             onSubmitted: widget.onSubmitted,
             decoration: InputDecoration(
@@ -96,16 +106,16 @@ class _ShadcnInputState extends State<ShadcnInput> {
               contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               border: InputBorder.none,
               hintText: widget.hintText,
-              hintStyle: AppTypography.bodyMedium.copyWith(color: AppColors.textMuted),
+              hintStyle: AppTypography.bodyMedium.copyWith(color: AppColors.muted(context)),
               prefixIcon: widget.prefixIcon != null
-                  ? Icon(widget.prefixIcon, size: 16, color: AppColors.textSecondary)
+                  ? Icon(widget.prefixIcon, size: 16, color: AppColors.subtext(context))
                   : null,
               suffixIcon: widget.isPassword
                   ? IconButton(
                       icon: Icon(
                         _obscureText ? LucideIcons.eyeOff : LucideIcons.eye,
                         size: 16,
-                        color: AppColors.textSecondary,
+                        color: AppColors.subtext(context),
                       ),
                       onPressed: () => setState(() => _obscureText = !_obscureText),
                     )

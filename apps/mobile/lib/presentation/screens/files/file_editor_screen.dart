@@ -115,13 +115,15 @@ class _FileEditorScreenState extends State<FileEditorScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppColors.isDark(context);
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.bg(context),
       appBar: AppBar(
-        backgroundColor: AppColors.surface,
+        backgroundColor: AppColors.card(context),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(LucideIcons.arrowLeft, size: 18, color: AppColors.textPrimary),
+          icon: Icon(LucideIcons.arrowLeft, size: 18, color: AppColors.text(context)),
           onPressed: () {
             if (_isModified) {
               _confirmExit();
@@ -144,7 +146,11 @@ class _FileEditorScreenState extends State<FileEditorScreen> {
                       Flexible(
                         child: Text(
                           widget.fileName,
-                          style: AppTypography.titleMedium.copyWith(fontSize: 14, fontWeight: FontWeight.w700),
+                          style: AppTypography.titleMedium.copyWith(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.text(context),
+                          ),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -163,7 +169,7 @@ class _FileEditorScreenState extends State<FileEditorScreen> {
                   ),
                   Text(
                     widget.filePath,
-                    style: AppTypography.codeSmall.copyWith(fontSize: 10, color: AppColors.textMuted),
+                    style: AppTypography.codeSmall.copyWith(fontSize: 10, color: AppColors.muted(context)),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
@@ -176,7 +182,7 @@ class _FileEditorScreenState extends State<FileEditorScreen> {
           const SizedBox(width: 8),
           IconButton(
             tooltip: 'Copy Content',
-            icon: const Icon(LucideIcons.copy, size: 16, color: AppColors.textSecondary),
+            icon: Icon(LucideIcons.copy, size: 16, color: AppColors.subtext(context)),
             onPressed: () {
               Clipboard.setData(ClipboardData(text: _codeController.text));
               ScaffoldMessenger.of(context).showSnackBar(
@@ -191,14 +197,16 @@ class _FileEditorScreenState extends State<FileEditorScreen> {
             padding: const EdgeInsets.only(right: 12),
             child: ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
-                backgroundColor: _isModified ? AppColors.accentPrimary : AppColors.surfaceElevated,
-                foregroundColor: Colors.white,
+                backgroundColor: _isModified
+                    ? AppColors.accentPrimary
+                    : (isDark ? AppColors.surfaceElevated : AppColors.lightSurfaceElevated),
+                foregroundColor: _isModified ? Colors.white : AppColors.text(context),
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                   side: BorderSide(
-                    color: _isModified ? Colors.transparent : AppColors.border,
+                    color: _isModified ? Colors.transparent : AppColors.line(context),
                     width: 1,
                   ),
                 ),
@@ -227,9 +235,9 @@ class _FileEditorScreenState extends State<FileEditorScreen> {
               child: Container(
                 margin: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
+                  color: AppColors.card(context),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: AppColors.line(context)),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -238,9 +246,9 @@ class _FileEditorScreenState extends State<FileEditorScreen> {
                     Container(
                       width: 44,
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      decoration: const BoxDecoration(
-                        color: Color(0x10000000),
-                        border: Border(right: BorderSide(color: Color(0x15FFFFFF))),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0x10000000) : const Color(0x08000000),
+                        border: Border(right: BorderSide(color: AppColors.line(context))),
                       ),
                       child: ListView.builder(
                         physics: const NeverScrollableScrollPhysics(),
@@ -252,7 +260,7 @@ class _FileEditorScreenState extends State<FileEditorScreen> {
                             textAlign: TextAlign.center,
                             style: AppTypography.codeSmall.copyWith(
                               fontSize: 11,
-                              color: AppColors.textMuted.withValues(alpha: 0.6),
+                              color: AppColors.muted(context).withValues(alpha: 0.7),
                             ),
                           ),
                         ),
@@ -269,7 +277,7 @@ class _FileEditorScreenState extends State<FileEditorScreen> {
                           style: AppTypography.codeSmall.copyWith(
                             fontSize: 12.5,
                             height: 1.45,
-                            color: AppColors.textPrimary,
+                            color: AppColors.text(context),
                           ),
                           cursorColor: AppColors.accentPrimary,
                           decoration: const InputDecoration(
@@ -287,17 +295,17 @@ class _FileEditorScreenState extends State<FileEditorScreen> {
             // Footer status bar
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: const BoxDecoration(
-                color: AppColors.surfaceElevated,
-                border: Border(top: BorderSide(color: Color(0x18FFFFFF), width: 1)),
+              decoration: BoxDecoration(
+                color: AppColors.cardElevated(context),
+                border: Border(top: BorderSide(color: AppColors.line(context), width: 1)),
               ),
               child: Row(
                 children: [
-                  const Icon(LucideIcons.fileText, size: 13, color: AppColors.textMuted),
+                  Icon(LucideIcons.fileText, size: 13, color: AppColors.muted(context)),
                   const SizedBox(width: 6),
                   Text(
                     '$_lineCount lines • UTF-8',
-                    style: AppTypography.codeSmall.copyWith(fontSize: 11, color: AppColors.textSecondary),
+                    style: AppTypography.codeSmall.copyWith(fontSize: 11, color: AppColors.subtext(context)),
                   ),
                   const Spacer(),
                   if (_isModified)
@@ -327,23 +335,27 @@ class _FileEditorScreenState extends State<FileEditorScreen> {
   }
 
   void _confirmExit() {
+    final isDark = AppColors.isDark(context);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF18181B),
+        backgroundColor: isDark ? const Color(0xFF18181B) : Colors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: Color(0x40FFFFFF)),
+          side: BorderSide(color: AppColors.line(context)),
         ),
-        title: Text('Unsaved Changes', style: AppTypography.titleMedium),
+        title: Text(
+          'Unsaved Changes',
+          style: AppTypography.titleMedium.copyWith(color: AppColors.text(context)),
+        ),
         content: Text(
           'You have unsaved changes in this file. Are you sure you want to discard them?',
-          style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
+          style: AppTypography.bodyMedium.copyWith(color: AppColors.subtext(context)),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel', style: AppTypography.bodyMedium.copyWith(color: AppColors.textMuted)),
+            child: Text('Cancel', style: AppTypography.bodyMedium.copyWith(color: AppColors.muted(context))),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(

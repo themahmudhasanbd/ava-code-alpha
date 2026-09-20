@@ -26,9 +26,9 @@ class _ThinkingAccordionState extends State<ThinkingAccordion> {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.card(context),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(color: AppColors.line(context), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -44,7 +44,7 @@ class _ThinkingAccordionState extends State<ThinkingAccordion> {
                   Icon(
                     widget.isLive ? LucideIcons.sparkles : LucideIcons.brain,
                     size: 14,
-                    color: widget.isLive ? AppColors.accentPurple : AppColors.textMuted,
+                    color: widget.isLive ? AppColors.accentPurple : AppColors.muted(context),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
@@ -52,7 +52,7 @@ class _ThinkingAccordionState extends State<ThinkingAccordion> {
                       widget.isLive ? 'Thinking...' : 'Reasoning process',
                       style: AppTypography.titleMedium.copyWith(
                         fontSize: 12,
-                        color: widget.isLive ? AppColors.textPrimary : AppColors.textSecondary,
+                        color: widget.isLive ? AppColors.text(context) : AppColors.subtext(context),
                       ),
                     ),
                   ),
@@ -70,7 +70,7 @@ class _ThinkingAccordionState extends State<ThinkingAccordion> {
                   Icon(
                     _isExpanded ? LucideIcons.chevronUp : LucideIcons.chevronDown,
                     size: 14,
-                    color: AppColors.textMuted,
+                    color: AppColors.muted(context),
                   ),
                 ],
               ),
@@ -79,13 +79,13 @@ class _ThinkingAccordionState extends State<ThinkingAccordion> {
           if (_isExpanded) ...[
             Container(
               padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
-              decoration: const BoxDecoration(
-                border: Border(top: BorderSide(color: AppColors.border, width: 1)),
+              decoration: BoxDecoration(
+                border: Border(top: BorderSide(color: AppColors.line(context), width: 1)),
               ),
               child: Text(
                 widget.thoughtText,
                 style: AppTypography.codeSmall.copyWith(
-                  color: AppColors.textSecondary,
+                  color: AppColors.subtext(context),
                   height: 1.45,
                 ),
               ),

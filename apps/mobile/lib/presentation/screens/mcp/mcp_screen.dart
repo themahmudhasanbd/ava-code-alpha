@@ -50,9 +50,9 @@ class _McpScreenState extends State<McpScreen> {
       'schema': '{"query": "string", "database?": "string"}',
     },
     {
-      'name': 'antigravity_stream_turn',
-      'server': 'Google Antigravity SDK',
-      'description': 'Stream multi-turn agentic coding sessions with Gemini 3.7 Flash.',
+      'name': 'agent_reasoning',
+      'server': 'Autonomous Engine',
+      'description': 'Stream multi-turn agentic coding sessions with full tool calling capabilities.',
       'schema': '{"prompt": "string", "model": "string", "contextWindow?": "number"}',
     },
   ];
@@ -82,36 +82,42 @@ class _McpScreenState extends State<McpScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppColors.isDark(context);
+
     final servers = _mcpData?['servers'] as List<dynamic>? ?? [
       {'name': 'Filesystem MCP', 'path': '/var/www/ava-code-alpha', 'status': 'connected', 'pingMs': 1},
       {'name': 'Terminal MCP', 'shell': 'bash', 'status': 'connected', 'pingMs': 1},
-      {'name': 'Google Antigravity SDK', 'provider': 'Gemini 3.7 Flash', 'status': 'active', 'pingMs': 12},
+      {'name': 'Autonomous Engine', 'provider': 'Gemini 3.7 Flash Tiered', 'status': 'active', 'pingMs': 12},
       {'name': 'MySQL Bridge', 'host': 'localhost', 'status': 'online', 'pingMs': 2},
     ];
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.bg(context),
       body: Column(
         children: [
           // Sub-header
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: const BoxDecoration(
-              color: AppColors.surface,
-              border: Border(bottom: BorderSide(color: Color(0x18FFFFFF), width: 1)),
+            decoration: BoxDecoration(
+              color: AppColors.card(context),
+              border: Border(bottom: BorderSide(color: AppColors.line(context), width: 1)),
             ),
             child: Row(
               children: [
                 const Icon(LucideIcons.plugZap, size: 15, color: AppColors.accentPrimary),
                 const SizedBox(width: 8),
                 Text(
-                  'MCP Tools & Servers',
-                  style: AppTypography.titleMedium.copyWith(fontSize: 14, fontWeight: FontWeight.w600),
+                  'MCP Tools & Protocol Servers',
+                  style: AppTypography.titleMedium.copyWith(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.text(context),
+                  ),
                 ),
                 const Spacer(),
                 IconButton(
                   tooltip: 'Ping Servers',
-                  icon: const Icon(LucideIcons.refreshCw, size: 15, color: AppColors.textSecondary),
+                  icon: Icon(LucideIcons.refreshCw, size: 15, color: AppColors.subtext(context)),
                   onPressed: _loadMcpStatus,
                 ),
               ],
@@ -135,7 +141,7 @@ class _McpScreenState extends State<McpScreen> {
                         style: AppTypography.codeSmall.copyWith(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.textMuted,
+                          color: AppColors.muted(context),
                           letterSpacing: 0.8,
                         ),
                       ),
@@ -151,9 +157,9 @@ class _McpScreenState extends State<McpScreen> {
                           margin: const EdgeInsets.only(bottom: 8),
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: AppColors.surface,
+                            color: AppColors.card(context),
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: AppColors.border),
+                            border: Border.all(color: AppColors.line(context)),
                           ),
                           child: Row(
                             children: [
@@ -172,11 +178,15 @@ class _McpScreenState extends State<McpScreen> {
                                   children: [
                                     Text(
                                       name,
-                                      style: AppTypography.titleMedium.copyWith(fontSize: 13, fontWeight: FontWeight.w600),
+                                      style: AppTypography.titleMedium.copyWith(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.text(context),
+                                      ),
                                     ),
                                     Text(
                                       '$detail • ${ping}ms latency',
-                                      style: AppTypography.codeSmall.copyWith(fontSize: 10, color: AppColors.textMuted),
+                                      style: AppTypography.codeSmall.copyWith(fontSize: 10, color: AppColors.muted(context)),
                                     ),
                                   ],
                                 ),
@@ -204,13 +214,13 @@ class _McpScreenState extends State<McpScreen> {
                             style: AppTypography.codeSmall.copyWith(
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
-                              color: AppColors.textMuted,
+                              color: AppColors.muted(context),
                               letterSpacing: 0.8,
                             ),
                           ),
                           Text(
                             '${_availableTools.length} Registered',
-                            style: AppTypography.codeSmall.copyWith(fontSize: 10, color: AppColors.textSecondary),
+                            style: AppTypography.codeSmall.copyWith(fontSize: 10, color: AppColors.subtext(context)),
                           ),
                         ],
                       ),
@@ -221,9 +231,9 @@ class _McpScreenState extends State<McpScreen> {
                           margin: const EdgeInsets.only(bottom: 8),
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: AppColors.surface,
+                            color: AppColors.card(context),
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: AppColors.border),
+                            border: Border.all(color: AppColors.line(context)),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -237,7 +247,7 @@ class _McpScreenState extends State<McpScreen> {
                                     style: AppTypography.codeSmall.copyWith(
                                       fontSize: 12.5,
                                       fontWeight: FontWeight.w700,
-                                      color: AppColors.textPrimary,
+                                      color: AppColors.text(context),
                                     ),
                                   ),
                                   const Spacer(),
@@ -247,14 +257,17 @@ class _McpScreenState extends State<McpScreen> {
                               const SizedBox(height: 6),
                               Text(
                                 tool['description']!,
-                                style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary, fontSize: 11.5),
+                                style: AppTypography.bodySmall.copyWith(
+                                  color: AppColors.subtext(context),
+                                  fontSize: 11.5,
+                                ),
                               ),
                               const SizedBox(height: 8),
                               Container(
                                 width: double.infinity,
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                                 decoration: BoxDecoration(
-                                  color: AppColors.surfaceElevated,
+                                  color: isDark ? AppColors.surfaceElevated : AppColors.lightSurfaceElevated,
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Row(
@@ -264,7 +277,7 @@ class _McpScreenState extends State<McpScreen> {
                                         tool['schema']!,
                                         style: AppTypography.codeSmall.copyWith(
                                           fontSize: 10,
-                                          color: AppColors.textMuted,
+                                          color: AppColors.muted(context),
                                         ),
                                         overflow: TextOverflow.ellipsis,
                                       ),
@@ -279,7 +292,7 @@ class _McpScreenState extends State<McpScreen> {
                                           ),
                                         );
                                       },
-                                      child: const Icon(LucideIcons.copy, size: 12, color: AppColors.textMuted),
+                                      child: Icon(LucideIcons.copy, size: 12, color: AppColors.muted(context)),
                                     ),
                                   ],
                                 ),

@@ -23,9 +23,9 @@ class ShadcnCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final decoration = BoxDecoration(
-      color: backgroundColor ?? AppColors.surface,
+      color: backgroundColor ?? AppColors.card(context),
       borderRadius: BorderRadius.circular(borderRadius),
-      border: border ?? Border.all(color: AppColors.border, width: 1),
+      border: border ?? Border.all(color: AppColors.line(context), width: 1),
     );
 
     if (onTap != null) {

@@ -67,15 +67,15 @@ class _ChatScreenState extends State<ChatScreen> {
         final isStreaming = threadCtrl.isStreaming;
 
         return Scaffold(
-          backgroundColor: AppColors.background,
+          backgroundColor: AppColors.bg(context),
           body: Column(
             children: [
               // Sleek Session Thread Sub-header
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: const BoxDecoration(
-                  color: AppColors.surface,
-                  border: Border(bottom: BorderSide(color: Color(0x18FFFFFF), width: 1)),
+                decoration: BoxDecoration(
+                  color: AppColors.card(context),
+                  border: Border(bottom: BorderSide(color: AppColors.line(context), width: 1)),
                 ),
                 child: Row(
                   children: [
@@ -83,14 +83,18 @@ class _ChatScreenState extends State<ChatScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        activeThread?.title ?? 'Active Session Workspace',
-                        style: AppTypography.titleMedium.copyWith(fontSize: 13, fontWeight: FontWeight.w600),
+                        activeThread?.title ?? 'Active Workspace Session',
+                        style: AppTypography.titleMedium.copyWith(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.text(context),
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(LucideIcons.plus, size: 16, color: AppColors.textSecondary),
+                      icon: Icon(LucideIcons.plus, size: 16, color: AppColors.subtext(context)),
                       onPressed: () => threadCtrl.createNewThread(title: 'New Session'),
                       tooltip: 'New Thread',
                       splashRadius: 16,
@@ -104,18 +108,18 @@ class _ChatScreenState extends State<ChatScreen> {
               // Message & Tool List
               Expanded(
                 child: items.isEmpty
-                    ? _buildEmptyState()
+                    ? _buildEmptyState(context)
                     : ListView.builder(
                         controller: _scrollController,
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         itemCount: items.length,
                         itemBuilder: (context, index) {
-                          return _buildTurnItem(items[index]);
+                          return _buildTurnItem(context, items[index]);
                         },
                       ),
               ),
 
-              // Signature Prompt Composer Dock (Old Signature Style)
+              // Signature Prompt Composer Dock
               ChatPromptBox(
                 controller: _inputController,
                 isStreaming: isStreaming,
@@ -130,7 +134,8 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(BuildContext context) {
+    final isDark = AppColors.isDark(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -142,19 +147,22 @@ class _ChatScreenState extends State<ChatScreen> {
               height: 64,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.surfaceElevated,
+                color: isDark ? AppColors.surfaceElevated : AppColors.lightSurfaceElevated,
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: AppColors.borderStrong),
+                border: Border.all(color: AppColors.line(context)),
               ),
               child: Image.asset(AppConstants.appLogoPath, fit: BoxFit.contain),
             ),
             const SizedBox(height: 16),
-            Text('${AppConstants.appName} is Ready', style: AppTypography.titleLarge),
+            Text(
+              '${AppConstants.appName} Workspace Ready',
+              style: AppTypography.titleLarge.copyWith(color: AppColors.text(context)),
+            ),
             const SizedBox(height: 6),
             Text(
-              'Connected to native Google Antigravity provider (`gemini-3.7-flash-tiered`). Send an instruction to begin.',
+              'Autonomous developer agent is active. Send a prompt to edit files, execute commands, or plan architecture.',
               textAlign: TextAlign.center,
-              style: AppTypography.bodyMedium,
+              style: AppTypography.bodyMedium.copyWith(color: AppColors.subtext(context)),
             ),
           ],
         ),
@@ -162,7 +170,9 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  Widget _buildTurnItem(TurnItemModel item) {
+  Widget _buildTurnItem(BuildContext context, TurnItemModel item) {
+    final isDark = AppColors.isDark(context);
+
     switch (item.type) {
       case TurnItemType.userPrompt:
         return Align(
@@ -172,13 +182,13 @@ class _ChatScreenState extends State<ChatScreen> {
             constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.85),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: AppColors.surfaceElevated,
+              color: isDark ? AppColors.surfaceElevated : AppColors.lightSurfaceElevated,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.borderStrong),
+              border: Border.all(color: AppColors.line(context)),
             ),
             child: Text(
               item.content,
-              style: AppTypography.bodyLarge.copyWith(color: AppColors.textPrimary),
+              style: AppTypography.bodyLarge.copyWith(color: AppColors.text(context)),
             ),
           ),
         );
@@ -201,7 +211,13 @@ class _ChatScreenState extends State<ChatScreen> {
                   children: [
                     const Icon(LucideIcons.terminal, size: 14, color: AppColors.accentCyan),
                     const SizedBox(width: 6),
-                    Text('Shell Command', style: AppTypography.titleMedium.copyWith(fontSize: 12)),
+                    Text(
+                      'Shell Command',
+                      style: AppTypography.titleMedium.copyWith(
+                        fontSize: 12,
+                        color: AppColors.text(context),
+                      ),
+                    ),
                     const Spacer(),
                     const ShadcnBadge(label: 'bash', variant: ShadcnBadgeVariant.neutral),
                   ],
@@ -210,16 +226,19 @@ class _ChatScreenState extends State<ChatScreen> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.background,
+                    color: AppColors.bg(context),
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  child: Text(item.content, style: AppTypography.codeSmall.copyWith(color: AppColors.accentCyan)),
+                  child: Text(
+                    item.content,
+                    style: AppTypography.codeSmall.copyWith(color: AppColors.accentCyan),
+                  ),
                 ),
                 if (item.secondaryContent != null) ...[
                   const SizedBox(height: 6),
                   Text(
                     item.secondaryContent!,
-                    style: AppTypography.codeSmall.copyWith(color: AppColors.textMuted),
+                    style: AppTypography.codeSmall.copyWith(color: AppColors.muted(context)),
                   ),
                 ],
               ],
@@ -249,29 +268,37 @@ class _ChatScreenState extends State<ChatScreen> {
                 height: 28,
                 margin: const EdgeInsets.only(top: 2),
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceHighlight,
+                  color: isDark ? AppColors.surfaceElevated : AppColors.lightSurfaceElevated,
                   borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.line(context)),
                 ),
-                child: const Icon(LucideIcons.sparkles, size: 14, color: AppColors.textPrimary),
+                child: const Icon(LucideIcons.sparkles, size: 14, color: AppColors.accentPrimary),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('AvA Agent', style: AppTypography.titleMedium.copyWith(fontSize: 13)),
+                    Text(
+                      'AvA Agent',
+                      style: AppTypography.titleMedium.copyWith(
+                        fontSize: 13,
+                        color: AppColors.text(context),
+                      ),
+                    ),
                     const SizedBox(height: 4),
                     MarkdownBody(
                       data: item.content.isEmpty ? '...' : item.content,
                       styleSheet: MarkdownStyleSheet(
-                        p: AppTypography.bodyLarge.copyWith(height: 1.5),
+                        p: AppTypography.bodyLarge.copyWith(height: 1.5, color: AppColors.text(context)),
                         code: AppTypography.codeSmall.copyWith(
-                          backgroundColor: AppColors.surfaceElevated,
+                          backgroundColor: isDark ? AppColors.surfaceElevated : AppColors.lightSurfaceElevated,
+                          color: isDark ? Colors.white : AppColors.lightTextPrimary,
                         ),
                         codeblockDecoration: BoxDecoration(
-                          color: AppColors.surfaceElevated,
+                          color: isDark ? AppColors.surfaceElevated : AppColors.lightSurfaceElevated,
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: AppColors.border),
+                          border: Border.all(color: AppColors.line(context)),
                         ),
                       ),
                     ),

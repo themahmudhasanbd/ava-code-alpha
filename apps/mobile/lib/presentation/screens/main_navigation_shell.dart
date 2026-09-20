@@ -42,7 +42,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
     ];
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.bg(context),
       appBar: AppShellHeader(
         onNavigateTab: _onTabSelect,
       ),

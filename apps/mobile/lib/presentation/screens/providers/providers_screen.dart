@@ -39,6 +39,7 @@ class ProvidersScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final providerCtrl = AppStateScope.of(context).providerController;
+    final isDark = AppColors.isDark(context);
 
     return ListenableBuilder(
       listenable: providerCtrl,
@@ -48,7 +49,7 @@ class ProvidersScreen extends StatelessWidget {
         final activeModelId = providerCtrl.activeModelId;
 
         return Scaffold(
-          backgroundColor: AppColors.background,
+          backgroundColor: AppColors.bg(context),
           body: ListView(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             children: [
@@ -57,53 +58,15 @@ class ProvidersScreen extends StatelessWidget {
                 children: [
                   const Icon(LucideIcons.sparkles, size: 16, color: AppColors.accentPrimary),
                   const SizedBox(width: 8),
-                  Text('AI Model Providers', style: AppTypography.titleLarge.copyWith(fontSize: 18)),
+                  Text(
+                    'AI Models & Engines',
+                    style: AppTypography.titleLarge.copyWith(fontSize: 18, color: AppColors.text(context)),
+                  ),
                 ],
               ),
               const SizedBox(height: 14),
 
-              // Highlight banner for Google Antigravity
-
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.accentPrimary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.accentPrimary.withValues(alpha: 0.3)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 28,
-                          height: 28,
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: AppColors.surfaceElevated,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: AppColors.accentPrimary.withValues(alpha: 0.4)),
-                          ),
-                          child: Image.asset(AppConstants.providerAntigravity, fit: BoxFit.contain),
-                        ),
-                        const SizedBox(width: 10),
-                        Text('Google Antigravity Provider', style: AppTypography.titleMedium),
-                        const Spacer(),
-                        const ShadcnBadge(label: 'Active Default', variant: ShadcnBadgeVariant.success),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Direct high-speed connection to Google Cloud Code PA. Supports Gemini 3.7 Flash Tiered, Gemini 3.8, Gemini 3.1 Pro, and Claude Opus/Sonnet.',
-                      style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              Text('AVAILABLE PROVIDERS', style: AppTypography.codeSmall.copyWith(color: AppColors.textMuted)),
+              Text('CONFIGURED PROVIDERS', style: AppTypography.codeSmall.copyWith(color: AppColors.muted(context))),
               const SizedBox(height: 10),
 
               ...providers.map((provider) {
@@ -112,9 +75,13 @@ class ProvidersScreen extends StatelessWidget {
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: ShadcnCard(
-                    backgroundColor: isSelected ? AppColors.surfaceElevated : AppColors.surface,
+                    backgroundColor: isSelected
+                        ? (isDark ? AppColors.surfaceElevated : AppColors.lightSurfaceElevated)
+                        : AppColors.card(context),
                     border: Border.all(
-                      color: isSelected ? AppColors.borderFocus : AppColors.border,
+                      color: isSelected
+                          ? (isDark ? AppColors.borderFocus : AppColors.lightBorderFocus)
+                          : AppColors.line(context),
                       width: isSelected ? 1.5 : 1.0,
                     ),
                     child: Column(
@@ -127,14 +94,17 @@ class ProvidersScreen extends StatelessWidget {
                               height: 28,
                               padding: const EdgeInsets.all(4),
                               decoration: BoxDecoration(
-                                color: AppColors.surfaceSubtle,
+                                color: isDark ? AppColors.surfaceSubtle : AppColors.lightSurfaceElevated,
                                 borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: AppColors.border),
+                                border: Border.all(color: AppColors.line(context)),
                               ),
                               child: Image.asset(_getProviderAsset(provider.id), fit: BoxFit.contain),
                             ),
                             const SizedBox(width: 10),
-                            Text(provider.name, style: AppTypography.titleMedium),
+                            Text(
+                              provider.name,
+                              style: AppTypography.titleMedium.copyWith(color: AppColors.text(context)),
+                            ),
                             const Spacer(),
                             if (provider.isConnected)
                               const ShadcnBadge(label: 'Connected', variant: ShadcnBadgeVariant.success)
@@ -143,7 +113,10 @@ class ProvidersScreen extends StatelessWidget {
                           ],
                         ),
                         const SizedBox(height: 6),
-                        Text(provider.description, style: AppTypography.bodySmall),
+                        Text(
+                          provider.description,
+                          style: AppTypography.bodySmall.copyWith(color: AppColors.subtext(context)),
+                        ),
                         const SizedBox(height: 12),
 
                         // Model Chips
@@ -158,16 +131,22 @@ class ProvidersScreen extends StatelessWidget {
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: isModelActive ? AppColors.textPrimary : AppColors.surfaceSubtle,
+                                  color: isModelActive
+                                      ? (isDark ? AppColors.textPrimary : AppColors.lightTextPrimary)
+                                      : (isDark ? AppColors.surfaceSubtle : AppColors.lightSurfaceElevated),
                                   borderRadius: BorderRadius.circular(6),
                                   border: Border.all(
-                                    color: isModelActive ? AppColors.textPrimary : AppColors.border,
+                                    color: isModelActive
+                                        ? (isDark ? AppColors.textPrimary : AppColors.lightTextPrimary)
+                                        : AppColors.line(context),
                                   ),
                                 ),
                                 child: Text(
                                   m,
                                   style: AppTypography.codeSmall.copyWith(
-                                    color: isModelActive ? AppColors.textInverse : AppColors.textPrimary,
+                                    color: isModelActive
+                                        ? (isDark ? AppColors.textInverse : AppColors.lightTextInverse)
+                                        : AppColors.text(context),
                                     fontWeight: isModelActive ? FontWeight.w600 : FontWeight.w400,
                                   ),
                                 ),

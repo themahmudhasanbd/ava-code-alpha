@@ -6,8 +6,8 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../state/app_state.dart';
 
-/// Premier Glassmorphic Top Header for AvA Code Alpha App Shell
-/// Inspired by 21st.dev / shadcn dark UI design systems
+/// Clean, professional App Shell Top Header
+/// Inspired by Claude Code and Lovable minimal design
 class AppShellHeader extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onNewThread;
   final ValueChanged<int>? onNavigateTab;
@@ -19,25 +19,104 @@ class AppShellHeader extends StatelessWidget implements PreferredSizeWidget {
   });
 
   @override
-  Size get preferredSize => const Size.fromHeight(60);
+  Size get preferredSize => const Size.fromHeight(56);
+
+  void _showModelPicker(BuildContext context) {
+    final providerCtrl = AppStateScope.of(context).providerController;
+    final activeModel = providerCtrl.activeModelId;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.card(context),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(LucideIcons.sparkles, size: 18, color: AppColors.accentPrimary),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Select AI Model',
+                      style: AppTypography.titleLarge.copyWith(
+                        fontSize: 16,
+                        color: AppColors.text(context),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                ...providerCtrl.providers.expand((p) => p.models).map((model) {
+                  final isSelected = model == activeModel;
+                  return InkWell(
+                    onTap: () {
+                      providerCtrl.setModel(model);
+                      Navigator.pop(ctx);
+                    },
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      margin: const EdgeInsets.only(bottom: 4),
+                      decoration: BoxDecoration(
+                        color: isSelected ? AppColors.cardElevated(context) : Colors.transparent,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            isSelected ? LucideIcons.checkCircle2 : LucideIcons.circle,
+                            size: 16,
+                            color: isSelected ? AppColors.accentPrimary : AppColors.muted(context),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              model,
+                              style: AppTypography.bodyMedium.copyWith(
+                                color: isSelected ? AppColors.text(context) : AppColors.subtext(context),
+                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final appState = AppStateScope.of(context);
-    final user = appState.authController.session?.username ?? AppConstants.authUsername;
-    final activeModelId = appState.providerController.activeModelId;
+    final themeCtrl = appState.themeController;
+    final providerCtrl = appState.providerController;
+    final activeModel = providerCtrl.activeModelId;
+    final isDark = AppColors.isDark(context);
 
     return ClipRRect(
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
         child: Container(
-          height: 60,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: const BoxDecoration(
-            color: Color(0xCC0D0D11), // Deep zinc translucent
+          height: 56,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xE609090B) : const Color(0xE6FFFFFF),
             border: Border(
               bottom: BorderSide(
-                color: Color(0x24FFFFFF), // 21st.dev subtle rim divider
+                color: AppColors.line(context),
                 width: 1.0,
               ),
             ),
@@ -48,15 +127,13 @@ class AppShellHeader extends StatelessWidget implements PreferredSizeWidget {
               children: [
                 // Drawer Menu Button
                 IconButton(
-                  icon: const Icon(LucideIcons.menu, size: 20, color: AppColors.textPrimary),
-                  tooltip: 'Open Workspace Menu',
-                  splashRadius: 20,
-                  onPressed: () {
-                    Scaffold.of(context).openDrawer();
-                  },
+                  icon: Icon(LucideIcons.menu, size: 19, color: AppColors.text(context)),
+                  tooltip: 'Menu',
+                  splashRadius: 18,
+                  onPressed: () => Scaffold.of(context).openDrawer(),
                 ),
 
-                const SizedBox(width: 6),
+                const SizedBox(width: 4),
 
                 // Brand Mark & Title
                 GestureDetector(
@@ -65,67 +142,23 @@ class AppShellHeader extends StatelessWidget implements PreferredSizeWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
-                        width: 28,
-                        height: 28,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF18181B),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0x40FFFFFF), width: 1),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.accentPrimary.withValues(alpha: 0.3),
-                              blurRadius: 8,
-                              offset: const Offset(0, 1),
-                            ),
-                          ],
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(7),
-                          child: Image.asset(
-                            AppConstants.appLogoPath,
-                            fit: BoxFit.cover,
-                          ),
+                        width: 24,
+                        height: 24,
+                        alignment: Alignment.center,
+                        child: Image.asset(
+                          AppConstants.appLogoPath,
+                          fit: BoxFit.contain,
                         ),
                       ),
-                      const SizedBox(width: 10),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Row(
-                            children: [
-                              Text(
-                                AppConstants.appShortName,
-                                style: AppTypography.titleMedium.copyWith(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: -0.3,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                                decoration: BoxDecoration(
-                                  color: AppColors.accentPrimary.withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(4),
-                                  border: Border.all(
-                                    color: AppColors.accentPrimary.withValues(alpha: 0.4),
-                                    width: 0.8,
-                                  ),
-                                ),
-                                child: Text(
-                                  'ALPHA',
-                                  style: AppTypography.codeSmall.copyWith(
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.w800,
-                                    color: AppColors.accentPrimary,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+                      const SizedBox(width: 8),
+                      Text(
+                        AppConstants.appShortName,
+                        style: AppTypography.titleMedium.copyWith(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.3,
+                          color: AppColors.text(context),
+                        ),
                       ),
                     ],
                   ),
@@ -133,79 +166,60 @@ class AppShellHeader extends StatelessWidget implements PreferredSizeWidget {
 
                 const Spacer(),
 
-                // Active Provider / Model Status Badge (Tap to switch model)
+                // Minimalist Model Selector Pill
                 InkWell(
-                  onTap: () => onNavigateTab?.call(4),
+                  onTap: () => _showModelPicker(context),
                   borderRadius: BorderRadius.circular(20),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4.5),
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceElevated,
+                      color: AppColors.cardElevated(context),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: AppColors.border),
+                      border: Border.all(color: AppColors.line(context)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Pulsing active dot
                         Container(
                           width: 6,
                           height: 6,
-                          decoration: BoxDecoration(
+                          decoration: const BoxDecoration(
                             color: AppColors.accentSuccess,
                             shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.accentSuccess.withValues(alpha: 0.6),
-                                blurRadius: 6,
-                                spreadRadius: 1,
-                              ),
-                            ],
                           ),
                         ),
                         const SizedBox(width: 6),
-                        Text(
-                          activeModelId,
-                          style: AppTypography.codeSmall.copyWith(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 140),
+                          child: Text(
+                            activeModel,
+                            style: AppTypography.codeSmall.copyWith(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.text(context),
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
+                        const SizedBox(width: 4),
+                        Icon(LucideIcons.chevronDown, size: 12, color: AppColors.subtext(context)),
                       ],
                     ),
                   ),
                 ),
 
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
 
-                // User / Developer Pill (Tap to go to Settings)
-                InkWell(
-                  onTap: () => onNavigateTab?.call(7),
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0x20FFFFFF),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0x30FFFFFF), width: 0.8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(LucideIcons.shieldCheck, size: 13, color: AppColors.accentSuccess),
-                        const SizedBox(width: 5),
-                        Text(
-                          '@$user',
-                          style: AppTypography.codeSmall.copyWith(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
+                // Theme Switcher Button
+                IconButton(
+                  tooltip: isDark ? 'Light Theme' : 'Dark Theme',
+                  icon: Icon(
+                    isDark ? LucideIcons.sun : LucideIcons.moon,
+                    size: 17,
+                    color: AppColors.text(context),
                   ),
+                  splashRadius: 18,
+                  onPressed: () => themeCtrl.toggleTheme(),
                 ),
               ],
             ),

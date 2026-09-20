@@ -9,8 +9,8 @@ import '../../components/shadcn_card.dart';
 import '../../components/shadcn_input.dart';
 import '../../state/app_state.dart';
 
-/// Premier Authentication screen for AvA Code Alpha
-/// Features prominent squircle logo, secure credentials validation, and tactile feedback
+/// Clean, high-performance Authentication screen for AvA Code Alpha
+/// Supports dynamic Light and Dark modes with clean brand presentation
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -67,90 +67,104 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final themeCtrl = AppStateScope.of(context).themeController;
+    final isDark = AppColors.isDark(context);
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.bg(context),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: [
+          IconButton(
+            tooltip: isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode',
+            icon: Icon(
+              isDark ? LucideIcons.sun : LucideIcons.moon,
+              size: 18,
+              color: AppColors.text(context),
+            ),
+            onPressed: () => themeCtrl.toggleTheme(),
+          ),
+          const SizedBox(width: 12),
+        ],
+      ),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
+              constraints: const BoxConstraints(maxWidth: 400),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Prominent Logo & Brand Presentation
+                  // Clean Logo Presentation inside Container
                   Center(
                     child: Container(
-                      width: 92,
-                      height: 92,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF18181B), // Zinc 900
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(
-                          color: const Color(0x40FFFFFF), // 21st.dev subtle rim light
-                          width: 1.2,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.6),
-                            blurRadius: 28,
-                            offset: const Offset(0, 10),
-                          ),
-                          BoxShadow(
-                            color: AppColors.accentPrimary.withValues(alpha: 0.22),
-                            blurRadius: 36,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(23),
-                        child: Image.asset(
-                          AppConstants.appLogoPath,
-                          fit: BoxFit.cover,
-                        ),
+                      width: 80,
+                      height: 80,
+                      alignment: Alignment.center,
+                      child: Image.asset(
+                        AppConstants.appLogoPath,
+                        fit: BoxFit.contain,
                       ),
                     ),
-                  ).animate().scale(duration: 400.ms, curve: Curves.easeOutBack),
+                  ).animate().scale(duration: 350.ms, curve: Curves.easeOutCubic),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
 
                   Center(
                     child: Text(
                       AppConstants.appName,
                       style: AppTypography.displayMedium.copyWith(
-                        fontSize: 24,
-                        letterSpacing: -0.6,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.5,
+                        color: AppColors.text(context),
                       ),
                     ),
-                  ).animate().fadeIn(delay: 80.ms),
+                  ).animate().fadeIn(delay: 60.ms),
 
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
 
                   Center(
                     child: Text(
-                      AppConstants.appTagline,
-                      style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary),
+                      'Autonomous Agentic Development Platform',
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.subtext(context),
+                        fontSize: 13,
+                      ),
                       textAlign: TextAlign.center,
                     ),
-                  ).animate().fadeIn(delay: 140.ms),
+                  ).animate().fadeIn(delay: 100.ms),
 
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 28),
 
                   // Login Form Card
                   ShadcnCard(
-                    padding: const EdgeInsets.all(24),
+                    padding: const EdgeInsets.all(22),
+                    backgroundColor: AppColors.card(context),
+                    border: Border.all(color: AppColors.line(context)),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Text('Sign In to AvA Core', style: AppTypography.titleLarge),
+                        Text(
+                          'Sign In',
+                          style: AppTypography.titleLarge.copyWith(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.text(context),
+                          ),
+                        ),
                         const SizedBox(height: 4),
                         Text(
-                          'Authenticate with authorized credentials to access autonomous agent workspaces.',
-                          style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
+                          'Enter your credentials to connect to AvA Core.',
+                          style: AppTypography.bodySmall.copyWith(
+                            color: AppColors.subtext(context),
+                            fontSize: 12,
+                          ),
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 18),
 
                         // Error Banner
                         if (_error != null) ...[
@@ -158,12 +172,12 @@ class _LoginScreenState extends State<LoginScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                             decoration: BoxDecoration(
                               color: AppColors.diffRemoveBg,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: AppColors.accentDanger.withValues(alpha: 0.4)),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: AppColors.accentDanger.withValues(alpha: 0.3)),
                             ),
                             child: Row(
                               children: [
-                                const Icon(LucideIcons.alertCircle, size: 16, color: AppColors.accentDanger),
+                                const Icon(LucideIcons.alertCircle, size: 15, color: AppColors.accentDanger),
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
@@ -171,20 +185,21 @@ class _LoginScreenState extends State<LoginScreen> {
                                     style: AppTypography.bodySmall.copyWith(
                                       color: AppColors.diffRemoveText,
                                       fontWeight: FontWeight.w500,
+                                      fontSize: 12,
                                     ),
                                   ),
                                 ),
                               ],
                             ),
-                          ).animate().shake(duration: 350.ms),
+                          ).animate().shake(duration: 300.ms),
                           const SizedBox(height: 16),
                         ],
 
                         // Username Field
                         ShadcnInput(
                           controller: _usernameController,
-                          label: 'Developer Username',
-                          hintText: 'Enter authorized username',
+                          label: 'Username',
+                          hintText: 'Enter username',
                           prefixIcon: LucideIcons.user,
                           keyboardType: TextInputType.text,
                           onChanged: (_) {
@@ -192,14 +207,14 @@ class _LoginScreenState extends State<LoginScreen> {
                           },
                           onSubmitted: (_) => _passwordFocusNode.requestFocus(),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 14),
 
                         // Password Field
                         ShadcnInput(
                           controller: _passwordController,
                           focusNode: _passwordFocusNode,
-                          label: 'Developer Password',
-                          hintText: 'Enter developer password',
+                          label: 'Password',
+                          hintText: 'Enter password',
                           prefixIcon: LucideIcons.lock,
                           isPassword: true,
                           onChanged: (_) {
@@ -207,54 +222,32 @@ class _LoginScreenState extends State<LoginScreen> {
                           },
                           onSubmitted: (_) => _handleLogin(),
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 20),
 
                         // Submit Button
                         ShadcnButton(
-                          text: 'Authenticate Session',
-                          icon: LucideIcons.logIn,
+                          text: 'Sign In',
+                          icon: LucideIcons.arrowRight,
                           isFullWidth: true,
                           isLoading: _isLoading,
                           onPressed: _handleLogin,
                         ),
                       ],
                     ),
-                  ).animate().slideY(begin: 0.08, duration: 350.ms, curve: Curves.easeOutCubic),
+                  ).animate().slideY(begin: 0.05, duration: 300.ms, curve: Curves.easeOutCubic),
 
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 24),
 
-                  // Antigravity Ready Pill
+                  // Minimal Footer Version Tag
                   Center(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceElevated,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 7,
-                            height: 7,
-                            decoration: const BoxDecoration(
-                              color: AppColors.accentSuccess,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Google Antigravity Provider: Active',
-                            style: AppTypography.codeSmall.copyWith(
-                              color: AppColors.textSecondary,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
+                    child: Text(
+                      '${AppConstants.appShortName} ${AppConstants.appVersion}',
+                      style: AppTypography.codeSmall.copyWith(
+                        color: AppColors.muted(context),
+                        fontSize: 11,
                       ),
                     ),
-                  ).animate().fadeIn(delay: 250.ms),
+                  ).animate().fadeIn(delay: 200.ms),
                 ],
               ),
             ),

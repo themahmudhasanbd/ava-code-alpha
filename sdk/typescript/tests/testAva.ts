@@ -6,10 +6,6 @@ import type { AvaConfigObject } from "../src/avaOptions";
 
 function resolveBinaryPath(): string {
   if (process.env.AVA_EXEC_PATH) return process.env.AVA_EXEC_PATH;
-  if (process.env.CODEX_EXEC_PATH) return process.env.CODEX_EXEC_PATH;
-
-  const debugCandidate = path.join(process.cwd(), "..", "..", "codex-rs", "target", "debug", "codex");
-  if (fs.existsSync(debugCandidate)) return debugCandidate;
 
   const vendorCandidate = path.join(
     process.cwd(),
@@ -19,11 +15,14 @@ function resolveBinaryPath(): string {
     "vendor",
     "x86_64-unknown-linux-musl",
     "bin",
-    "codex",
+    "ava",
   );
   if (fs.existsSync(vendorCandidate)) return vendorCandidate;
 
-  return debugCandidate;
+  const debugCandidate = path.join(process.cwd(), "..", "..", "ava-rs", "target", "debug", "ava");
+  if (fs.existsSync(debugCandidate)) return debugCandidate;
+
+  return vendorCandidate;
 }
 
 export const avaExecPath = resolveBinaryPath();

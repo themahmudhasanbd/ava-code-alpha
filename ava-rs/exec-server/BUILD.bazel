@@ -3,7 +3,7 @@ load("//bazel/rules/testing/compat:exec_server_compat_test.bzl", "exec_server_co
 
 exports_files(
     ["src/proto/codex.exec_server.relay.v1.rs"],
-    visibility = ["//codex-rs/exec-server/tests/support:__pkg__"],
+    visibility = ["//ava-rs/exec-server/tests/support:__pkg__"],
 )
 
 codex_rust_crate(
@@ -19,9 +19,9 @@ codex_rust_crate(
         "@crates//:toml",
     ],
     extra_binaries = [
-        "//codex-rs/bwrap:bwrap",
-        "//codex-rs/windows-sandbox-rs:codex-command-runner",
-        "//codex-rs/windows-sandbox-rs:codex-windows-sandbox-setup",
+        "//ava-rs/bwrap:bwrap",
+        "//ava-rs/windows-sandbox-rs:codex-command-runner",
+        "//ava-rs/windows-sandbox-rs:codex-windows-sandbox-setup",
     ],
     integration_compile_data_extra = [
         "src/proto/codex.exec_server.relay.v1.rs",
@@ -36,8 +36,8 @@ codex_rust_crate(
 
 exec_server_compat_test(
     name = "exec-server-current-version-test",
-    comparison_binary = "//codex-rs/cli:codex",
-    current_binary = "//codex-rs/cli:codex",
+    comparison_binary = "//ava-rs/cli:codex",
+    current_binary = "//ava-rs/cli:codex",
 )
 
 exec_server_compat_test(

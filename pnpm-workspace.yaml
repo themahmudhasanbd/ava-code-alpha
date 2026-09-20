@@ -1,6 +1,6 @@
 packages:
   - ava-cli
-  - codex-rs/responses-api-proxy/npm
+  - ava-rs/responses-api-proxy/npm
   - sdk/typescript
 
 ignoredBuiltDependencies:

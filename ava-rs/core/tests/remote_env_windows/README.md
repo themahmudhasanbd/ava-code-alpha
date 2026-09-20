@@ -8,7 +8,7 @@ path.
 
 ```sh
 bazel test \
-  //codex-rs/core/tests/remote_env_windows:smoke-test \
+  //ava-rs/core/tests/remote_env_windows:smoke-test \
   --test_output=errors
 ```
 

@@ -96,7 +96,7 @@ pub use mcp::resolve_oauth_callback;
 pub use mcp::resolve_oauth_scopes;
 pub use mcp::should_retry_without_scopes;
 
-pub use codex_apps::declared_openai_file_input_param_names;
+pub use apps::declared_openai_file_input_param_names;
 pub use mcp::McpPermissionPromptAutoApproveContext;
 pub use mcp::mcp_permission_prompt_is_auto_approved;
 pub use mcp::qualified_mcp_tool_name_prefix;
@@ -108,7 +108,7 @@ pub(crate) mod binding_clients;
 mod catalog;
 mod client_capabilities;
 mod client_tool_catalog;
-pub(crate) mod codex_apps;
+pub(crate) mod apps;
 pub(crate) mod connection_manager;
 pub(crate) mod elicitation;
 mod event_stream;

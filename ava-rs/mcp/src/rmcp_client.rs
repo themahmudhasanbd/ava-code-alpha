@@ -23,10 +23,10 @@ use std::time::Duration;
 use std::time::Instant;
 
 use crate::client_tool_catalog::ClientToolCatalog;
-use crate::codex_apps::normalize_codex_apps_callable_name;
-use crate::codex_apps::normalize_codex_apps_callable_namespace;
-use crate::codex_apps::normalize_codex_apps_tool_title;
-use crate::codex_apps::prepare_openai_file_params_for_model;
+use crate::apps::normalize_codex_apps_callable_name;
+use crate::apps::normalize_codex_apps_callable_namespace;
+use crate::apps::normalize_codex_apps_tool_title;
+use crate::apps::prepare_openai_file_params_for_model;
 use crate::elicitation::ElicitationRequestManager;
 use crate::executor_environment_http_client::ExecutorEnvironmentHttpClient;
 use crate::mcp::CODEX_APPS_MCP_SERVER_NAME;

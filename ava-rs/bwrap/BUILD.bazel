@@ -32,15 +32,15 @@ genrule(
     ]),
     target_compatible_with = ["@platforms//os:linux"],
     tools = ["@bazel_tools//tools/build_defs/hash:sha256"],
-    visibility = ["//codex-rs/linux-sandbox:__pkg__"],
+    visibility = ["//ava-rs/linux-sandbox:__pkg__"],
 )
 
 cc_library(
     name = "bwrap-ffi",
-    srcs = ["//codex-rs/vendor:bubblewrap_c_sources"],
+    srcs = ["//ava-rs/vendor:bubblewrap_c_sources"],
     hdrs = [
         "config.h",
-        "//codex-rs/vendor:bubblewrap_headers",
+        "//ava-rs/vendor:bubblewrap_headers",
     ],
     copts = [
         "-D_GNU_SOURCE",

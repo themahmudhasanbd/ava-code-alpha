@@ -88,8 +88,8 @@ function findExecutable() {
 
   const binaryNames =
     process.platform === "win32"
-      ? ["ava.exe", "ava-alpha.exe", "codex.exe"]
-      : ["ava", "ava-alpha", "codex"];
+      ? ["ava.exe", "ava-alpha.exe"]
+      : ["ava", "ava-alpha"];
 
   for (const name of binaryNames) {
     const candidate = path.join(vendorRoot, targetTriple, "bin", name);
@@ -100,12 +100,9 @@ function findExecutable() {
 
   // Also check local target build directories if in development
   const localBuildCandidates = [
-    path.join(__dirname, "..", "..", "codex-rs", "target", "release", "ava"),
-    path.join(__dirname, "..", "..", "codex-rs", "target", "release", "codex"),
+    path.join(__dirname, "..", "..", "ava-rs", "target", "release", "ava"),
     path.join(__dirname, "..", "..", "target", "release", "ava"),
-    path.join(__dirname, "..", "..", "target", "release", "codex"),
-    path.join(__dirname, "..", "..", "codex-rs", "target", "debug", "ava"),
-    path.join(__dirname, "..", "..", "codex-rs", "target", "debug", "codex"),
+    path.join(__dirname, "..", "..", "ava-rs", "target", "debug", "ava"),
   ];
 
   for (const candidate of localBuildCandidates) {

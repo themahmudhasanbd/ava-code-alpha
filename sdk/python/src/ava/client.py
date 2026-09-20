@@ -66,7 +66,7 @@ from .retry import retry_on_overload
 
 ModelT = TypeVar("ModelT", bound=BaseModel)
 ApprovalHandler = Callable[[str, JsonObject | None], JsonObject]
-RUNTIME_PKG_NAME = "openai-codex-cli-bin"
+RUNTIME_PKG_NAME = "ava-cli-bin"
 _GOAL_START_TIMEOUT_S = 30.0
 
 
@@ -112,20 +112,20 @@ def _params_dict(
 
 def _installed_codex_path() -> Path:
     try:
-        from codex_cli_bin import bundled_codex_path
+        from ava_cli_bin import bundled_ava_path
     except ImportError as exc:
         raise FileNotFoundError(
-            "Unable to locate the pinned Codex runtime. Install the published SDK build "
+            "Unable to locate the pinned AvA runtime. Install the published SDK build "
             f"with its {RUNTIME_PKG_NAME} dependency, or set CodexConfig.codex_bin "
             "explicitly."
         ) from exc
 
-    return bundled_codex_path()
+    return bundled_ava_path()
 
 
 def _installed_codex_path_dirs() -> tuple[Path, ...]:
     try:
-        from codex_cli_bin import bundled_path_dir
+        from ava_cli_bin import bundled_path_dir
     except (ImportError, AttributeError):
         return ()
 

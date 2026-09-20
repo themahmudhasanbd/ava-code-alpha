@@ -310,8 +310,8 @@ register_toolchains("//bazel/toolchains/prost:toolchain")
 
 crate = use_extension("@rules_rs//rs:extensions.bzl", "crate")
 crate.from_cargo(
-    cargo_lock = "//codex-rs:Cargo.lock",
-    cargo_toml = "//codex-rs:Cargo.toml",
+    cargo_lock = "//ava-rs:Cargo.lock",
+    cargo_toml = "//ava-rs:Cargo.toml",
     platform_triples = [
         "aarch64-unknown-linux-gnu",
         "aarch64-unknown-linux-musl",
@@ -488,7 +488,7 @@ crate.annotation(
 http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 codex_release_archive = use_extension(
-    "//bazel/extensions:codex_release_archive.bzl",
+    "//bazel/extensions:ava_release_archive.bzl",
     "codex_release_archive",
 )
 codex_release_archive.release(

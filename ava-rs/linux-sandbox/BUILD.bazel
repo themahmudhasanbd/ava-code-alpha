@@ -4,10 +4,10 @@ codex_rust_crate(
     name = "linux-sandbox",
     crate_name = "codex_linux_sandbox",
     extra_binaries = [
-        "//codex-rs/bwrap:bwrap",
+        "//ava-rs/bwrap:bwrap",
     ],
     rustc_env_files = select({
-        "@platforms//os:linux": ["//codex-rs/bwrap:bwrap-sha256-env"],
+        "@platforms//os:linux": ["//ava-rs/bwrap:bwrap-sha256-env"],
         "//conditions:default": [],
     }),
 )

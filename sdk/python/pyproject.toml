@@ -3,26 +3,26 @@ requires = ["uv_build>=0.11.19,<0.12"]
 build-backend = "uv_build"
 
 [project]
-name = "openai-codex"
+name = "ava-code"
 version = "0.0.0-dev"
-description = "Python SDK for Codex"
+description = "Python SDK for AvA"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "Apache-2.0"
-authors = [{ name = "OpenAI" }]
-keywords = ["codex", "sdk", "llm", "ai", "agents"]
+authors = [{ name = "AvA Code" }]
+keywords = ["ava", "sdk", "llm", "ai", "agents"]
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Intended Audience :: Developers",
   "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-dependencies = ["pydantic>=2.12", "packaging>=26.2", "openai-codex-cli-bin==0.153.4"]
+dependencies = ["pydantic>=2.12", "packaging>=26.2", "ava-cli-bin==0.153.4"]
 
 [project.urls]
-Homepage = "https://github.com/openai/codex"
-Repository = "https://github.com/openai/codex"
-Issues = "https://github.com/openai/codex/issues"
-Documentation = "https://github.com/openai/codex/tree/main/sdk/python/docs"
+Homepage = "https://github.com/themahmudhasanbd/ava-code-alpha"
+Repository = "https://github.com/themahmudhasanbd/ava-code-alpha"
+Issues = "https://github.com/themahmudhasanbd/ava-code-alpha/issues"
+Documentation = "https://github.com/themahmudhasanbd/ava-code-alpha/tree/main/sdk/python/docs"
 
 [dependency-groups]
 format = ["ruff>=0.15.8"]
@@ -36,8 +36,8 @@ dev = [
   { include-group = "format" },
 ]
 
-[tool.codex.codegen]
-schema-dir = "../../codex-rs/app-server-protocol/schema/json"
+[tool.ava.codegen]
+schema-dir = "../../ava-rs/app-server-protocol/schema/json"
 
 [tool.pytest.ini_options]
 addopts = "-q"
@@ -49,7 +49,7 @@ required-version = ">=0.15.8"
 line-length = 100
 extend-exclude = [
   "notebooks/**",
-  "src/openai_codex/generated/**",
+  "src/ava/generated/**",
 ]
 
 [tool.ruff.lint]

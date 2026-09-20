@@ -18,7 +18,7 @@ _MODULE_DIR = Path(__file__).resolve().parent
 if str(_MODULE_DIR) not in sys.path:
     sys.path.insert(0, str(_MODULE_DIR))
 
-from run_codex_compliance import (  # noqa: E402 - direct scripts must first add their sibling directory.
+from run_ava_compliance import (  # noqa: E402 - direct scripts must first add their sibling directory.
     LEGACY_VERSION,
     MISMATCHED_DISCOVERY_ID_PROFILE,
     MODERN_VERSION,

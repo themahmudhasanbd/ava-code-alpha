@@ -36,8 +36,8 @@ const BOOTSTRAP_BASES = [
 ];
 
 const AUTH_PATHS = [
-  path.join(process.env.HOME || "/root", ".config/ava/auth.json"),
-  path.join(process.env.HOME || "/root", ".local/share/ava/auth.json"),
+  path.join(process.cwd(), ".ava/auth.json"),
+  path.join(process.env.HOME || "/root", ".config/ava-alpha/auth.json"),
 ];
 
 function readAuth() {

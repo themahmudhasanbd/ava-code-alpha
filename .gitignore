@@ -95,3 +95,10 @@ CHANGELOG.ignore.md
 __pycache__/
 *.pyc
 .github/workflows
+
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+

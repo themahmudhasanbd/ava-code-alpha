@@ -3,14 +3,15 @@ use dirs::home_dir;
 use std::path::PathBuf;
 
 /// Returns the path to the AvA configuration directory, which can be
-/// specified by the `AVA_HOME` or `CODEX_HOME` environment variable. If not set, defaults to
-/// `~/.ava` (or `~/.codex` if it already exists).
+/// specified by the `AVA_CODE_HOME`, `AVA_HOME`, or `CODEX_HOME` environment variable. If not set, defaults to
+/// `~/.ava-code` (or `~/.ava` / `~/.codex` if they already exist).
 ///
-/// - If `AVA_HOME` or `CODEX_HOME` is set, the value must exist and be a directory. The
+/// - If `AVA_CODE_HOME`, `AVA_HOME`, or `CODEX_HOME` is set, the value must exist and be a directory. The
 ///   value will be canonicalized and this function will Err otherwise.
 /// - If neither is set, this function does not verify that the directory exists.
 pub fn find_codex_home() -> std::io::Result<AbsolutePathBuf> {
-    let home_env = std::env::var("AVA_HOME")
+    let home_env = std::env::var("AVA_CODE_HOME")
+        .or_else(|_| std::env::var("AVA_HOME"))
         .or_else(|_| std::env::var("CODEX_HOME"))
         .ok()
         .filter(|val| !val.is_empty());
@@ -22,7 +23,7 @@ pub fn find_ava_home() -> std::io::Result<AbsolutePathBuf> {
 }
 
 fn find_codex_home_from_env(home_env: Option<&str>) -> std::io::Result<AbsolutePathBuf> {
-    // Honor the `AVA_HOME` / `CODEX_HOME` environment variable when it is set
+    // Honor the `AVA_CODE_HOME` / `AVA_HOME` / `CODEX_HOME` environment variable when it is set
     match home_env {
         Some(val) => {
             let path = PathBuf::from(val);
@@ -60,16 +61,19 @@ fn find_codex_home_from_env(home_env: Option<&str>) -> std::io::Result<AbsoluteP
                 )
             })?;
 
-            // Prefer ~/.ava, fallback to ~/.codex if existing
+            // Prefer ~/.ava-code, then ~/.ava, fallback to ~/.codex if existing
+            let ava_code = user_home.join(".ava-code");
             let ava = user_home.join(".ava");
             let codex = user_home.join(".codex");
 
-            let target = if ava.is_dir() {
+            let target = if ava_code.is_dir() {
+                ava_code
+            } else if ava.is_dir() {
                 ava
             } else if codex.is_dir() {
                 codex
             } else {
-                ava
+                ava_code
             };
 
             AbsolutePathBuf::from_absolute_path(target)

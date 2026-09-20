@@ -102,4 +102,5 @@ __pycache__/
 .flutter-plugins-dependencies
 .packages
 .ava/
+.ava-code/
 

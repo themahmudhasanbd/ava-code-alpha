@@ -36,8 +36,9 @@ const BOOTSTRAP_BASES = [
 ];
 
 const AUTH_PATHS = [
-  path.join(process.cwd(), ".ava/auth.json"),
-  path.join(process.env.HOME || "/root", ".config/ava-alpha/auth.json"),
+  path.join(process.cwd(), ".ava-code/auth.json"),
+  path.join(process.env.HOME || "/root", ".ava-code/auth.json"),
+  path.join(process.env.HOME || "/root", ".config/ava-code/auth.json"),
 ];
 
 function readAuth() {
@@ -235,21 +236,18 @@ async function main() {
     const models = await fetchModels(access, ag.accountId);
     console.log(JSON.stringify(models, null, 2));
   } else if (command === "setup-config") {
-    const configPath = path.join(process.cwd(), ".ava/config.toml");
-    const dir = path.dirname(configPath);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-
-    let content = "";
-    if (fs.existsSync(configPath)) {
-      content = fs.readFileSync(configPath, "utf-8");
-    }
+    const targets = [
+      path.join(process.cwd(), ".ava-code/config.toml"),
+      path.join(process.env.HOME || "/root", ".ava-code/config.toml"),
+      path.join(process.env.HOME || "/root", ".config/ava-code/config.toml"),
+    ];
 
     const snippet = `
 # ------------------------------------------------------------------------------
 # Google Antigravity Provider Settings
 # ------------------------------------------------------------------------------
 model_provider = "antigravity"
-model = "gemini-3.7-flash-tiered"
+model = "gemini-3.8-flash-tiered"
 
 [model_providers.antigravity]
 name = "Google Antigravity"
@@ -262,12 +260,22 @@ wire_api = "responses"
 "X-Goog-Api-Client" = "gl-node/22.21.1"
 `;
 
-    if (!content.includes("[model_providers.antigravity]")) {
-      content += snippet;
-      fs.writeFileSync(configPath, content, "utf-8");
-      console.log(`[Antigravity] Configured Google Antigravity in ${configPath}`);
-    } else {
-      console.log(`[Antigravity] Google Antigravity is already configured in ${configPath}`);
+    for (const configPath of targets) {
+      const dir = path.dirname(configPath);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+
+      let content = "";
+      if (fs.existsSync(configPath)) {
+        content = fs.readFileSync(configPath, "utf-8");
+      }
+
+      if (!content.includes("[model_providers.antigravity]")) {
+        content += snippet;
+        fs.writeFileSync(configPath, content, "utf-8");
+        console.log(`[Antigravity] Configured Google Antigravity in ${configPath}`);
+      } else {
+        console.log(`[Antigravity] Google Antigravity is already configured in ${configPath}`);
+      }
     }
   } else {
     console.log("Unknown command. Supported: status, login, models, setup-config");

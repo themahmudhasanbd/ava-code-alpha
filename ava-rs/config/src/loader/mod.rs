@@ -1660,12 +1660,21 @@ async fn discover_project_layers(
     let mut layers = Vec::new();
     let mut startup_warnings = Vec::new();
     for dir in dirs {
+        let dot_ava_code_abs = dir.join(".ava-code");
         let dot_ava_abs = dir.join(".ava");
         let dot_codex_abs = dir.join(".codex");
+        let dot_ava_code_uri = PathUri::from_abs_path(&dot_ava_code_abs);
         let dot_ava_uri = PathUri::from_abs_path(&dot_ava_abs);
         let dot_codex_uri = PathUri::from_abs_path(&dot_codex_abs);
 
         let (dot_config_abs, dot_config_uri) = if fs
+            .get_metadata(&dot_ava_code_uri, Default::default(), /*sandbox*/ None)
+            .await
+            .map(|metadata| metadata.is_directory)
+            .unwrap_or(false)
+        {
+            (dot_ava_code_abs, dot_ava_code_uri)
+        } else if fs
             .get_metadata(&dot_ava_uri, Default::default(), /*sandbox*/ None)
             .await
             .map(|metadata| metadata.is_directory)

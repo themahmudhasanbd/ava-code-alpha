@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
@@ -48,13 +49,21 @@ class ProvidersScreen extends StatelessWidget {
 
         return Scaffold(
           backgroundColor: AppColors.background,
-          appBar: AppBar(
-            title: Text('AI Model Providers', style: AppTypography.titleLarge),
-          ),
           body: ListView(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             children: [
+              // Screen Title Header
+              Row(
+                children: [
+                  const Icon(LucideIcons.sparkles, size: 16, color: AppColors.accentPrimary),
+                  const SizedBox(width: 8),
+                  Text('AI Model Providers', style: AppTypography.titleLarge.copyWith(fontSize: 18)),
+                ],
+              ),
+              const SizedBox(height: 14),
+
               // Highlight banner for Google Antigravity
+
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(

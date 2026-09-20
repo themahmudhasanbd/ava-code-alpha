@@ -8,6 +8,9 @@ enum ShadcnBadgeVariant {
   warning,
   danger,
   antigravity,
+  outline,
+  secondary,
+  defaultVariant,
 }
 
 /// Minimalist pill badge for model names, statuses, and providers
@@ -34,10 +37,23 @@ class ShadcnBadge extends StatelessWidget {
 
     switch (variant) {
       case ShadcnBadgeVariant.neutral:
+      case ShadcnBadgeVariant.defaultVariant:
         bg = AppColors.surfaceElevated;
         fg = AppColors.textSecondary;
         dotColor = AppColors.textSecondary;
         border = Border.all(color: AppColors.border, width: 1);
+        break;
+      case ShadcnBadgeVariant.outline:
+        bg = Colors.transparent;
+        fg = AppColors.textSecondary;
+        dotColor = AppColors.textSecondary;
+        border = Border.all(color: AppColors.borderStrong, width: 1);
+        break;
+      case ShadcnBadgeVariant.secondary:
+        bg = const Color(0x20FFFFFF);
+        fg = AppColors.textPrimary;
+        dotColor = AppColors.accentPrimary;
+        border = Border.all(color: const Color(0x30FFFFFF), width: 0.8);
         break;
       case ShadcnBadgeVariant.success:
         bg = AppColors.diffAddBg;

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'core/constants/app_constants.dart';
+import 'core/network/json_rpc_client.dart';
 import 'core/storage/secure_storage_service.dart';
 import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
@@ -29,13 +30,17 @@ void main() async {
   final storage = SecureStorageService();
   await storage.init();
 
-  final authRepo = AuthRepository(storage: storage);
+  final rpcClient = JsonRpcClient();
+  final authRepo = AuthRepository(storage: storage, rpcClient: rpcClient);
   final authController = AuthController(repository: authRepo);
-  final threadController = ThreadController();
-  final providerController = ProviderController();
+  final threadController = ThreadController(rpcClient: rpcClient);
+  final providerController = ProviderController(rpcClient: rpcClient);
 
   // Initialize auth state
   await authController.init();
+  if (authController.session != null) {
+    rpcClient.setAuthToken(authController.session!.token);
+  }
 
   runApp(
     AvaMobileApp(
@@ -43,6 +48,7 @@ void main() async {
       authController: authController,
       threadController: threadController,
       providerController: providerController,
+      rpcClient: rpcClient,
     ),
   );
 }
@@ -52,6 +58,7 @@ class AvaMobileApp extends StatelessWidget {
   final AuthController authController;
   final ThreadController threadController;
   final ProviderController providerController;
+  final JsonRpcClient rpcClient;
 
   const AvaMobileApp({
     super.key,
@@ -59,6 +66,7 @@ class AvaMobileApp extends StatelessWidget {
     required this.authController,
     required this.threadController,
     required this.providerController,
+    required this.rpcClient,
   });
 
   @override
@@ -68,6 +76,7 @@ class AvaMobileApp extends StatelessWidget {
       authController: authController,
       threadController: threadController,
       providerController: providerController,
+      rpcClient: rpcClient,
       child: MaterialApp(
         title: AppConstants.appName,
         debugShowCheckedModeBanner: false,

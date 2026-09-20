@@ -3,8 +3,9 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../components/shadcn_badge.dart';
+import '../../state/app_state.dart';
 
-/// Embedded command line execution output inspector
+/// Real-time interactive bash terminal shell connected directly to VPS
 class TerminalScreen extends StatefulWidget {
   const TerminalScreen({super.key});
 
@@ -13,31 +14,99 @@ class TerminalScreen extends StatefulWidget {
 }
 
 class _TerminalScreenState extends State<TerminalScreen> {
-  final List<String> _logs = [
-    'ava-rs daemon initialized on port 4096 (JSON-RPC v2.0)',
-    'Loaded model provider: antigravity (daily-cloudcode-pa.googleapis.com)',
-    'Active session: th_01_core [gemini-3.7-flash-tiered]',
-    'Sandbox mode: workspaceWrite (/var/www/ava-code-alpha)',
-    'Model context window: 1,048,576 tokens',
-    'Ready for user turns...',
+  final List<Map<String, dynamic>> _logs = [
+    {
+      'type': 'system',
+      'text': '🚀 AvA Code Alpha Live Shell Connected (PID 4096)\nWorking directory: /var/www/ava-code-alpha\nType a command or tap quick actions below.',
+    },
   ];
 
   final _cmdController = TextEditingController();
+  final _scrollController = ScrollController();
+  bool _isExecuting = false;
+  final String _cwd = '/var/www/ava-code-alpha';
 
-  void _runCommand() {
-    final cmd = _cmdController.text.trim();
-    if (cmd.isEmpty) return;
+  final List<String> _quickCommands = [
+    'git status',
+    'git diff',
+    'pm2 list',
+    'cargo check',
+    'ls -la',
+    'bun run build',
+  ];
+
+  @override
+  void dispose() {
+    _cmdController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  Future<void> _runCommand([String? explicitCmd]) async {
+    final cmd = (explicitCmd ?? _cmdController.text).trim();
+    if (cmd.isEmpty || _isExecuting) return;
 
     setState(() {
-      _logs.add('\$ $cmd');
-      if (cmd.startsWith('git')) {
-        _logs.add('On branch main. Your branch is up to date with \'origin/main\'.');
-      } else if (cmd == 'cargo check') {
-        _logs.add('   Finished dev target(s) in 0.82s');
-      } else {
-        _logs.add('Executed in local sandbox (exit 0)');
+      _logs.add({'type': 'input', 'text': '\$ $cmd'});
+      _isExecuting = true;
+    });
+    _cmdController.clear();
+    _scrollToBottom();
+
+    final rpc = AppStateScope.of(context).rpcClient;
+
+    try {
+      final res = await rpc.executeTerminal(cmd, cwd: _cwd);
+      if (mounted) {
+        setState(() {
+          _isExecuting = false;
+          if (res != null) {
+            final stdout = res['stdout']?.toString() ?? '';
+            final stderr = res['stderr']?.toString() ?? '';
+            final exitCode = res['exitCode'] as int? ?? 0;
+
+            if (stdout.isNotEmpty) {
+              _logs.add({'type': 'stdout', 'text': stdout});
+            }
+            if (stderr.isNotEmpty) {
+              _logs.add({'type': 'stderr', 'text': stderr});
+            }
+            if (stdout.isEmpty && stderr.isEmpty) {
+              _logs.add({'type': 'system', 'text': 'Command completed (exit $exitCode)'});
+            }
+          } else {
+            _logs.add({'type': 'stderr', 'text': 'Error: Failed to communicate with terminal daemon'});
+          }
+        });
+        _scrollToBottom();
       }
-      _cmdController.clear();
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isExecuting = false;
+          _logs.add({'type': 'stderr', 'text': 'Terminal execution error: $e'});
+        });
+        _scrollToBottom();
+      }
+    }
+  }
+
+  void _clearLogs() {
+    setState(() {
+      _logs.clear();
+      _logs.add({'type': 'system', 'text': 'Terminal output cleared.'});
     });
   }
 
@@ -45,40 +114,99 @@ class _TerminalScreenState extends State<TerminalScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Row(
-          children: [
-            const Icon(LucideIcons.terminal, size: 18),
-            const SizedBox(width: 8),
-            Text('Agent Terminal', style: AppTypography.titleLarge),
-            const Spacer(),
-            const ShadcnBadge(label: 'Live', variant: ShadcnBadgeVariant.success, showDot: true),
-          ],
-        ),
-      ),
       body: Column(
         children: [
+          // Sub-header bar
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: const BoxDecoration(
+              color: AppColors.surface,
+              border: Border(bottom: BorderSide(color: Color(0x18FFFFFF), width: 1)),
+            ),
+            child: Row(
+              children: [
+                const Icon(LucideIcons.terminal, size: 15, color: AppColors.accentCyan),
+                const SizedBox(width: 8),
+                Text(
+                  'Host Terminal Shell',
+                  style: AppTypography.titleMedium.copyWith(fontSize: 14, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(width: 8),
+                const ShadcnBadge(label: 'Live Bash', variant: ShadcnBadgeVariant.success, showDot: true),
+                const Spacer(),
+                IconButton(
+                  tooltip: 'Clear Output',
+                  icon: const Icon(LucideIcons.trash2, size: 15, color: AppColors.textSecondary),
+                  onPressed: _clearLogs,
+                ),
+              ],
+            ),
+          ),
+
+          // Working Directory Badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            color: AppColors.surfaceElevated,
+            child: Row(
+              children: [
+                const Icon(LucideIcons.folder, size: 12, color: AppColors.textMuted),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'CWD: $_cwd',
+                    style: AppTypography.codeSmall.copyWith(fontSize: 10.5, color: AppColors.textSecondary),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Terminal Output Canvas
           Expanded(
             child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              padding: const EdgeInsets.all(14),
+              margin: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: const Color(0xFF0C0C0F),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: AppColors.border),
               ),
               child: ListView.builder(
+                controller: _scrollController,
                 itemCount: _logs.length,
                 itemBuilder: (context, idx) {
-                  final line = _logs[idx];
-                  final isCmd = line.startsWith('\$');
+                  final item = _logs[idx];
+                  final type = item['type'];
+                  final text = item['text']?.toString() ?? '';
+
+                  Color textColor;
+                  FontWeight weight = FontWeight.w400;
+
+                  switch (type) {
+                    case 'input':
+                      textColor = AppColors.accentCyan;
+                      weight = FontWeight.w600;
+                      break;
+                    case 'stderr':
+                      textColor = AppColors.accentDanger;
+                      break;
+                    case 'system':
+                      textColor = AppColors.accentPrimary;
+                      break;
+                    default:
+                      textColor = const Color(0xFFE4E4E7);
+                  }
+
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 2),
-                    child: Text(
-                      line,
+                    child: SelectableText(
+                      text,
                       style: AppTypography.codeSmall.copyWith(
-                        color: isCmd ? AppColors.accentCyan : AppColors.textSecondary,
+                        color: textColor,
                         fontSize: 11.5,
+                        fontWeight: weight,
+                        height: 1.4,
                       ),
                     ),
                   );
@@ -86,8 +214,36 @@ class _TerminalScreenState extends State<TerminalScreen> {
               ),
             ),
           ),
+
+          // Quick Commands Toolbar
           Container(
-            padding: const EdgeInsets.fromLTRB(14, 4, 14, 14),
+            height: 36,
+            margin: const EdgeInsets.symmetric(horizontal: 12),
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: _quickCommands.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 6),
+              itemBuilder: (context, i) {
+                final cmd = _quickCommands[i];
+                return ActionChip(
+                  labelPadding: const EdgeInsets.symmetric(horizontal: 6),
+                  backgroundColor: AppColors.surfaceElevated,
+                  side: const BorderSide(color: AppColors.border, width: 0.8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                  label: Text(
+                    cmd,
+                    style: AppTypography.codeSmall.copyWith(fontSize: 11, color: AppColors.textPrimary),
+                  ),
+                  onPressed: _isExecuting ? null : () => _runCommand(cmd),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          // Interactive Command Input Box
+          Container(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
             child: SafeArea(
               top: false,
               child: Row(
@@ -100,25 +256,52 @@ class _TerminalScreenState extends State<TerminalScreen> {
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(color: AppColors.borderStrong),
                       ),
-                      child: TextField(
-                        controller: _cmdController,
-                        style: AppTypography.codeSmall.copyWith(color: AppColors.textPrimary),
-                        cursorColor: AppColors.textPrimary,
-                        decoration: InputDecoration(
-                          hintText: 'Enter command (e.g. git status, cargo check)...',
-                          hintStyle: AppTypography.codeSmall.copyWith(color: AppColors.textMuted),
-                          border: InputBorder.none,
-                          isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                        ),
-                        onSubmitted: (_) => _runCommand(),
+                      child: Row(
+                        children: [
+                          Text(
+                            '\$ ',
+                            style: AppTypography.codeSmall.copyWith(
+                              color: AppColors.accentCyan,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
+                            ),
+                          ),
+                          Expanded(
+                            child: TextField(
+                              controller: _cmdController,
+                              style: AppTypography.codeSmall.copyWith(color: AppColors.textPrimary),
+                              cursorColor: AppColors.accentCyan,
+                              decoration: InputDecoration(
+                                hintText: 'Enter command (e.g. git status, pm2 list)...',
+                                hintStyle: AppTypography.codeSmall.copyWith(color: AppColors.textMuted),
+                                border: InputBorder.none,
+                                isDense: true,
+                                contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                              ),
+                              onSubmitted: (_) => _runCommand(),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
                   const SizedBox(width: 8),
-                  IconButton(
-                    icon: const Icon(LucideIcons.play, size: 18, color: AppColors.textPrimary),
-                    onPressed: _runCommand,
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.accentPrimary,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.all(12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onPressed: _isExecuting ? null : () => _runCommand(),
+                    child: _isExecuting
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Icon(LucideIcons.play, size: 16),
                   ),
                 ],
               ),

@@ -5,6 +5,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../data/models/turn_item_model.dart';
+import '../../components/chat_prompt_box.dart';
 import '../../components/diff_viewer.dart';
 import '../../components/shadcn_badge.dart';
 import '../../components/shadcn_card.dart';
@@ -67,69 +68,39 @@ class _ChatScreenState extends State<ChatScreen> {
 
         return Scaffold(
           backgroundColor: AppColors.background,
-          appBar: AppBar(
-            title: Row(
-              children: [
-                Container(
-                  width: 28,
-                  height: 28,
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceElevated,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: Image.asset(AppConstants.appLogoPath, fit: BoxFit.contain),
+          body: Column(
+            children: [
+              // Sleek Session Thread Sub-header
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: const BoxDecoration(
+                  color: AppColors.surface,
+                  border: Border(bottom: BorderSide(color: Color(0x18FFFFFF), width: 1)),
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        activeThread?.title ?? AppConstants.appName,
-                        style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.w600),
+                child: Row(
+                  children: [
+                    const Icon(LucideIcons.messageSquare, size: 14, color: AppColors.accentPrimary),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        activeThread?.title ?? 'Active Session Workspace',
+                        style: AppTypography.titleMedium.copyWith(fontSize: 13, fontWeight: FontWeight.w600),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 2),
-                      Row(
-                        children: [
-                          const ShadcnBadge(
-                            label: 'Antigravity',
-                            variant: ShadcnBadgeVariant.antigravity,
-                            showDot: true,
-                          ),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              providerCtrl.activeModelId,
-                              style: AppTypography.codeSmall,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                    ),
+                    IconButton(
+                      icon: const Icon(LucideIcons.plus, size: 16, color: AppColors.textSecondary),
+                      onPressed: () => threadCtrl.createNewThread(title: 'New Session'),
+                      tooltip: 'New Thread',
+                      splashRadius: 16,
+                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                      padding: EdgeInsets.zero,
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            actions: [
-              IconButton(
-                icon: const Icon(LucideIcons.rotateCcw, size: 18),
-                onPressed: () => threadCtrl.createNewThread(title: 'New Session'),
-                tooltip: 'New Thread',
               ),
-              IconButton(
-                icon: const Icon(LucideIcons.moreVertical, size: 18),
-                onPressed: () {},
-              ),
-            ],
-          ),
-          body: Column(
-            children: [
+
               // Message & Tool List
               Expanded(
                 child: items.isEmpty
@@ -144,8 +115,14 @@ class _ChatScreenState extends State<ChatScreen> {
                       ),
               ),
 
-              // Bottom Input Composer
-              _buildInputComposer(isStreaming, threadCtrl),
+              // Signature Prompt Composer Dock (Old Signature Style)
+              ChatPromptBox(
+                controller: _inputController,
+                isStreaming: isStreaming,
+                onSend: _handleSend,
+                onInterrupt: () => threadCtrl.interruptTurn(),
+                onSelectSuggestion: (prompt) => _handleSend(),
+              ),
             ],
           ),
         );
@@ -305,61 +282,5 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         );
     }
-  }
-
-  Widget _buildInputComposer(bool isStreaming, dynamic threadCtrl) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
-      decoration: const BoxDecoration(
-        color: AppColors.background,
-        border: Border(top: BorderSide(color: AppColors.border, width: 1)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Row(
-          children: [
-            Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.borderStrong),
-                ),
-                child: TextField(
-                  controller: _inputController,
-                  style: AppTypography.bodyLarge,
-                  cursorColor: AppColors.textPrimary,
-                  maxLines: 4,
-                  minLines: 1,
-                  decoration: InputDecoration(
-                    hintText: isStreaming ? 'Agent is working...' : 'Ask AvA to code, refactor, or test...',
-                    hintStyle: AppTypography.bodyMedium.copyWith(color: AppColors.textMuted),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    border: InputBorder.none,
-                    isDense: true,
-                  ),
-                  onSubmitted: (_) => _handleSend(),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              decoration: const BoxDecoration(
-                color: AppColors.textPrimary,
-                shape: BoxShape.circle,
-              ),
-              child: IconButton(
-                icon: Icon(
-                  isStreaming ? LucideIcons.square : LucideIcons.arrowUp,
-                  size: 18,
-                  color: AppColors.textInverse,
-                ),
-                onPressed: isStreaming ? () => threadCtrl.interruptTurn() : _handleSend,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }

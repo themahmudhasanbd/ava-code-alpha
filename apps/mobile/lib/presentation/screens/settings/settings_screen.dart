@@ -33,13 +33,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text('Settings', style: AppTypography.titleLarge),
-      ),
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         children: [
+          // Screen Title Header
+          Row(
+            children: [
+              const Icon(LucideIcons.settings, size: 16, color: AppColors.accentPrimary),
+              const SizedBox(width: 8),
+              Text('System Preferences', style: AppTypography.titleLarge.copyWith(fontSize: 18)),
+            ],
+          ),
+          const SizedBox(height: 14),
+
           // Authenticated User Profile Card
+
           ShadcnCard(
             child: Row(
               children: [

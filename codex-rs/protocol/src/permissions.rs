@@ -35,12 +35,14 @@ pub use windows_glob::windows_deny_read_glob_scan;
 
 const PROTECTED_METADATA_GIT_PATH_NAME: &str = ".git";
 const PROTECTED_METADATA_AGENTS_PATH_NAME: &str = ".agents";
+const PROTECTED_METADATA_AVA_PATH_NAME: &str = ".ava";
 const PROTECTED_METADATA_CODEX_PATH_NAME: &str = ".codex";
 
 /// Top-level workspace metadata paths that stay protected under writable roots.
 pub const PROTECTED_METADATA_PATH_NAMES: &[&str] = &[
     PROTECTED_METADATA_GIT_PATH_NAME,
     PROTECTED_METADATA_AGENTS_PATH_NAME,
+    PROTECTED_METADATA_AVA_PATH_NAME,
     PROTECTED_METADATA_CODEX_PATH_NAME,
 ];
 

@@ -6,7 +6,7 @@ import path from "node:path";
 
 import { describe, it } from "@jest/globals";
 
-import { codexExecPath } from "./testCodex";
+import { avaExecPath as codexExecPath } from "./testAva";
 
 const conformanceTimeoutMs = 300_000;
 const reviewerRegressionTimeoutMs = 180_000;

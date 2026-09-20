@@ -1,18 +1,18 @@
 {
-  "name": "@openai/codex-sdk",
-  "version": "0.0.0-dev",
-  "description": "TypeScript SDK for Codex APIs.",
+  "name": "@avacode/sdk",
+  "version": "0.0.0-alpha",
+  "description": "TypeScript SDK for AvA APIs.",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/openai/codex.git",
+    "url": "git+https://github.com/themahmudhasanbd/ava-code-alpha.git",
     "directory": "sdk/typescript"
   },
   "keywords": [
-    "openai",
-    "codex",
+    "ava",
+    "avacode",
     "sdk",
     "typescript",
-    "api"
+    "agent"
   ],
   "license": "Apache-2.0",
   "type": "module",

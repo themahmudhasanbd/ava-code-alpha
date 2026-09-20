@@ -1,16 +1,37 @@
+import fs from "node:fs";
 import path from "node:path";
 
-import { Codex } from "../src/codex";
-import type { CodexConfigObject } from "../src/codexOptions";
+import { Ava } from "../src/ava";
+import type { AvaConfigObject } from "../src/avaOptions";
 
-export const codexExecPath =
-  process.env.CODEX_EXEC_PATH ??
-  path.join(process.cwd(), "..", "..", "codex-rs", "target", "debug", "codex");
+function resolveBinaryPath(): string {
+  if (process.env.AVA_EXEC_PATH) return process.env.AVA_EXEC_PATH;
+  if (process.env.CODEX_EXEC_PATH) return process.env.CODEX_EXEC_PATH;
+
+  const debugCandidate = path.join(process.cwd(), "..", "..", "codex-rs", "target", "debug", "codex");
+  if (fs.existsSync(debugCandidate)) return debugCandidate;
+
+  const vendorCandidate = path.join(
+    process.cwd(),
+    "..",
+    "..",
+    "ava-cli",
+    "vendor",
+    "x86_64-unknown-linux-musl",
+    "bin",
+    "codex",
+  );
+  if (fs.existsSync(vendorCandidate)) return vendorCandidate;
+
+  return debugCandidate;
+}
+
+export const avaExecPath = resolveBinaryPath();
 
 type CreateTestClientOptions = {
   apiKey?: string;
   baseUrl?: string;
-  config?: CodexConfigObject;
+  config?: AvaConfigObject;
   configOverrides?: string[];
   env?: Record<string, string>;
   inheritEnv?: boolean;
@@ -18,7 +39,7 @@ type CreateTestClientOptions = {
 
 export type TestClient = {
   cleanup: () => void;
-  client: Codex;
+  client: Ava;
 };
 
 export function createMockClient(url: string): TestClient {
@@ -43,8 +64,8 @@ export function createTestClient(options: CreateTestClientOptions = {}): TestCli
 
   return {
     cleanup: () => {},
-    client: new Codex({
-      codexPathOverride: codexExecPath,
+    client: new Ava({
+      avaPathOverride: avaExecPath,
       baseUrl: options.baseUrl,
       apiKey: options.apiKey,
       config: mergeTestConfig(options.baseUrl, options.config),
@@ -56,15 +77,13 @@ export function createTestClient(options: CreateTestClientOptions = {}): TestCli
 
 function mergeTestConfig(
   baseUrl: string | undefined,
-  config: CodexConfigObject | undefined,
-): CodexConfigObject | undefined {
-  const mergedConfig: CodexConfigObject | undefined =
+  config: AvaConfigObject | undefined,
+): AvaConfigObject | undefined {
+  const mergedConfig: AvaConfigObject | undefined =
     !baseUrl || hasExplicitProviderConfig(config)
       ? config
       : {
           ...config,
-          // Built-in providers are merged before user config, so tests need a
-          // custom provider entry to force SSE against the local mock server.
           model_provider: "mock",
           model_providers: {
             mock: {
@@ -79,8 +98,6 @@ function mergeTestConfig(
 
   return {
     ...mergedConfig,
-    // Disable plugins in SDK integration tests so background curated-plugin
-    // sync does not race temp CODEX_HOME cleanup.
     features:
       featureOverrides && typeof featureOverrides === "object" && !Array.isArray(featureOverrides)
         ? { ...featureOverrides, plugins: false }
@@ -88,7 +105,7 @@ function mergeTestConfig(
   };
 }
 
-function hasExplicitProviderConfig(config: CodexConfigObject | undefined): boolean {
+function hasExplicitProviderConfig(config: AvaConfigObject | undefined): boolean {
   return config?.model_provider !== undefined || config?.model_providers !== undefined;
 }
 
@@ -96,7 +113,7 @@ function getCurrentEnv(): Record<string, string> {
   const env: Record<string, string> = {};
 
   for (const [key, value] of Object.entries(process.env)) {
-    if (key === "CODEX_INTERNAL_ORIGINATOR_OVERRIDE") {
+    if (key === "AVA_INTERNAL_ORIGINATOR_OVERRIDE" || key === "CODEX_INTERNAL_ORIGINATOR_OVERRIDE") {
       continue;
     }
     if (value !== undefined) {

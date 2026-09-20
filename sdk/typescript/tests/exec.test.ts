@@ -5,9 +5,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { PassThrough } from "node:stream";
 
-import { describe, expect, it } from "@jest/globals";
-
-import type { CodexConfigObject } from "../src/codexOptions";
+import type { AvaConfigObject } from "../src/avaOptions";
 
 jest.mock("node:child_process", () => {
   const actual = jest.requireActual<typeof import("node:child_process")>("node:child_process");
@@ -101,7 +99,7 @@ describe("CodexExec", () => {
 
   const configOverrideCases: {
     name: string;
-    config?: CodexConfigObject;
+    config?: AvaConfigObject;
     configOverrides?: string[];
     expectedOverrides: string[];
   }[] = [

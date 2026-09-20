@@ -6,12 +6,17 @@ import stat
 from dataclasses import dataclass
 from pathlib import Path
 
-_repo_root = os.environ.get("CODEX_REPO_ROOT")
+_repo_root = os.environ.get("AVA_REPO_ROOT") or os.environ.get("CODEX_REPO_ROOT")
 if _repo_root is None:
-    raise RuntimeError(
-        "CODEX_REPO_ROOT must point to the repository root; "
-        "run `just assemble-codex-package` to set it automatically"
-    )
+    # Auto-discover repository root from this script file
+    _candidate = Path(__file__).resolve().parents[2]
+    if (_candidate / "justfile").exists() or (_candidate / "package.json").exists():
+        _repo_root = str(_candidate)
+    else:
+        raise RuntimeError(
+            "AVA_REPO_ROOT or CODEX_REPO_ROOT must point to the repository root; "
+            "run `just assemble-codex-package` to set it automatically"
+        )
 REPO_ROOT = Path(_repo_root)
 
 

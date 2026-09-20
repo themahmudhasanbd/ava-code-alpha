@@ -26,9 +26,9 @@ export type {
 export { Thread } from "./thread";
 export type { RunResult, RunStreamedResult, Input, UserInput } from "./thread";
 
-export { Codex } from "./codex";
+export { Ava } from "./ava";
 
-export type { CodexOptions } from "./codexOptions";
+export type { AvaOptions } from "./avaOptions";
 
 export type {
   ThreadOptions,

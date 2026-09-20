@@ -4,7 +4,7 @@ import path from "node:path";
 import readline from "node:readline";
 import { createRequire } from "node:module";
 
-import type { CodexConfigObject, CodexConfigValue } from "./codexOptions";
+import type { AvaConfigObject, AvaConfigValue } from "./avaOptions";
 import { SandboxMode, ModelReasoningEffort, ApprovalMode, WebSearchMode } from "./threadOptions";
 
 export type CodexExecArgs = {
@@ -66,13 +66,13 @@ export class CodexExec {
   private executablePath: string;
   private pathDirs: string[];
   private envOverride?: Record<string, string>;
-  private configOverrides?: CodexConfigObject;
+  private configOverrides?: AvaConfigObject;
   private rawConfigOverrides?: string[];
 
   constructor(
     executablePath: string | null = null,
     env?: Record<string, string>,
-    configOverrides?: CodexConfigObject,
+    configOverrides?: AvaConfigObject,
     rawConfigOverrides?: string[],
   ) {
     if (executablePath) {
@@ -258,14 +258,14 @@ export class CodexExec {
   }
 }
 
-function serializeConfigOverrides(configOverrides: CodexConfigObject): string[] {
+function serializeConfigOverrides(configOverrides: AvaConfigObject): string[] {
   const overrides: string[] = [];
   flattenConfigOverrides(configOverrides, "", overrides);
   return overrides;
 }
 
 function flattenConfigOverrides(
-  value: CodexConfigValue,
+  value: AvaConfigValue,
   prefix: string,
   overrides: string[],
 ): void {
@@ -274,7 +274,7 @@ function flattenConfigOverrides(
       overrides.push(`${prefix}=${toTomlValue(value, prefix)}`);
       return;
     } else {
-      throw new Error("Codex config overrides must be a plain object");
+      throw new Error("Ava config overrides must be a plain object");
     }
   }
 
@@ -304,12 +304,12 @@ function flattenConfigOverrides(
   }
 }
 
-function toTomlValue(value: CodexConfigValue, path: string): string {
+function toTomlValue(value: AvaConfigValue, path: string): string {
   if (typeof value === "string") {
     return JSON.stringify(value);
   } else if (typeof value === "number") {
     if (!Number.isFinite(value)) {
-      throw new Error(`Codex config override at ${path} must be a finite number`);
+      throw new Error(`Ava config override at ${path} must be a finite number`);
     }
     return `${value}`;
   } else if (typeof value === "boolean") {
@@ -321,7 +321,7 @@ function toTomlValue(value: CodexConfigValue, path: string): string {
     const parts: string[] = [];
     for (const [key, child] of Object.entries(value)) {
       if (!key) {
-        throw new Error("Codex config override keys must be non-empty strings");
+        throw new Error("Ava config override keys must be non-empty strings");
       }
       if (child === undefined) {
         continue;
@@ -330,10 +330,10 @@ function toTomlValue(value: CodexConfigValue, path: string): string {
     }
     return `{${parts.join(", ")}}`;
   } else if (value === null) {
-    throw new Error(`Codex config override at ${path} cannot be null`);
+    throw new Error(`Ava config override at ${path} cannot be null`);
   } else {
     const typeName = typeof value;
-    throw new Error(`Unsupported Codex config override value at ${path}: ${typeName}`);
+    throw new Error(`Unsupported Ava config override value at ${path}: ${typeName}`);
   }
 }
 
@@ -342,7 +342,7 @@ function formatTomlKey(key: string): string {
   return TOML_BARE_KEY.test(key) ? key : JSON.stringify(key);
 }
 
-function isPlainObject(value: unknown): value is CodexConfigObject {
+function isPlainObject(value: unknown): value is AvaConfigObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 

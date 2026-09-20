@@ -5,7 +5,7 @@ from pathlib import Path
 from .dotslash import fetch_dotslash_executable
 from .targets import TargetSpec, resolve_input_path
 
-ZSH_MANIFEST = Path(__file__).with_name("codex-zsh")
+ZSH_MANIFEST = Path(__file__).with_name("ava-zsh")
 ZSH_RESOURCE_PATH = Path("zsh") / "bin" / "zsh"
 
 
@@ -21,7 +21,7 @@ def resolve_zsh_bin(
     return fetch_dotslash_executable(
         spec,
         manifest_path=manifest_path or ZSH_MANIFEST,
-        artifact_label="codex-zsh",
+        artifact_label="ava-zsh",
         cache_key=f"{spec.target}-zsh",
         dest_name="zsh",
         missing_ok=True,

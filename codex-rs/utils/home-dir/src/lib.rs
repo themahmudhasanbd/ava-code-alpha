@@ -2,62 +2,77 @@ use codex_utils_absolute_path::AbsolutePathBuf;
 use dirs::home_dir;
 use std::path::PathBuf;
 
-/// Returns the path to the Codex configuration directory, which can be
-/// specified by the `CODEX_HOME` environment variable. If not set, defaults to
-/// `~/.codex`.
+/// Returns the path to the AvA configuration directory, which can be
+/// specified by the `AVA_HOME` or `CODEX_HOME` environment variable. If not set, defaults to
+/// `~/.ava` (or `~/.codex` if it already exists).
 ///
-/// - If `CODEX_HOME` is set, the value must exist and be a directory. The
+/// - If `AVA_HOME` or `CODEX_HOME` is set, the value must exist and be a directory. The
 ///   value will be canonicalized and this function will Err otherwise.
-/// - If `CODEX_HOME` is not set, this function does not verify that the
-///   directory exists.
+/// - If neither is set, this function does not verify that the directory exists.
 pub fn find_codex_home() -> std::io::Result<AbsolutePathBuf> {
-    let codex_home_env = std::env::var("CODEX_HOME")
+    let home_env = std::env::var("AVA_HOME")
+        .or_else(|_| std::env::var("CODEX_HOME"))
         .ok()
         .filter(|val| !val.is_empty());
-    find_codex_home_from_env(codex_home_env.as_deref())
+    find_codex_home_from_env(home_env.as_deref())
 }
 
-fn find_codex_home_from_env(codex_home_env: Option<&str>) -> std::io::Result<AbsolutePathBuf> {
-    // Honor the `CODEX_HOME` environment variable when it is set to allow users
-    // (and tests) to override the default location.
-    match codex_home_env {
+pub fn find_ava_home() -> std::io::Result<AbsolutePathBuf> {
+    find_codex_home()
+}
+
+fn find_codex_home_from_env(home_env: Option<&str>) -> std::io::Result<AbsolutePathBuf> {
+    // Honor the `AVA_HOME` / `CODEX_HOME` environment variable when it is set
+    match home_env {
         Some(val) => {
             let path = PathBuf::from(val);
             let metadata = std::fs::metadata(&path).map_err(|err| match err.kind() {
                 std::io::ErrorKind::NotFound => std::io::Error::new(
                     std::io::ErrorKind::NotFound,
-                    format!("CODEX_HOME points to {val:?}, but that path does not exist"),
+                    format!("Home directory points to {val:?}, but that path does not exist"),
                 ),
                 _ => std::io::Error::new(
                     err.kind(),
-                    format!("failed to read CODEX_HOME {val:?}: {err}"),
+                    format!("failed to read home directory {val:?}: {err}"),
                 ),
             })?;
 
             if !metadata.is_dir() {
                 Err(std::io::Error::new(
                     std::io::ErrorKind::InvalidInput,
-                    format!("CODEX_HOME points to {val:?}, but that path is not a directory"),
+                    format!("Home directory points to {val:?}, but that path is not a directory"),
                 ))
             } else {
                 let canonical = path.canonicalize().map_err(|err| {
                     std::io::Error::new(
                         err.kind(),
-                        format!("failed to canonicalize CODEX_HOME {val:?}: {err}"),
+                        format!("failed to canonicalize home directory {val:?}: {err}"),
                     )
                 })?;
                 AbsolutePathBuf::from_absolute_path(canonical)
             }
         }
         None => {
-            let mut p = home_dir().ok_or_else(|| {
+            let user_home = home_dir().ok_or_else(|| {
                 std::io::Error::new(
                     std::io::ErrorKind::NotFound,
-                    "Could not find home directory",
+                    "Could not find user home directory",
                 )
             })?;
-            p.push(".codex");
-            AbsolutePathBuf::from_absolute_path(p)
+
+            // Prefer ~/.ava, fallback to ~/.codex if existing
+            let ava = user_home.join(".ava");
+            let codex = user_home.join(".codex");
+
+            let target = if ava.is_dir() {
+                ava
+            } else if codex.is_dir() {
+                codex
+            } else {
+                ava
+            };
+
+            AbsolutePathBuf::from_absolute_path(target)
         }
     }
 }

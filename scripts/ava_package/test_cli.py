@@ -7,7 +7,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from codex_package.cli import parse_package_version
+from ava_package.cli import parse_package_version
 
 
 class PackageVersionTest(unittest.TestCase):

@@ -638,6 +638,14 @@ pub const DEFAULT_OLLAMA_PORT: u16 = 11434;
 
 pub const LMSTUDIO_OSS_PROVIDER_ID: &str = "lmstudio";
 pub const OLLAMA_OSS_PROVIDER_ID: &str = "ollama";
+pub const OPENROUTER_PROVIDER_ID: &str = "openrouter";
+pub const DEEPSEEK_PROVIDER_ID: &str = "deepseek";
+pub const GROQ_PROVIDER_ID: &str = "groq";
+pub const TOGETHER_PROVIDER_ID: &str = "together";
+pub const MISTRAL_PROVIDER_ID: &str = "mistral";
+pub const GEMINI_PROVIDER_ID: &str = "gemini";
+pub const ANTHROPIC_PROVIDER_ID: &str = "anthropic";
+pub const CUSTOM_PROVIDER_ID: &str = "custom";
 
 /// Built-in default provider list.
 pub fn built_in_model_providers(
@@ -649,10 +657,6 @@ pub fn built_in_model_providers(
     let amazon_bedrock_runtime_provider =
         P::create_amazon_bedrock_runtime_provider(/*aws*/ None);
 
-    // We do not want to be in the business of adjucating which third-party
-    // providers are bundled with Codex CLI, so we only include the OpenAI and
-    // open source ("oss") providers by default. Users are encouraged to add to
-    // `model_providers` in config.toml to add their own providers.
     [
         (OPENAI_PROVIDER_ID, openai_provider),
         (AMAZON_BEDROCK_PROVIDER_ID, amazon_bedrock_provider),
@@ -667,6 +671,78 @@ pub fn built_in_model_providers(
         (
             LMSTUDIO_OSS_PROVIDER_ID,
             create_oss_provider(DEFAULT_LMSTUDIO_PORT, WireApi::Responses),
+        ),
+        (
+            OPENROUTER_PROVIDER_ID,
+            create_custom_provider(
+                "OpenRouter",
+                "https://openrouter.ai/api/v1",
+                Some("OPENROUTER_API_KEY"),
+                WireApi::Responses,
+            ),
+        ),
+        (
+            DEEPSEEK_PROVIDER_ID,
+            create_custom_provider(
+                "DeepSeek",
+                "https://api.deepseek.com/v1",
+                Some("DEEPSEEK_API_KEY"),
+                WireApi::Responses,
+            ),
+        ),
+        (
+            GROQ_PROVIDER_ID,
+            create_custom_provider(
+                "Groq",
+                "https://api.groq.com/openai/v1",
+                Some("GROQ_API_KEY"),
+                WireApi::Responses,
+            ),
+        ),
+        (
+            TOGETHER_PROVIDER_ID,
+            create_custom_provider(
+                "Together AI",
+                "https://api.together.xyz/v1",
+                Some("TOGETHER_API_KEY"),
+                WireApi::Responses,
+            ),
+        ),
+        (
+            MISTRAL_PROVIDER_ID,
+            create_custom_provider(
+                "Mistral AI",
+                "https://api.mistral.ai/v1",
+                Some("MISTRAL_API_KEY"),
+                WireApi::Responses,
+            ),
+        ),
+        (
+            GEMINI_PROVIDER_ID,
+            create_custom_provider(
+                "Google Gemini",
+                "https://generativelanguage.googleapis.com/v1beta/openai",
+                Some("GEMINI_API_KEY"),
+                WireApi::Responses,
+            ),
+        ),
+        (
+            ANTHROPIC_PROVIDER_ID,
+            create_custom_provider(
+                "Anthropic",
+                "https://api.anthropic.com/v1",
+                Some("ANTHROPIC_API_KEY"),
+                WireApi::Responses,
+            ),
+        ),
+        (
+            CUSTOM_PROVIDER_ID,
+            create_custom_provider(
+                "Custom Provider",
+                "http://localhost:8000/v1",
+                Some("CUSTOM_API_KEY"),
+                WireApi::Responses,
+            ),
         ),
     ]
     .into_iter()

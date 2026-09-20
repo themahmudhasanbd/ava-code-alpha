@@ -10,11 +10,11 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from build_winget_package import prepare_winget_package
-from codex_package.layout import build_package_dir
-from codex_package.layout import validate_package_dir
-from codex_package.targets import PACKAGE_VARIANTS
-from codex_package.targets import PackageInputs
-from codex_package.targets import TARGET_SPECS
+from ava_package.layout import build_package_dir
+from ava_package.layout import validate_package_dir
+from ava_package.targets import PACKAGE_VARIANTS
+from ava_package.targets import PackageInputs
+from ava_package.targets import TARGET_SPECS
 
 
 class PackageLayoutTest(unittest.TestCase):

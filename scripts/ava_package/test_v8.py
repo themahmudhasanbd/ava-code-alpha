@@ -9,8 +9,8 @@ from unittest.mock import MagicMock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from codex_package import v8
-from codex_package.targets import TARGET_SPECS, TargetSpec
+from ava_package import v8
+from ava_package.targets import TARGET_SPECS, TargetSpec
 
 
 class FetchCodexV8ArtifactsTest(unittest.TestCase):

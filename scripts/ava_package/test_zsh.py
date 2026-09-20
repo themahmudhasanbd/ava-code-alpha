@@ -11,8 +11,8 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from codex_package.targets import TARGET_SPECS
-from codex_package.zsh import resolve_zsh_bin
+from ava_package.targets import TARGET_SPECS
+from ava_package.zsh import resolve_zsh_bin
 
 
 class ResolveZshBinTest(unittest.TestCase):
@@ -22,7 +22,7 @@ class ResolveZshBinTest(unittest.TestCase):
             signed_zsh.write_bytes(b"signed zsh binary")
             signed_zsh.chmod(0o755)
 
-            with patch("codex_package.zsh.fetch_dotslash_executable") as fetch:
+            with patch("ava_package.zsh.fetch_dotslash_executable") as fetch:
                 zsh_bin = resolve_zsh_bin(
                     TARGET_SPECS["aarch64-apple-darwin"], zsh_bin=signed_zsh
                 )
@@ -61,7 +61,7 @@ class ResolveZshBinTest(unittest.TestCase):
             )
 
             with patch(
-                "codex_package.dotslash.default_cache_root",
+                "ava_package.dotslash.default_cache_root",
                 return_value=root / "cache",
             ):
                 zsh_bin = resolve_zsh_bin(

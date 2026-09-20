@@ -1660,26 +1660,38 @@ async fn discover_project_layers(
     let mut layers = Vec::new();
     let mut startup_warnings = Vec::new();
     for dir in dirs {
+        let dot_ava_abs = dir.join(".ava");
         let dot_codex_abs = dir.join(".codex");
+        let dot_ava_uri = PathUri::from_abs_path(&dot_ava_abs);
         let dot_codex_uri = PathUri::from_abs_path(&dot_codex_abs);
-        if !fs
+
+        let (dot_config_abs, dot_config_uri) = if fs
+            .get_metadata(&dot_ava_uri, Default::default(), /*sandbox*/ None)
+            .await
+            .map(|metadata| metadata.is_directory)
+            .unwrap_or(false)
+        {
+            (dot_ava_abs, dot_ava_uri)
+        } else if fs
             .get_metadata(&dot_codex_uri, Default::default(), /*sandbox*/ None)
             .await
             .map(|metadata| metadata.is_directory)
             .unwrap_or(false)
         {
+            (dot_codex_abs, dot_codex_uri)
+        } else {
             continue;
-        }
+        };
 
         let decision = trust_context.decision_for_dir(&dir);
         let disabled_reason = trust_context.disabled_reason_for_decision(&decision);
         let hooks_config_folder_override = trust_context.root_checkout_hooks_folder_for_dir(&dir);
-        let dot_codex_normalized =
-            normalize_path(dot_codex_abs.as_path()).unwrap_or_else(|_| dot_codex_abs.to_path_buf());
-        if dot_codex_abs == codex_home_abs || dot_codex_normalized == codex_home_normalized {
+        let dot_config_normalized =
+            normalize_path(dot_config_abs.as_path()).unwrap_or_else(|_| dot_config_abs.to_path_buf());
+        if dot_config_abs == codex_home_abs || dot_config_normalized == codex_home_normalized {
             continue;
         }
-        let config_file = dot_codex_abs.join(CONFIG_TOML_FILE);
+        let config_file = dot_config_abs.join(CONFIG_TOML_FILE);
         let config_file_uri = PathUri::from_abs_path(&config_file);
         match fs
             .read_file_text(&config_file_uri, Default::default(), /*sandbox*/ None)
@@ -1699,7 +1711,7 @@ async fn discover_project_layers(
                             ));
                         }
                         layers.push(DiscoveredProjectLayer {
-                            dot_codex_folder: dot_codex_abs,
+                            dot_codex_folder: dot_config_abs,
                             config: TomlValue::Table(toml::map::Map::new()),
                             disabled_reason,
                             hooks_config_folder_override,

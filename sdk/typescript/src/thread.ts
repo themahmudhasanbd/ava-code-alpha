@@ -1,4 +1,4 @@
-import { CodexOptions } from "./codexOptions";
+import { AvaOptions } from "./avaOptions";
 import { ThreadEvent, ThreadError, Usage } from "./events";
 import { CodexExec } from "./exec";
 import { ThreadItem } from "./items";
@@ -40,7 +40,7 @@ export type Input = string | UserInput[];
 /** Represent a thread of conversation with the agent. One thread can have multiple consecutive turns. */
 export class Thread {
   private _exec: CodexExec;
-  private _options: CodexOptions;
+  private _options: AvaOptions;
   private _id: string | null;
   private _threadOptions: ThreadOptions;
 
@@ -52,7 +52,7 @@ export class Thread {
   /* @internal */
   constructor(
     exec: CodexExec,
-    options: CodexOptions,
+    options: AvaOptions,
     threadOptions: ThreadOptions,
     id: string | null = null,
   ) {

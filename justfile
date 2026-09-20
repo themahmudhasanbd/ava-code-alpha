@@ -36,10 +36,15 @@ file-search *args:
 code-mode-host *args:
     cargo run --bin codex-code-mode-host -- {args}
 
-# Assemble a local Codex package.
+# Assemble a local AvA package.
+[no-cd]
+assemble-ava-package *args:
+    {{ python }} {{ justfile_directory() }}/scripts/build_ava_package.py {args}
+
+# Assemble a local Codex package (backwards compatibility).
 [no-cd]
 assemble-codex-package *args:
-    {{ python }} {{ justfile_directory() }}/scripts/build_codex_package.py {args}
+    {{ python }} {{ justfile_directory() }}/scripts/build_ava_package.py {args}
 
 # Build the CLI and run the app-server test client
 app-server-test-client *args:

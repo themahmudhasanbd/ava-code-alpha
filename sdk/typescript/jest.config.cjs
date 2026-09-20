@@ -2,8 +2,9 @@
 module.exports = {
   preset: "ts-jest/presets/default-esm",
   testEnvironment: "node",
+  testTimeout: 60000,
   extensionsToTreatAsEsm: [".ts"],
-  setupFilesAfterEnv: ["<rootDir>/tests/setupCodexHome.ts"],
+  setupFilesAfterEnv: ["<rootDir>/tests/setupAvaHome.ts"],
   moduleNameMapper: {
     "^(\\.{1,2}/.*)\\.js$": "$1",
   },

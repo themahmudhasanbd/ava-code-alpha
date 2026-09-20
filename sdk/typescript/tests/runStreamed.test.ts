@@ -9,9 +9,9 @@ import {
   sse,
   startResponsesTestProxy,
 } from "./responsesProxy";
-import { createMockClient } from "./testCodex";
+import { createMockClient } from "./testAva";
 
-describe("Codex", () => {
+describe("Ava", () => {
   it("returns thread events", async () => {
     const { url, close } = await startResponsesTestProxy({
       statusCode: 200,

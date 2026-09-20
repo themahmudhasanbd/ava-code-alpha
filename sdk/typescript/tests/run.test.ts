@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { codexExecSpy } from "./codexExecSpy";
+import { avaExecSpy as codexExecSpy } from "./avaExecSpy";
 import { describe, expect, it } from "@jest/globals";
 
 import {
@@ -14,9 +14,9 @@ import {
   startResponsesTestProxy,
   SseResponseBody,
 } from "./responsesProxy";
-import { createMockClient, createTestClient } from "./testCodex";
+import { createMockClient, createTestClient } from "./testAva";
 
-describe("Codex", () => {
+describe("Ava", () => {
   it("returns thread events", async () => {
     const { url, close } = await startResponsesTestProxy({
       statusCode: 200,

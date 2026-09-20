@@ -118,6 +118,25 @@ function findExecutable() {
 
 const binaryPath = findExecutable();
 
+// Automatically load Antigravity & other provider credentials from auth.json
+try {
+  if (!process.env.ANTIGRAVITY_API_KEY) {
+    const authPaths = [
+      path.join(process.env.HOME || "/root", ".config/ava/auth.json"),
+      path.join(process.env.HOME || "/root", ".local/share/ava/auth.json"),
+    ];
+    for (const p of authPaths) {
+      if (existsSync(p)) {
+        const authData = JSON.parse(readFileSync(p, "utf-8"));
+        if (authData?.antigravity?.access) {
+          process.env.ANTIGRAVITY_API_KEY = authData.antigravity.access;
+          break;
+        }
+      }
+    }
+  }
+} catch (_) {}
+
 const child = spawn(binaryPath, process.argv.slice(2), {
   stdio: "inherit",
   env: process.env,

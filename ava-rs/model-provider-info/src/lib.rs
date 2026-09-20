@@ -636,6 +636,7 @@ other non-default provider fields are not supported"
 pub const DEFAULT_LMSTUDIO_PORT: u16 = 1234;
 pub const DEFAULT_OLLAMA_PORT: u16 = 11434;
 
+pub const ANTIGRAVITY_PROVIDER_ID: &str = "antigravity";
 pub const LMSTUDIO_OSS_PROVIDER_ID: &str = "lmstudio";
 pub const OLLAMA_OSS_PROVIDER_ID: &str = "ollama";
 pub const OPENROUTER_PROVIDER_ID: &str = "openrouter";
@@ -659,6 +660,10 @@ pub fn built_in_model_providers(
 
     [
         (OPENAI_PROVIDER_ID, openai_provider),
+        (
+            ANTIGRAVITY_PROVIDER_ID,
+            create_antigravity_provider(),
+        ),
         (AMAZON_BEDROCK_PROVIDER_ID, amazon_bedrock_provider),
         (
             AMAZON_BEDROCK_RUNTIME_PROVIDER_ID,
@@ -790,6 +795,47 @@ pub fn merge_configured_model_providers(
     }
 
     Ok(model_providers)
+}
+
+pub fn create_antigravity_provider() -> ModelProviderInfo {
+    ModelProviderInfo {
+        name: "Google Antigravity".into(),
+        base_url: Some("https://daily-cloudcode-pa.googleapis.com".into()),
+        model_catalog_url: None,
+        env_key: Some("ANTIGRAVITY_API_KEY".into()),
+        env_key_instructions: Some(
+            "Set your Google Antigravity OAuth access token (ya29...) or API key in the ANTIGRAVITY_API_KEY environment variable."
+                .into(),
+        ),
+        experimental_bearer_token: None,
+        auth: None,
+        gateway_oauth: None,
+        aws: None,
+        wire_api: WireApi::Responses,
+        query_params: None,
+        http_headers: Some(
+            [
+                (
+                    "User-Agent".to_string(),
+                    "antigravity/ide/2.5.5 darwin/arm64".to_string(),
+                ),
+                (
+                    "X-Goog-Api-Client".to_string(),
+                    "gl-node/22.21.1".to_string(),
+                ),
+            ]
+            .into_iter()
+            .collect(),
+        ),
+        env_http_headers: None,
+        request_max_retries: Some(5),
+        stream_max_retries: Some(5),
+        stream_idle_timeout_ms: None,
+        websocket_connect_timeout_ms: None,
+        requires_openai_auth: false,
+        supports_websockets: false,
+        supports_standalone_web_search: true,
+    }
 }
 
 pub fn create_oss_provider(default_provider_port: u16, wire_api: WireApi) -> ModelProviderInfo {

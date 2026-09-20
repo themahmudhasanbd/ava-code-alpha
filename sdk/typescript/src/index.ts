@@ -38,3 +38,4 @@ export type {
   WebSearchMode,
 } from "./threadOptions";
 export type { TurnOptions } from "./turnOptions";
+export * as Antigravity from "./providers/antigravity";

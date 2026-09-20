@@ -1,34 +1,49 @@
 # ==============================================================================
-# AvA - Configuration Template (~/.ava/config.toml or .ava/config.toml)
+# AvA Code Alpha - Configuration Template (~/.ava/config.toml or .ava/config.toml)
 # ==============================================================================
 
 # ------------------------------------------------------------------------------
 # 1. Active Model & Provider Selection
 # ------------------------------------------------------------------------------
 # Set the active provider and model to use:
-model_provider = "openrouter"
-model = "anthropic/claude-3.7-sonnet"
+model_provider = "antigravity"
+model = "gemini-3.7-flash-tiered"
 
 # Context window & auto-compaction
-model_context_window = 200000
-model_auto_compact_token_limit = 180000
+model_context_window = 1048576
+model_auto_compact_token_limit = 900000
 
 # ------------------------------------------------------------------------------
 # 2. Built-in Provider Presets
 # AvA includes built-in endpoints for popular providers:
-# - "openrouter" (env: OPENROUTER_API_KEY)
-# - "deepseek"   (env: DEEPSEEK_API_KEY)
-# - "groq"       (env: GROQ_API_KEY)
-# - "gemini"     (env: GEMINI_API_KEY)
-# - "together"   (env: TOGETHER_API_KEY)
-# - "mistral"    (env: MISTRAL_API_KEY)
-# - "anthropic"  (env: ANTHROPIC_API_KEY)
-# - "ollama"     (local http://localhost:11434/v1)
-# - "lmstudio"   (local http://localhost:1234/v1)
+# - "antigravity" (Google Antigravity Code Assist - OAuth / env: ANTIGRAVITY_API_KEY)
+# - "openrouter"  (env: OPENROUTER_API_KEY)
+# - "deepseek"    (env: DEEPSEEK_API_KEY)
+# - "groq"        (env: GROQ_API_KEY)
+# - "gemini"      (env: GEMINI_API_KEY)
+# - "together"    (env: TOGETHER_API_KEY)
+# - "mistral"     (env: MISTRAL_API_KEY)
+# - "anthropic"   (env: ANTHROPIC_API_KEY)
+# - "ollama"      (local http://localhost:11434/v1)
+# - "lmstudio"    (local http://localhost:1234/v1)
 # ------------------------------------------------------------------------------
 
 # ------------------------------------------------------------------------------
-# 3. Custom AI Providers ([model_providers.<id>])
+# 3. Google Antigravity Provider Settings ([model_providers.antigravity])
+# ------------------------------------------------------------------------------
+[model_providers.antigravity]
+name = "Google Antigravity"
+base_url = "https://daily-cloudcode-pa.googleapis.com"
+env_key = "ANTIGRAVITY_API_KEY"
+wire_api = "responses"
+# Optional: Set token directly (e.g. ya29...) instead of env var
+# experimental_bearer_token = "ya29.a0A..."
+[model_providers.antigravity.http_headers]
+"User-Agent" = "antigravity/ide/2.5.5 darwin/arm64"
+"X-Goog-Api-Client" = "gl-node/22.21.1"
+
+# ------------------------------------------------------------------------------
+# 4. Custom AI Providers ([model_providers.<id>])
 # You can add ANY OpenAI-compatible endpoint, custom proxy, LiteLLM, or self-hosted API:
 # ------------------------------------------------------------------------------
 

@@ -95,14 +95,19 @@ extension FmvMarkdownExt on _FormattedMessageViewState {
       return _cachedMarkdownWidget!;
     }
 
-    // Format streaming markdown and close dangling code fences so UI layout does not break
+    // Format streaming markdown and close dangling code fences / math delimiters
     String markdownData;
     if (isLive) {
       final codeFenceCount = RegExp(r'```').allMatches(text).length;
       if (codeFenceCount % 2 != 0) {
         markdownData = '$text\n```\n▋';
       } else {
-        markdownData = '$text ▋';
+        final blockMathCount = RegExp(r'\$\$').allMatches(text).length;
+        if (blockMathCount % 2 != 0) {
+          markdownData = '$text\n\$\$\n▋';
+        } else {
+          markdownData = '$text ▋';
+        }
       }
     } else {
       markdownData = text;
@@ -114,7 +119,16 @@ extension FmvMarkdownExt on _FormattedMessageViewState {
     _cachedMarkdownWidget = MarkdownBody(
       data: markdownData,
       selectable: true,
+      extensionSet: kMathExtensionSet,
       builders: {
+        "latex-inline": LatexInlineElementBuilder(
+          isDark: widget.isDark,
+        ),
+        "latex-block": LatexBlockElementBuilder(
+          isDark: widget.isDark,
+          cardBg: _cCardBg,
+          borderColor: _cBorder,
+        ),
         "pre": CopyableCodeBlockBuilder(
           context: context,
           borderColor: _cBorder,

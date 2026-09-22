@@ -224,7 +224,16 @@ extension FmvThinkingExt on _FormattedMessageViewState {
     return MarkdownBody(
       data: markdownData,
       selectable: true,
+      extensionSet: kMathExtensionSet,
       builders: {
+        "latex-inline": LatexInlineElementBuilder(
+          isDark: widget.isDark,
+        ),
+        "latex-block": LatexBlockElementBuilder(
+          isDark: widget.isDark,
+          cardBg: _cCardBg,
+          borderColor: _cBorder,
+        ),
         "pre": CopyableCodeBlockBuilder(
           context: context,
           borderColor: _cBorder,

@@ -641,3 +641,172 @@ class ScrollableTableBuilder extends MarkdownElementBuilder {
     );
   }
 }
+
+
+// ─── Mathematical Expression (LaTeX / TeX) Syntaxes & Builders ───────────────
+
+class MathInlineSyntax extends md.InlineSyntax {
+  MathInlineSyntax() : super(r"(?<!\\)\$(?!\$)(.+?)(?<!\\)\$|(?<!\\)\\\((.+?)(?<!\\)\\\)");
+
+  @override
+  bool onMatch(md.InlineParser parser, Match match) {
+    final raw = match[1] ?? match[2] ?? "";
+    if (raw.trim().isEmpty) return false;
+    final element = md.Element.text("latex-inline", raw.trim());
+    parser.addNode(element);
+    return true;
+  }
+}
+
+class MathBlockSyntax extends md.BlockSyntax {
+  @override
+  RegExp get pattern => RegExp(r"^(?:\$\$|\\\[)");
+
+  const MathBlockSyntax();
+
+  @override
+  bool canParse(md.BlockParser parser) {
+    final line = parser.current.content.trim();
+    return line.startsWith(r"$$") || line.startsWith(r"\[");
+  }
+
+  @override
+  md.Node parse(md.BlockParser parser) {
+    final firstLine = parser.current.content.trim();
+
+    // Single line block: $$...$$ or \[...\]
+    if (firstLine.startsWith(r"$$") && firstLine.endsWith(r"$$") && firstLine.length > 4) {
+      final content = firstLine.substring(2, firstLine.length - 2).trim();
+      parser.advance();
+      return md.Element.text("latex-block", content);
+    }
+
+    if (firstLine.startsWith(r"\[") && firstLine.endsWith(r"\]") && firstLine.length > 4) {
+      final content = firstLine.substring(2, firstLine.length - 2).trim();
+      parser.advance();
+      return md.Element.text("latex-block", content);
+    }
+
+    final lines = <String>[];
+    if (firstLine.length > 2 && (firstLine.startsWith(r"$$") || firstLine.startsWith(r"\["))) {
+      final startContent = firstLine.substring(2).trim();
+      if (startContent.isNotEmpty) lines.add(startContent);
+    }
+
+    parser.advance();
+    while (!parser.isDone) {
+      final line = parser.current.content;
+      final trimmed = line.trim();
+      if (trimmed.endsWith(r"$$") || trimmed.endsWith(r"\]")) {
+        final endContent = trimmed.substring(0, trimmed.length - 2).trim();
+        if (endContent.isNotEmpty) lines.add(endContent);
+        parser.advance();
+        break;
+      }
+      lines.add(line);
+      parser.advance();
+    }
+    return md.Element.text("latex-block", lines.join("\n"));
+  }
+}
+
+final md.ExtensionSet kMathExtensionSet = md.ExtensionSet(
+  [const MathBlockSyntax(), ...md.ExtensionSet.gitHubFlavored.blockSyntaxes],
+  [MathInlineSyntax(), ...md.ExtensionSet.gitHubFlavored.inlineSyntaxes],
+);
+
+class LatexInlineElementBuilder extends MarkdownElementBuilder {
+  final TextStyle? defaultStyle;
+  final bool isDark;
+
+  LatexInlineElementBuilder({this.defaultStyle, this.isDark = true});
+
+  @override
+  Widget? visitElementAfterWithContext(
+    BuildContext context,
+    md.Element element,
+    TextStyle? preferredStyle,
+    TextStyle? parentStyle,
+  ) {
+    final text = element.textContent.trim();
+    if (text.isEmpty) return const SizedBox.shrink();
+
+    final effectiveStyle = (preferredStyle ?? defaultStyle)?.copyWith(
+      color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF1E293B),
+    );
+
+    return Math.tex(
+      text,
+      textStyle: effectiveStyle,
+      mathStyle: MathStyle.text,
+      onErrorFallback: (err) => Text(
+        "\$$text\$",
+        style: preferredStyle ?? defaultStyle,
+      ),
+    );
+  }
+}
+
+class LatexBlockElementBuilder extends MarkdownElementBuilder {
+  final TextStyle? defaultStyle;
+  final bool isDark;
+  final Color? cardBg;
+  final Color? borderColor;
+
+  LatexBlockElementBuilder({
+    this.defaultStyle,
+    this.isDark = true,
+    this.cardBg,
+    this.borderColor,
+  });
+
+  @override
+  bool isBlockElement() => true;
+
+  @override
+  Widget? visitElementAfterWithContext(
+    BuildContext context,
+    md.Element element,
+    TextStyle? preferredStyle,
+    TextStyle? parentStyle,
+  ) {
+    final text = element.textContent.trim();
+    if (text.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Center(
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: cardBg ?? (isDark ? const Color(0xFF11141E) : const Color(0xFFF8FAFC)),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: borderColor ?? (isDark ? const Color(0xFF272F45) : const Color(0xFFE2E8F0)),
+                width: 0.8,
+              ),
+            ),
+            child: Math.tex(
+              text,
+              textStyle: (preferredStyle ?? defaultStyle)?.copyWith(
+                fontSize: 15.0,
+                color: isDark ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A),
+              ),
+              mathStyle: MathStyle.display,
+              onErrorFallback: (err) => SelectableText(
+                "\$\$\n$text\n\$\$",
+                style: (preferredStyle ?? defaultStyle)?.copyWith(
+                  fontFamily: "JetBrainsMono",
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

@@ -205,7 +205,11 @@ abstract class AgentCoreBase {
   }
 
   void _onWsDisconnected() {
-    updateConnectionState(false);
+    if (!_isDisposed && (_wsReconnectTimer == null || !_wsReconnectTimer!.isActive)) {
+      connectionStatusNotifier.value = CoreConnectionStatus.reconnecting;
+    } else {
+      updateConnectionState(false);
+    }
     _wsSubscription?.cancel();
     _wsSubscription = null;
     _wsChannel = null;

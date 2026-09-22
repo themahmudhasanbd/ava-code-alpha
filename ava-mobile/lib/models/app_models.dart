@@ -5,6 +5,7 @@ enum CoreConnectionStatus {
   connected,
   connecting,
   reconnecting,
+  syncing,
   disconnected,
 }
 

@@ -260,9 +260,20 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed && mounted) {
-      // 1. Eagerly reconnect WebSocket / Core channel
+      // 1. Immediately indicate smooth syncing state on app resume
+      if (_agentCoreService.connectionStatusNotifier.value != CoreConnectionStatus.connected) {
+        _agentCoreService.connectionStatusNotifier.value = CoreConnectionStatus.syncing;
+      }
+
+      // 2. Eagerly reconnect WebSocket / Core channel and check health
       _agentCoreService.ensureSseConnected();
-      _agentCoreService.checkHealth();
+      _agentCoreService.checkHealth().then((isHealthy) {
+        if (mounted && isHealthy) {
+          setState(() {
+            _isCoreConnected = true;
+          });
+        }
+      });
 
       if (_activeSessionId != null && _activeSessionId!.isNotEmpty) {
         final currentSessId = _activeSessionId!;
@@ -3003,6 +3014,7 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
                       onNewSession: () => _handleCreateNewSession(mode: _selectedMode, workspacePath: _vpsWorkspacePath),
                       isCoreConnected: _isCoreConnected,
                       isReconnecting: _isReconnectingCore,
+                      statusNotifier: _agentCoreService.connectionStatusNotifier,
                       onReconnectCore: _handleReconnectCore,
                       chatMessages: _chatMessages,
                       activeSessionId: _activeSessionId,

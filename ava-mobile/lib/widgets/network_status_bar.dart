@@ -88,10 +88,11 @@ class _NetworkStatusBarState extends State<NetworkStatusBar> with SingleTickerPr
 
   @override
   Widget build(BuildContext context) {
+    final isSyncing = _currentStatus == CoreConnectionStatus.syncing;
     final isDisconnected = _currentStatus == CoreConnectionStatus.disconnected;
     final isReconnecting = _currentStatus == CoreConnectionStatus.reconnecting ||
         _currentStatus == CoreConnectionStatus.connecting;
-    final isVisible = isDisconnected || isReconnecting || _showBackOnline;
+    final isVisible = isDisconnected || isReconnecting || isSyncing || _showBackOnline;
 
     Color bgColor;
     Color fgColor;
@@ -106,6 +107,14 @@ class _NetworkStatusBarState extends State<NetworkStatusBar> with SingleTickerPr
       fgColor = Colors.white;
       iconData = LucideIcons.checkCircle2;
       text = 'Back online';
+    } else if (isSyncing) {
+      bgColor = widget.isDark
+          ? const Color(0xFF312E81).withValues(alpha: 0.95)
+          : const Color(0xFF4F46E5);
+      fgColor = Colors.white;
+      iconData = LucideIcons.refreshCw;
+      text = 'Syncing with AvA Core…';
+      isSpinning = true;
     } else if (isReconnecting) {
       bgColor = widget.isDark
           ? const Color(0xFF78350F).withValues(alpha: 0.95)

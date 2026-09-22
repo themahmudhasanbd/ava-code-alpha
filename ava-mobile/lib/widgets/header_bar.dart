@@ -17,6 +17,7 @@ class HeaderBar extends StatelessWidget implements PreferredSizeWidget {
   final Future<void> Function()? onRefreshModels;
   final bool isCoreConnected;
   final bool isReconnecting;
+  final ValueNotifier<CoreConnectionStatus>? statusNotifier;
   final VoidCallback? onReconnectCore;
   final VoidCallback onOpenDrawer;
   final VoidCallback? onOpenWorkspacePreferences;
@@ -42,6 +43,7 @@ class HeaderBar extends StatelessWidget implements PreferredSizeWidget {
     this.onRefreshModels,
     required this.isCoreConnected,
     this.isReconnecting = false,
+    this.statusNotifier,
     this.onReconnectCore,
     required this.onOpenDrawer,
     this.onOpenWorkspacePreferences,
@@ -234,86 +236,106 @@ class HeaderBar extends StatelessWidget implements PreferredSizeWidget {
               ],
 
               // Core Engine Connection Status Indicator & Context Window Pill
-              Tooltip(
-                message: isReconnecting
-                    ? 'Reconnecting to AvA Core...'
-                    : (isCoreConnected
-                        ? 'AvA Core Online • Tap for Context Window & Tokens'
-                        : 'AvA Core Disconnected (Tap to Reconnect)'),
-                child: InkWell(
-                  onTap: () {
-                    if (!isCoreConnected) {
-                      if (onReconnectCore != null) {
-                        onReconnectCore!();
-                      } else if (onOpenSystemHealth != null) {
-                        onOpenSystemHealth!();
+              () {
+                final status = statusNotifier?.value ?? (isCoreConnected ? CoreConnectionStatus.connected : (isReconnecting ? CoreConnectionStatus.reconnecting : CoreConnectionStatus.disconnected));
+                final bool isLiveOnline = status == CoreConnectionStatus.connected;
+                final bool isSyncingOrConnecting = status == CoreConnectionStatus.syncing || status == CoreConnectionStatus.connecting || status == CoreConnectionStatus.reconnecting || isReconnecting;
+
+                String tooltipMsg;
+                Color pillBg;
+                Color pillBorder;
+                Color pillFg;
+
+                if (isLiveOnline) {
+                  tooltipMsg = 'AvA Core Online • Tap for Context Window & Tokens';
+                  pillBg = isDark ? const Color(0xFF064E3B).withValues(alpha: 0.40) : const Color(0xFFECFDF5);
+                  pillBorder = isDark ? const Color(0xFF059669).withValues(alpha: 0.7) : const Color(0xFFA7F3D0);
+                  pillFg = const Color(0xFF10B981);
+                } else if (isSyncingOrConnecting) {
+                  tooltipMsg = status == CoreConnectionStatus.syncing ? 'Syncing with AvA Core…' : 'Connecting to AvA Core…';
+                  pillBg = isDark ? const Color(0xFF312E81).withValues(alpha: 0.40) : const Color(0xFFEEF2FF);
+                  pillBorder = isDark ? const Color(0xFF6366F1).withValues(alpha: 0.7) : const Color(0xFFC7D2FE);
+                  pillFg = const Color(0xFF818CF8);
+                } else {
+                  tooltipMsg = 'AvA Core Disconnected (Tap to Reconnect)';
+                  pillBg = isDark ? const Color(0xFF7F1D1D).withValues(alpha: 0.40) : const Color(0xFFFEF2F2);
+                  pillBorder = isDark ? const Color(0xFFDC2626).withValues(alpha: 0.7) : const Color(0xFFFECACA);
+                  pillFg = const Color(0xFFEF4444);
+                }
+
+                return Tooltip(
+                  message: tooltipMsg,
+                  child: InkWell(
+                    onTap: () {
+                      if (!isLiveOnline && !isSyncingOrConnecting) {
+                        if (onReconnectCore != null) {
+                          onReconnectCore!();
+                        } else if (onOpenSystemHealth != null) {
+                          onOpenSystemHealth!();
+                        }
+                      } else {
+                        showContextWindowModal(
+                          context: context,
+                          isDark: isDark,
+                          cardBg: cardBg,
+                          borderColor: borderColor,
+                          textPrimary: textPrimary,
+                          textSecondary: textSecondary,
+                          selectedModel: selectedModel,
+                          chatMessages: chatMessages,
+                          isCoreConnected: isLiveOnline,
+                          activeSessionId: activeSessionId,
+                          activeSessionTitle: activeSessionTitle,
+                          serverUrl: serverUrl,
+                          onCompactSession: onCompactSession,
+                          onNewSession: onNewSession,
+                          onOpenAnalytics: onOpenWorkspacePreferences,
+                        );
                       }
-                    } else {
-                      showContextWindowModal(
-                        context: context,
-                        isDark: isDark,
-                        cardBg: cardBg,
-                        borderColor: borderColor,
-                        textPrimary: textPrimary,
-                        textSecondary: textSecondary,
-                        selectedModel: selectedModel,
-                        chatMessages: chatMessages,
-                        isCoreConnected: isCoreConnected,
-                        activeSessionId: activeSessionId,
-                        activeSessionTitle: activeSessionTitle,
-                        serverUrl: serverUrl,
-                        onCompactSession: onCompactSession,
-                        onNewSession: onNewSession,
-                        onOpenAnalytics: onOpenWorkspacePreferences,
-                      );
-                    }
-                  },
-                  borderRadius: BorderRadius.circular(16),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: isCoreConnected
-                          ? (isDark ? const Color(0xFF064E3B).withValues(alpha: 0.40) : const Color(0xFFECFDF5))
-                          : (isDark ? const Color(0xFF7F1D1D).withValues(alpha: 0.40) : const Color(0xFFFEF2F2)),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: isCoreConnected
-                            ? (isDark ? const Color(0xFF059669).withValues(alpha: 0.7) : const Color(0xFFA7F3D0))
-                            : (isDark ? const Color(0xFFDC2626).withValues(alpha: 0.7) : const Color(0xFFFECACA)),
-                        width: 1.0,
+                    },
+                    borderRadius: BorderRadius.circular(16),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: pillBg,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: pillBorder, width: 1.0),
                       ),
-                    ),
-                    child: isReconnecting
-                        ? const SizedBox(
-                            width: 13,
-                            height: 13,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFF59E0B)),
-                          )
-                        : Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                isCoreConnected ? LucideIcons.zap : LucideIcons.refreshCw,
-                                size: 13,
-                                color: isCoreConnected ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                      child: isSyncingOrConnecting
+                          ? SizedBox(
+                              width: 13,
+                              height: 13,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 1.8,
+                                color: pillFg,
                               ),
-                              if (isCoreConnected) ...[
-                                const SizedBox(width: 4),
-                                Container(
-                                  width: 5,
-                                  height: 5,
-                                  decoration: const BoxDecoration(
-                                    color: Color(0xFF10B981),
-                                    shape: BoxShape.circle,
-                                  ),
+                            )
+                          : Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  isLiveOnline ? LucideIcons.zap : LucideIcons.refreshCw,
+                                  size: 13,
+                                  color: pillFg,
                                 ),
+                                if (isLiveOnline) ...[
+                                  const SizedBox(width: 4),
+                                  Container(
+                                    width: 5,
+                                    height: 5,
+                                    decoration: BoxDecoration(
+                                      color: pillFg,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                ],
                               ],
-                            ],
-                          ),
+                            ),
+                    ),
                   ),
-                ),
-              ),
+                );
+              }(),
             ],
           ),
         ),

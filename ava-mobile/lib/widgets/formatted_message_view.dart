@@ -6,6 +6,7 @@ import "package:flutter/gestures.dart";
 import "package:flutter/material.dart";
 import "package:flutter/services.dart";
 import "package:flutter_markdown/flutter_markdown.dart";
+import "package:flutter_math_fork/flutter_math.dart";
 import "package:lucide_icons_flutter/lucide_icons.dart";
 
 import "package:cached_network_image/cached_network_image.dart";
@@ -100,6 +101,26 @@ class FormattedMessageView extends StatefulWidget {
 // ─── State ────────────────────────────────────────────────────────────────────
 
 class _FormattedMessageViewState extends State<FormattedMessageView> with SingleTickerProviderStateMixin {
+  String _computeTurnDuration(ChatMessageModel msg) {
+    int totalMs = 0;
+    for (final p in msg.parts) {
+      if (p.durationMs != null && p.durationMs! > 0) {
+        totalMs += p.durationMs!;
+      }
+    }
+    if (totalMs > 0) {
+      final sec = totalMs / 1000.0;
+      if (sec < 60) {
+        return sec >= 10 ? "${sec.toStringAsFixed(0)}s" : "${sec.toStringAsFixed(1)}s";
+      } else {
+        final mins = (sec / 60).floor();
+        final remSec = (sec % 60).round();
+        return "${mins}m ${remSec}s";
+      }
+    }
+    return "";
+  }
+
   final Map<String, bool> _expandedState = {};
   final Map<String, bool> _fullOutputExpanded = {};
   final Map<String, double> _frozenThinkingDuration = {};
@@ -325,6 +346,74 @@ class _FormattedMessageViewState extends State<FormattedMessageView> with Single
 
           if (msg.permissionData != null)
             _buildPermissionCard(msg.permissionData!),
+
+          // ── Bottom Action Bar: Timestamp, Turn Duration & 1-Tap Copy ───────
+          if (!isTurnActive && (msg.text.trim().isNotEmpty || msg.parts.isNotEmpty)) ...[
+            const SizedBox(height: 6),
+            () {
+              final durStr = _computeTurnDuration(msg);
+              final formattedTime = TimeFormatter.formatTimeString(msg.timestamp, context: context);
+              return Row(
+                children: [
+                  if (formattedTime.isNotEmpty)
+                    Text(
+                      formattedTime,
+                      style: TextStyle(fontSize: 10.5, color: _cFaint, fontFamily: "Inter"),
+                    ),
+                  if (formattedTime.isNotEmpty && durStr.isNotEmpty) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      width: 3,
+                      height: 3,
+                      decoration: BoxDecoration(color: _cFaint.withValues(alpha: 0.4), shape: BoxShape.circle),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  if (durStr.isNotEmpty) ...[
+                    Icon(LucideIcons.clock, size: 11, color: _cFaint),
+                    const SizedBox(width: 4),
+                    Text(
+                      "Worked for $durStr",
+                      style: TextStyle(fontSize: 10.5, color: _cFaint, fontFamily: "Inter", fontWeight: FontWeight.w500),
+                    ),
+                  ],
+                  const Spacer(),
+                  if (msg.text.trim().isNotEmpty)
+                    InkWell(
+                      onTap: () {
+                        Clipboard.setData(ClipboardData(text: msg.text.trim()));
+                        AppToast.copied(context, "Copied response to clipboard!");
+                      },
+                      borderRadius: BorderRadius.circular(6),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: _cAccentPurple.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: _cAccentPurple.withValues(alpha: 0.3), width: 0.6),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(LucideIcons.copy, size: 11, color: _cAccentPurple),
+                            const SizedBox(width: 4),
+                            Text(
+                              "Copy",
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontFamily: "Inter",
+                                fontWeight: FontWeight.w700,
+                                color: _cAccentPurple,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            }(),
+          ],
         ],
       ),
     );

@@ -94,7 +94,7 @@ CHANGELOG.ignore.md
 # Python bytecode files
 __pycache__/
 *.pyc
-.github/workflows
+
 
 # Flutter / Dart
 .dart_tool/
@@ -105,3 +105,6 @@ __pycache__/
 .ava-code/
 ava-cli/bin/
 
+*.apk
+ava-mobile/web/download/*.apk
+.github/workflows/

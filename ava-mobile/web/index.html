@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="AvA Code — Autonomous AI IDE & Agent Platform">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+
+  <title>AvA Code</title>
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="AvA Code">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <!-- Google Fonts Preload -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:ital,wght@0,400;0,600;0,700;1,400&family=Noto+Sans+Bengali:wght@400;600;700&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    @font-face {
+      font-family: 'HindSiliguri';
+      src: url('assets/assets/fonts/HindSiliguri-Regular.ttf') format('truetype');
+      font-weight: 400;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: 'HindSiliguri';
+      src: url('assets/assets/fonts/HindSiliguri-Medium.ttf') format('truetype');
+      font-weight: 500;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: 'HindSiliguri';
+      src: url('assets/assets/fonts/HindSiliguri-SemiBold.ttf') format('truetype');
+      font-weight: 600;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: 'HindSiliguri';
+      src: url('assets/assets/fonts/HindSiliguri-Bold.ttf') format('truetype');
+      font-weight: 700;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: 'Hind Siliguri';
+      src: url('assets/assets/fonts/HindSiliguri-Regular.ttf') format('truetype');
+      font-weight: 400;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: 'Hind Siliguri';
+      src: url('assets/assets/fonts/HindSiliguri-Bold.ttf') format('truetype');
+      font-weight: 700;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: 'NotoSansBengali';
+      src: url('assets/assets/fonts/NotoSansBengali-Regular.ttf') format('truetype');
+      font-weight: 400;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: 'NotoSansBengali';
+      src: url('assets/assets/fonts/NotoSansBengali-Bold.ttf') format('truetype');
+      font-weight: 700;
+      font-style: normal;
+    }
+    html, body, input, textarea, select, button, [contenteditable], flt-scene-host, flt-glass-pane {
+      background-color: #0b0f17;
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Hind Siliguri', 'HindSiliguri', 'Noto Sans Bengali', 'NotoSansBengali', 'Inter', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    }
+    #loading-indicator {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: radial-gradient(circle at center, #111827 0%, #080c14 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      z-index: 999999;
+      transition: opacity 0.4s ease, visibility 0.4s ease;
+    }
+    .logo-container {
+      position: relative;
+      width: 68px;
+      height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .logo-glow {
+      position: absolute;
+      width: 80px;
+      height: 80px;
+      border-radius: 24px;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.45) 0%, rgba(99, 102, 241, 0) 70%);
+      animation: pulse 2.2s infinite ease-in-out;
+    }
+    .logo-img {
+      width: 64px;
+      height: 64px;
+      border-radius: 18px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 16px rgba(99, 102, 241, 0.25);
+      z-index: 1;
+    }
+    .spinner-ring {
+      width: 32px;
+      height: 32px;
+      border: 2.5px solid rgba(99, 102, 241, 0.2);
+      border-top-color: #6366f1;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    .app-title {
+      font-size: 19px;
+      font-weight: 700;
+      color: #f1f5f9;
+      letter-spacing: -0.4px;
+      margin: 0;
+    }
+    .status-text {
+      font-size: 13px;
+      font-weight: 500;
+      color: #94a3b8;
+      letter-spacing: 0.2px;
+      transition: color 0.3s ease;
+    }
+    .action-btn {
+      display: none;
+      margin-top: 10px;
+      padding: 9px 20px;
+      background: #6366f1;
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+      transition: transform 0.15s ease, background-color 0.2s ease;
+    }
+    .action-btn:active {
+      transform: scale(0.97);
+      background: #4f46e5;
+    }
+    .error-card {
+      display: none;
+      max-width: 320px;
+      padding: 10px 14px;
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: 10px;
+      color: #fca5a5;
+      font-size: 12px;
+      text-align: center;
+      line-height: 1.4;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 0.6; }
+      50% { transform: scale(1.18); opacity: 0.95; }
+    }
+  </style>
+</head>
+<body>
+  <div id="loading-indicator">
+    <div class="logo-container">
+      <div class="logo-glow"></div>
+      <img class="logo-img" src="icons/Icon-512.png" alt="AvA Code Logo" onerror="this.style.display='none'">
+    </div>
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+      <h1 class="app-title">AvA Code</h1>
+      <div id="loader-status" class="status-text">Connecting to Workspace...</div>
+    </div>
+    <div class="spinner-ring" id="loader-spinner"></div>
+    <div id="loader-error" class="error-card"></div>
+  </div>
+
+  <script>
+    // Configure local CanvasKit and engine options
+    window.flutterConfiguration = {
+      canvasKitBaseUrl: "/canvaskit/"
+    };
+    window._flutter = window._flutter || {};
+    window._flutter.buildConfig = window._flutter.buildConfig || {};
+    window._flutter.buildConfig.useLocalCanvasKit = true;
+    window._flutter.buildConfig.canvasKitBaseUrl = "/canvaskit/";
+
+    // Remove obsolete service workers & browser cache gracefully
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for (let registration of registrations) {
+          registration.unregister();
+        }
+      });
+    }
+
+    function removeLoader() {
+      const loader = document.getElementById('loading-indicator');
+      if (loader && !loader.dataset.removed) {
+        loader.dataset.removed = 'true';
+        loader.style.opacity = '0';
+        loader.style.pointerEvents = 'none';
+        setTimeout(function() { loader.remove(); }, 300);
+      }
+    }
+
+    // Dismiss loader strictly upon first rendered Flutter frame
+    window.addEventListener('flutter-first-frame', removeLoader);
+
+    const observer = new MutationObserver(function() {
+      if (document.querySelector('flutter-view') || document.querySelector('flt-glass-pane')) {
+        setTimeout(removeLoader, 100);
+        observer.disconnect();
+      }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    // Informative status updates for slower mobile networks
+    setTimeout(function() {
+      const status = document.getElementById('loader-status');
+      if (status && !document.getElementById('loading-indicator')?.dataset?.removed) {
+        status.innerText = 'Starting AvA Workspace...';
+      }
+    }, 3000);
+
+    // Fail-safe automatic loader dismissal
+    setTimeout(function() {
+      removeLoader();
+    }, 6000);
+
+    // Global Error Boundary
+    window.addEventListener('error', function(e) {
+      console.error('[AvA Web Boot Error]', e);
+    });
+  </script>
+
+  <!-- AvA Direct Audio Recording Bridge for Multimodal Voice Input -->
+  <script>
+    (function() {
+      let mediaRecorder = null;
+      let audioChunks = [];
+      let recordingStartTime = 0;
+      let activeStream = null;
+
+      window.avaAudioRecordIsSupported = function() {
+        return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
+      };
+
+      window.avaAudioRecordStart = function(onStarted, onError) {
+        if (!window.avaAudioRecordIsSupported()) {
+          if (typeof onError === 'function') onError('Audio recording is not supported in this browser.');
+          return;
+        }
+
+        navigator.mediaDevices.getUserMedia({ audio: true })
+          .then(function(stream) {
+            activeStream = stream;
+            audioChunks = [];
+            recordingStartTime = Date.now();
+
+            let mimeType = 'audio/webm;codecs=opus';
+            if (!MediaRecorder.isTypeSupported(mimeType)) {
+              if (MediaRecorder.isTypeSupported('audio/webm')) {
+                mimeType = 'audio/webm';
+              } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+                mimeType = 'audio/mp4';
+              } else if (MediaRecorder.isTypeSupported('audio/ogg')) {
+                mimeType = 'audio/ogg';
+              } else if (MediaRecorder.isTypeSupported('audio/wav')) {
+                mimeType = 'audio/wav';
+              } else {
+                mimeType = '';
+              }
+            }
+
+            try {
+              mediaRecorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+            } catch (e) {
+              mediaRecorder = new MediaRecorder(stream);
+            }
+
+            mediaRecorder.ondataavailable = function(e) {
+              if (e.data && e.data.size > 0) {
+                audioChunks.push(e.data);
+              }
+            };
+
+            mediaRecorder.onstart = function() {
+              if (typeof onStarted === 'function') onStarted();
+            };
+
+            mediaRecorder.onerror = function(e) {
+              if (typeof onError === 'function') onError((e && e.error && e.error.message) || 'Audio recording error');
+            };
+
+            mediaRecorder.start(100);
+          })
+          .catch(function(err) {
+            console.error('[AvA Audio] Recording start error:', err);
+            if (typeof onError === 'function') {
+              onError((err && err.message) || 'Microphone permission denied or unavailable');
+            }
+          });
+      };
+
+      window.avaAudioRecordStop = function(onSuccess, onError) {
+        if (!mediaRecorder || mediaRecorder.state === 'inactive') {
+          if (typeof onError === 'function') onError('No active recording found');
+          return;
+        }
+
+        mediaRecorder.onstop = function() {
+          const duration = Date.now() - recordingStartTime;
+          const mime = mediaRecorder.mimeType || 'audio/webm';
+          const blob = new Blob(audioChunks, { type: mime });
+
+          if (activeStream) {
+            activeStream.getTracks().forEach(function(t) { t.stop(); });
+            activeStream = null;
+          }
+
+          const reader = new FileReader();
+          reader.onloadend = function() {
+            const base64Data = reader.result;
+            if (typeof onSuccess === 'function') {
+              onSuccess(base64Data, mime, duration);
+            }
+          };
+          reader.onerror = function(err) {
+            if (typeof onError === 'function') onError('Failed to read recorded audio data');
+          };
+          reader.readAsDataURL(blob);
+        };
+
+        try {
+          mediaRecorder.stop();
+        } catch (err) {
+          if (typeof onError === 'function') onError((err && err.message) || 'Error stopping audio recorder');
+        }
+      };
+
+      // ─── Speech Recognition (Speech-to-Text) Bridge ─────────────────
+      let speechRecognition = null;
+      let speechAccumulated = '';
+
+      window.avaSpeechIsSupported = function() {
+        return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+      };
+
+      window.avaSpeechStart = function(onResult, onError, onEnd, onStarted) {
+        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRec) {
+          if (typeof onError === 'function') onError('Speech recognition not supported');
+          return;
+        }
+
+        try {
+          if (speechRecognition) {
+            try { speechRecognition.abort(); } catch(_) {}
+            speechRecognition = null;
+          }
+
+          speechRecognition = new SpeechRec();
+          speechRecognition.continuous = true;
+          speechRecognition.interimResults = true;
+          speechRecognition.lang = navigator.language || 'bn-BD';
+          speechAccumulated = '';
+
+          speechRecognition.onstart = function() {
+            if (typeof onStarted === 'function') onStarted();
+          };
+
+          speechRecognition.onresult = function(event) {
+            let interim = '';
+            let finalStr = '';
+            for (let i = 0; i < event.results.length; ++i) {
+              if (event.results[i].isFinal) {
+                finalStr += event.results[i][0].transcript + ' ';
+              } else {
+                interim += event.results[i][0].transcript;
+              }
+            }
+            speechAccumulated = (finalStr + interim).trim();
+            if (typeof onResult === 'function') onResult(speechAccumulated);
+          };
+
+          speechRecognition.onerror = function(event) {
+            if (event.error === 'no-speech') return; // Ignore silent pauses
+            if (typeof onError === 'function') onError(event.error || 'Speech recognition error');
+          };
+
+          speechRecognition.onend = function() {
+            if (typeof onEnd === 'function') onEnd();
+          };
+
+          speechRecognition.start();
+        } catch(e) {
+          if (typeof onError === 'function') onError((e && e.message) || 'Speech start failed');
+        }
+      };
+
+      window.avaSpeechStop = function() {
+        if (speechRecognition) {
+          try { speechRecognition.stop(); } catch(_) {}
+          speechRecognition = null;
+        }
+      };
+
+      // ─── In-App Audio Player Bridge (HTML5 Audio) ───────────────────
+      let currentAudio = null;
+
+      window.avaAudioPlay = function(url, onTimeUpdate, onEnded, onError) {
+        try {
+          if (currentAudio) {
+            currentAudio.pause();
+            currentAudio.currentTime = 0;
+            currentAudio = null;
+          }
+
+          currentAudio = new Audio();
+          currentAudio.crossOrigin = 'anonymous';
+          currentAudio.preload = 'auto';
+          currentAudio.src = url;
+
+          currentAudio.ontimeupdate = function() {
+            if (typeof onTimeUpdate === 'function' && currentAudio) {
+              onTimeUpdate(currentAudio.currentTime || 0, currentAudio.duration || 0);
+            }
+          };
+
+          currentAudio.onended = function() {
+            if (typeof onEnded === 'function') onEnded();
+          };
+
+          currentAudio.onerror = function(e) {
+            if (typeof onError === 'function') onError('Audio play failed');
+          };
+
+          const promise = currentAudio.play();
+          if (promise !== undefined) {
+            promise.catch(function(err) {
+              if (typeof onError === 'function') onError((err && err.message) || 'Audio play error');
+            });
+          }
+        } catch(err) {
+          if (typeof onError === 'function') onError((err && err.message) || 'Audio play error');
+        }
+      };
+
+      window.avaAudioPause = function() {
+        if (currentAudio) {
+          try { currentAudio.pause(); } catch(_) {}
+        }
+      };
+
+      window.avaAudioResume = function() {
+        if (currentAudio) {
+          try { currentAudio.play(); } catch(_) {}
+        }
+      };
+
+      window.avaAudioSeek = function(seconds) {
+        if (currentAudio && !isNaN(seconds)) {
+          try { currentAudio.currentTime = seconds; } catch(_) {}
+        }
+      };
+
+      window.avaAudioStop = function() {
+        if (currentAudio) {
+          try {
+            currentAudio.pause();
+            currentAudio.currentTime = 0;
+          } catch(_) {}
+          currentAudio = null;
+        }
+      };
+    })();
+
+    // Force unregister stale service workers and clear obsolete caches on update
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for (let r of registrations) {
+          r.unregister();
+        }
+      });
+    }
+    if ('caches' in window) {
+      caches.keys().then(function(names) {
+        for (let name of names) {
+          if (!name.includes('v20260919_0650')) {
+            caches.delete(name);
+          }
+        }
+      });
+    }
+  </script>
+
+  <script src="flutter_bootstrap.js?v=20260919_0650" async></script>
+</body>
+</html>

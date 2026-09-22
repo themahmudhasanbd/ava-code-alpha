@@ -736,6 +736,12 @@ pub fn built_in_model_providers(
         P::create_amazon_bedrock_runtime_provider(/*aws*/ None);
 
     [
+        (OPENAI_PROVIDER_ID, openai_provider),
+        (AMAZON_BEDROCK_PROVIDER_ID, amazon_bedrock_provider),
+        (
+            AMAZON_BEDROCK_RUNTIME_PROVIDER_ID,
+            amazon_bedrock_runtime_provider,
+        ),
         (ANTIGRAVITY_PROVIDER_ID, create_antigravity_provider()),
         (
             OLLAMA_OSS_PROVIDER_ID,

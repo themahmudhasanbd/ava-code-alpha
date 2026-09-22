@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "76282394533",
+    "project_id": "ava-code",
+    "storage_bucket": "ava-code.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:76282394533:android:6f7029563f0a48c72e1a4c",
+        "android_client_info": {
+          "package_name": "com.avacode.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBPGEiR9w1ismOxlN7N8deX6NNL6V_X_TQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

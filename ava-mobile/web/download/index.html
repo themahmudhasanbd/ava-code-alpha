@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Download AvA Code for Android | Official Release</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #0b0f19;
+      --card-bg: rgba(22, 28, 45, 0.7);
+      --card-border: rgba(255, 255, 255, 0.1);
+      --primary-accent: #6366f1;
+      --primary-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --success: #10b981;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow-x: hidden;
+      padding: 2rem 1rem;
+    }
+
+    /* Ambient Background Glows */
+    .glow-1 {
+      position: absolute;
+      top: -10%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.25) 0%, rgba(168, 85, 247, 0.1) 40%, transparent 70%);
+      filter: blur(80px);
+      pointer-events: none;
+    }
+
+    .glow-2 {
+      position: absolute;
+      bottom: -10%;
+      right: 10%;
+      width: 450px;
+      height: 450px;
+      background: radial-gradient(circle, rgba(236, 72, 153, 0.2) 0%, transparent 70%);
+      filter: blur(80px);
+      pointer-events: none;
+    }
+
+    .container {
+      max-width: 540px;
+      width: 100%;
+      position: relative;
+      z-index: 10;
+    }
+
+    .card {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 2.5rem 2rem;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+      text-align: center;
+    }
+
+    .logo-badge {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 1.5rem auto;
+      background: var(--primary-gradient);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4);
+      transform: rotate(-3deg);
+      transition: transform 0.3s ease;
+    }
+
+    .logo-badge:hover {
+      transform: rotate(0deg) scale(1.05);
+    }
+
+    .logo-badge svg {
+      width: 44px;
+      height: 44px;
+      fill: #ffffff;
+    }
+
+    .title {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(180deg, #ffffff 0%, #d1d5db 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      line-height: 1.5;
+      margin-bottom: 2rem;
+    }
+
+    .badge-row {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-bottom: 1.75rem;
+      flex-wrap: wrap;
+    }
+
+    .tag {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 100px;
+      padding: 0.35rem 0.85rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #e5e7eb;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .tag-success {
+      border-color: rgba(16, 185, 129, 0.3);
+      background: rgba(16, 185, 129, 0.1);
+      color: #34d399;
+    }
+
+    .btn-download {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      width: 100%;
+      padding: 1.1rem 1.75rem;
+      background: var(--primary-gradient);
+      color: #ffffff;
+      font-size: 1.1rem;
+      font-weight: 700;
+      border: none;
+      border-radius: 16px;
+      text-decoration: none;
+      box-shadow: 0 10px 30px rgba(99, 102, 241, 0.35);
+      transition: all 0.25s ease;
+      margin-bottom: 1.5rem;
+    }
+
+    .btn-download:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 15px 35px rgba(99, 102, 241, 0.5);
+      filter: brightness(1.1);
+    }
+
+    .btn-download:active {
+      transform: translateY(0);
+    }
+
+    .info-box {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      padding: 1.25rem;
+      text-align: left;
+      margin-top: 1rem;
+    }
+
+    .info-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 0.75rem;
+    }
+
+    .info-list {
+      list-style: none;
+      font-size: 0.875rem;
+      color: #d1d5db;
+    }
+
+    .info-list li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.4rem 0;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.06);
+    }
+
+    .info-list li:last-child {
+      border-bottom: none;
+    }
+
+    .info-label {
+      color: var(--text-muted);
+    }
+
+    .info-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 500;
+      color: #f9fafb;
+    }
+
+    .instructions {
+      margin-top: 1.75rem;
+      text-align: left;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .instructions h4 {
+      color: var(--text-main);
+      font-size: 0.9rem;
+      margin-bottom: 0.4rem;
+    }
+
+    .instructions ol {
+      padding-left: 1.2rem;
+    }
+
+    .instructions li {
+      margin-bottom: 0.3rem;
+    }
+
+    footer {
+      margin-top: 2rem;
+      font-size: 0.8rem;
+      color: #6b7280;
+      text-align: center;
+    }
+
+    footer a {
+      color: var(--primary-accent);
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="glow-1"></div>
+  <div class="glow-2"></div>
+
+  <div class="container">
+    <div class="card">
+      <div class="logo-badge">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
+        </svg>
+      </div>
+
+      <h1 class="title">AvA Code Mobile</h1>
+      <p class="subtitle">Official Android Release Build for AvA Code Core Engine & IDE</p>
+
+      <div class="badge-row">
+        <span class="tag tag-success">● Official Build</span>
+        <span class="tag">Android APK</span>
+        <span class="tag">v1.0.0</span>
+      </div>
+
+      <a id="downloadBtn" href="/download/ava-code-release.apk" class="btn-download" download="ava-code-release.apk">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        Download Release APK
+      </a>
+
+      <div class="info-box">
+        <div class="info-title">Package Specifications</div>
+        <ul class="info-list">
+          <li>
+            <span class="info-label">File Name</span>
+            <span class="info-val">ava-code-release.apk</span>
+          </li>
+          <li>
+            <span class="info-label">File Size</span>
+            <span class="info-val" id="fileSize">60 MB</span>
+          </li>
+          <li>
+            <span class="info-label">Target Architecture</span>
+            <span class="info-val">arm64-v8a / Universal</span>
+          </li>
+          <li>
+            <span class="info-label">Min Android Version</span>
+            <span class="info-val">Android 7.0 (API 24+)</span>
+          </li>
+          <li>
+            <span class="info-label">Build Date</span>
+            <span class="info-val">Sep 04, 2026</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="instructions">
+        <h4>📱 Installation Guide</h4>
+        <ol>
+          <li>Tap <strong>Download Release APK</strong> above to download the file.</li>
+          <li>Open your Android Notification bar or Downloads folder and tap on <code>ava-code-release.apk</code>.</li>
+          <li>If prompted, allow <strong>"Install from unknown sources"</strong> in your browser or device settings.</li>
+          <li>Tap <strong>Install</strong> and enjoy AvA Code Mobile!</li>
+        </ol>
+      </div>
+    </div>
+
+    <footer>
+      Powered by <strong>Thunder Nexus Platform</strong> &bull; <a href="https://test.thundernexus.com">Launch Web App</a>
+    </footer>
+  </div>
+
+  <script>
+    // Auto initiate download if URL contains ?auto=true or #auto
+    if (window.location.search.includes('auto=true') || window.location.hash === '#auto') {
+      document.getElementById('downloadBtn').click();
+    }
+  </script>
+</body>
+</html>

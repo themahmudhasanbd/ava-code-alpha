@@ -1,0 +1,732 @@
+import 'package:flutter/material.dart';
+import 'models/app_models.dart';
+import 'services/agent_core_service.dart';
+import 'theme/app_theme.dart';
+import 'widgets/header_bar.dart';
+import 'widgets/drawer_navigation.dart';
+import 'screens/auth_screen.dart';
+import 'screens/chat_screen.dart';
+import 'screens/models_screen.dart';
+import 'screens/mcp_screen.dart';
+import 'screens/sessions_screen.dart';
+import 'screens/system_screen.dart';
+import 'screens/settings_screen.dart';
+import 'screens/files_screen.dart';
+import 'screens/terminal_screen.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+
+void main() {
+  runApp(const AvaCodeApp());
+}
+
+class AvaCodeApp extends StatelessWidget {
+  const AvaCodeApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<AvaThemePreset>(
+      valueListenable: AppTheme.currentThemeNotifier,
+      builder: (context, activePreset, _) {
+        return MaterialApp(
+          title: 'AvA Code Mobile',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.themeData,
+          home: const MainHomeScreen(),
+        );
+      },
+    );
+  }
+}
+
+class MainHomeScreen extends StatefulWidget {
+  const MainHomeScreen({super.key});
+
+  @override
+  State<MainHomeScreen> createState() => _MainHomeScreenState();
+}
+
+class _MainHomeScreenState extends State<MainHomeScreen> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  bool _isAuthenticated = false; // Default requires authentication on startup
+  String _serverUrl = 'https://test.thundernexus.com'; // Web: proxied via NGINX → port 8082
+  String _vpsWorkspacePath = '/var/www/ava-code';
+  int _selectedNavIndex = 0; // 0: Agent Chat, 1: Files, 2: Models, 3: MCP, 4: Sessions, 5: System, 6: Settings, 7: Terminal
+  String _selectedMode = 'build';
+
+  late AvaAgentCoreService _agentCoreService;
+  bool _isCoreConnected = false;
+
+  List<AvaModelItem> _availableModels = [];
+  AvaModelItem? _selectedModelItem;
+
+  String? _activeSessionId;
+
+  // Clean empty initial chat messages (NO welcome greeting bubble)
+  final List<ChatMessageModel> _chatMessages = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _agentCoreService = AvaAgentCoreService(
+      baseUrl: _serverUrl,
+      workspacePath: _vpsWorkspacePath,
+    );
+    _initializeAgentCoreConnection();
+  }
+
+  Future<void> _handleSelectSession(Map<String, dynamic> session) async {
+    final sessId = session['id']?.toString() ?? '';
+    final sessTitle = session['name']?.toString() ?? session['title']?.toString() ?? 'Active Session';
+    final targetWorkspace = session['workspacePath']?.toString() ?? session['directory']?.toString() ?? '/var/www/ava-code';
+
+    final targetMode = session['mode']?.toString() ?? session['agent']?.toString() ?? 'build';
+
+    if (sessId.isEmpty) return;
+
+    setState(() {
+      _activeSessionId = sessId;
+      _vpsWorkspacePath = targetWorkspace;
+      _selectedMode = targetMode;
+      _agentCoreService = AvaAgentCoreService(
+        baseUrl: _serverUrl,
+        workspacePath: _vpsWorkspacePath,
+      );
+      _selectedNavIndex = 0; // Switch to Agent Chat
+      _chatMessages.clear();
+      _chatMessages.add(ChatMessageModel(
+        id: 'loading-hist',
+        sender: 'agent',
+        text: 'Loading history for "$sessTitle"...',
+        timestamp: TimeOfDay.now().format(context),
+        isPending: true,
+      ));
+    });
+
+    final historyMsgs = await _agentCoreService.fetchSessionMessages(sessId);
+
+    if (mounted) {
+      setState(() {
+        _chatMessages.clear();
+        _chatMessages.add(ChatMessageModel(
+          id: 'sess-header-${DateTime.now().millisecondsSinceEpoch}',
+          sender: 'agent',
+          text: '### Resumed Session: **$sessTitle**\n- **Session ID**: `$sessId`\n- **Workspace**: `$targetWorkspace`\n- **Agent Mode**: `${targetMode.toUpperCase()}`',
+          timestamp: TimeOfDay.now().format(context),
+          modelName: 'Session Manager',
+        ));
+        if (historyMsgs.isNotEmpty) {
+          _chatMessages.addAll(historyMsgs);
+        }
+      });
+    }
+  }
+
+  Future<void> _initializeAgentCoreConnection() async {
+    final isHealthy = await _agentCoreService.checkHealth();
+    final catalogInfo = await _agentCoreService.fetchCatalogInfo();
+    final models = catalogInfo['models'] as List<AvaModelItem>;
+    final defaultModelId = catalogInfo['defaultModelId'] as String;
+
+    if (mounted) {
+      setState(() {
+        _isCoreConnected = isHealthy;
+        _availableModels = models;
+
+        if (_selectedModelItem == null && models.isNotEmpty) {
+          // Select configured default model or fallback to first available
+          final matchedDefault = models.firstWhere(
+            (m) => m.id == defaultModelId,
+            orElse: () => models.first,
+          );
+          _selectedModelItem = matchedDefault;
+        }
+      });
+    }
+  }
+
+  Future<void> _handleSendPrompt(String promptText) async {
+    final now = DateTime.now();
+    final timeStr = TimeOfDay.now().format(context);
+    final selectedModelName = _selectedModelItem?.name ?? (_availableModels.isNotEmpty ? _availableModels.first.name : 'AvA Model');
+
+    final userMsg = ChatMessageModel(
+      id: now.millisecondsSinceEpoch.toString(),
+      sender: 'user',
+      text: promptText,
+      timestamp: timeStr,
+    );
+
+    final pendingId = (now.millisecondsSinceEpoch + 1).toString();
+    final pendingAgentMsg = ChatMessageModel(
+      id: pendingId,
+      sender: 'agent',
+      text: '',
+      timestamp: timeStr,
+      isPending: true,
+      modelName: selectedModelName,
+      reasoningText: '',
+    );
+
+    setState(() {
+      _chatMessages.add(userMsg);
+      _chatMessages.add(pendingAgentMsg);
+    });
+
+    String accumulatedText = '';
+    String accumulatedReasoning = '';
+    final List<AgentTimelineEvent> accumulatedTimeline = [];
+    Map<String, dynamic>? currentQuestion;
+    Map<String, dynamic>? currentPermission;
+
+    try {
+      final stream = _agentCoreService.sendPromptStream(
+        prompt: promptText,
+        modelId: _selectedModelItem?.id ?? (_availableModels.isNotEmpty ? _availableModels.first.id : ''),
+        provider: _selectedModelItem?.provider ?? (_availableModels.isNotEmpty ? _availableModels.first.provider : 'Default'),
+        mode: _selectedMode,
+        sessionId: _activeSessionId,
+      );
+
+      await for (final event in stream) {
+        if (!mounted) break;
+
+        final type = event['type']?.toString() ?? '';
+
+        // ── Session bootstrap ─────────────────────────────────────────────
+        if (type == 'session_id') {
+          final returnedSessId = event['sessionId']?.toString();
+          if (returnedSessId != null && returnedSessId.isNotEmpty) {
+            _activeSessionId = returnedSessId;
+          }
+
+        // ── Step lifecycle (session-usecase.js: type=="step") ─────────────
+        } else if (type == 'step') {
+          final stepType = event['stepType']?.toString() ?? '';
+          if (stepType == 'step_start') {
+            setState(() {});
+          } else if (stepType == 'step_finish') {
+            // Step done — finalize the message
+            setState(() {
+              final idx = _chatMessages.indexWhere((m) => m.id == pendingId);
+              if (idx != -1 && accumulatedText.trim().isNotEmpty) {
+                _chatMessages[idx] = _chatMessages[idx].copyWith(
+                  text: accumulatedText.trim(),
+                  timelineEvents: List.from(accumulatedTimeline),
+                );
+              }
+            });
+          }
+
+        // ── Text streaming (session-usecase.js: type=="text") ─────────────
+        } else if (type == 'text') {
+          final chunk = event['text']?.toString() ?? '';
+          if (chunk.isNotEmpty) {
+            accumulatedText += chunk;
+            setState(() {
+              final idx = _chatMessages.indexWhere((m) => m.id == pendingId);
+              if (idx != -1) {
+                _chatMessages[idx] = _chatMessages[idx].copyWith(text: accumulatedText);
+              }
+            });
+          }
+
+        // ── Reasoning (session-usecase.js: type=="reasoning") ─────────────
+        } else if (type == 'reasoning') {
+          final chunk = event['text']?.toString() ?? '';
+          if (chunk.isNotEmpty) {
+            accumulatedReasoning += chunk;
+            setState(() {
+              final idx = _chatMessages.indexWhere((m) => m.id == pendingId);
+              if (idx != -1) {
+                _chatMessages[idx] = _chatMessages[idx].copyWith(reasoningText: accumulatedReasoning);
+              }
+            });
+          }
+
+        // ── Tool calls (session-usecase.js: type=="tool_use") ─────────────
+        } else if (type == 'tool_use') {
+          final tool = event['tool']?.toString() ?? 'tool';
+          final command = event['command']?.toString();
+          final output = event['output']?.toString();
+          final status = event['status']?.toString() ?? 'completed';
+          final evId = 'ev-${DateTime.now().microsecondsSinceEpoch}';
+          final title = command != null && command.isNotEmpty ? '$tool: $command' : tool;
+          accumulatedTimeline.add(AgentTimelineEvent(
+            id: evId,
+            type: 'tool_use',
+            title: title,
+            details: output,
+            status: status,
+          ));
+          setState(() {
+            final idx = _chatMessages.indexWhere((m) => m.id == pendingId);
+            if (idx != -1) {
+              _chatMessages[idx] = _chatMessages[idx].copyWith(timelineEvents: List.from(accumulatedTimeline));
+            }
+          });
+
+        // ── Idle / done (session-usecase.js: type=="session.status"|"done")
+        } else if (type == 'session.status' && event['status']?.toString() == 'idle') {
+          setState(() {});
+
+        } else if (type == 'done') {
+          final status = event['status']?.toString() ?? 'success';
+          final isSuccess = status == 'success';
+          final finalReply = event['reply']?.toString() ?? '';
+          final finalReasoning = event['reasoning']?.toString();
+
+          String finalText = accumulatedText.trim();
+          if (finalText.isEmpty) {
+            finalText = finalReply.isNotEmpty
+                ? finalReply
+                : (isSuccess ? 'Task completed successfully.' : 'An error occurred.');
+          }
+          final finalReason = accumulatedReasoning.trim().isNotEmpty
+              ? accumulatedReasoning.trim()
+              : finalReasoning;
+
+          setState(() {
+            final idx = _chatMessages.indexWhere((m) => m.id == pendingId);
+            if (idx != -1) {
+              _chatMessages[idx] = ChatMessageModel(
+                id: pendingId,
+                sender: 'agent',
+                text: finalText,
+                timestamp: TimeOfDay.now().format(context),
+                isPending: false,
+                isError: !isSuccess,
+                modelName: selectedModelName,
+                errorMessage: isSuccess ? null : finalText,
+                reasoningText: finalReason,
+                timelineEvents: List.from(accumulatedTimeline),
+                questionData: currentQuestion,
+                permissionData: currentPermission,
+              );
+            }
+          });
+
+        // ── Questions & Permissions ───────────────────────────────────────
+        } else if (type == 'ask_question' || type == 'question.asked') {
+          currentQuestion = Map<String, dynamic>.from(event);
+          accumulatedTimeline.add(AgentTimelineEvent(
+            id: 'ev-${DateTime.now().microsecondsSinceEpoch}',
+            type: 'ask_question',
+            title: event['question']?.toString() ?? 'Question',
+            options: event['options'] is List ? List<String>.from(event['options']) : null,
+          ));
+          setState(() {
+            final idx = _chatMessages.indexWhere((m) => m.id == pendingId);
+            if (idx != -1) {
+              _chatMessages[idx] = _chatMessages[idx].copyWith(
+                timelineEvents: List.from(accumulatedTimeline),
+                questionData: currentQuestion,
+              );
+            }
+          });
+
+        } else if (type == 'permission_request' || type == 'permission.asked') {
+          currentPermission = Map<String, dynamic>.from(event);
+          accumulatedTimeline.add(AgentTimelineEvent(
+            id: 'ev-${DateTime.now().microsecondsSinceEpoch}',
+            type: 'permission_request',
+            title: event['command']?.toString() ?? 'Permission Request',
+            command: event['command']?.toString(),
+            details: event['description']?.toString(),
+          ));
+          setState(() {
+            final idx = _chatMessages.indexWhere((m) => m.id == pendingId);
+            if (idx != -1) {
+              _chatMessages[idx] = _chatMessages[idx].copyWith(
+                timelineEvents: List.from(accumulatedTimeline),
+                permissionData: currentPermission,
+              );
+            }
+          });
+
+        // ── Forward-compat: session.next.* protocol events ─────────────────
+        } else if (type == 'session.next.text.delta') {
+          final delta = event['delta']?.toString() ?? '';
+          if (delta.isNotEmpty) {
+            accumulatedText += delta;
+            setState(() {
+              final idx = _chatMessages.indexWhere((m) => m.id == pendingId);
+              if (idx != -1) _chatMessages[idx] = _chatMessages[idx].copyWith(text: accumulatedText);
+            });
+          }
+        } else if (type == 'session.next.text.ended') {
+          final fullText = event['text']?.toString() ?? '';
+          if (fullText.isNotEmpty) {
+            accumulatedText = fullText;
+            setState(() {
+              final idx = _chatMessages.indexWhere((m) => m.id == pendingId);
+              if (idx != -1) _chatMessages[idx] = _chatMessages[idx].copyWith(text: accumulatedText);
+            });
+          }
+        } else if (type == 'session.next.reasoning.delta') {
+          final delta = event['delta']?.toString() ?? '';
+          if (delta.isNotEmpty) {
+            accumulatedReasoning += delta;
+            setState(() {
+              final idx = _chatMessages.indexWhere((m) => m.id == pendingId);
+              if (idx != -1) _chatMessages[idx] = _chatMessages[idx].copyWith(reasoningText: accumulatedReasoning);
+            });
+          }
+        } else if (type == 'session.next.step.ended') {
+          setState(() {
+            final idx = _chatMessages.indexWhere((m) => m.id == pendingId);
+            if (idx != -1) {
+              _chatMessages[idx] = _chatMessages[idx].copyWith(
+                isPending: false,
+                text: accumulatedText.trim().isNotEmpty ? accumulatedText.trim() : 'Step completed.',
+                timelineEvents: List.from(accumulatedTimeline),
+              );
+            }
+          });
+        } else if (type == 'session.next.step.failed') {
+          final errMap = event['error'];
+          final errMsg = errMap is Map ? (errMap['message']?.toString() ?? 'Step failed.') : 'Step failed.';
+          setState(() {
+            final idx = _chatMessages.indexWhere((m) => m.id == pendingId);
+            if (idx != -1) {
+              _chatMessages[idx] = ChatMessageModel(
+                id: pendingId,
+                sender: 'agent',
+                text: accumulatedText.trim().isNotEmpty ? accumulatedText.trim() : errMsg,
+                timestamp: TimeOfDay.now().format(context),
+                isPending: false,
+                isError: true,
+                modelName: selectedModelName,
+                errorMessage: errMsg,
+                reasoningText: accumulatedReasoning.isNotEmpty ? accumulatedReasoning : null,
+                timelineEvents: List.from(accumulatedTimeline),
+              );
+            }
+          });
+          break;
+        }
+      }
+
+
+    } catch (err) {
+      if (mounted) {
+        setState(() {
+          final idx = _chatMessages.indexWhere((m) => m.id == pendingId);
+          if (idx != -1) {
+            _chatMessages[idx] = ChatMessageModel(
+              id: pendingId,
+              sender: 'agent',
+              text: accumulatedText.isNotEmpty ? accumulatedText : 'Failed to communicate with agent server.',
+              timestamp: TimeOfDay.now().format(context),
+              isPending: false,
+              isError: true,
+              modelName: selectedModelName,
+              errorMessage: 'Network error or timeout: ${err.toString()}',
+              reasoningText: accumulatedReasoning.isNotEmpty ? accumulatedReasoning : null,
+            );
+          }
+        });
+      }
+    }
+  }
+
+  Future<void> _handleQuestionReplied(String requestId, String answer) async {
+    await _agentCoreService.replyQuestion(requestId, answer);
+    await _handleSendPrompt(answer);
+  }
+
+  void _showTerminalModal() {
+    setState(() => _selectedNavIndex = 7);
+  }
+
+  void _showDebugLogsModal() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final logs = AvaAgentCoreService.debugLogs;
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.7,
+              decoration: const BoxDecoration(
+                color: Color(0xFF13141F),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                border: Border(top: BorderSide(color: Color(0xFF27272A))),
+              ),
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(LucideIcons.bug, size: 16, color: const Color(0xFF818CF8)),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Live API & App Debug Console',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        icon: Icon(LucideIcons.trash2, size: 16, color: const Color(0xFF8B8B95)),
+                        onPressed: () {
+                          AvaAgentCoreService.debugLogs.clear();
+                          setModalState(() {});
+                        },
+                        tooltip: 'Clear logs',
+                      ),
+                      IconButton(
+                        icon: Icon(LucideIcons.x, size: 16, color: Colors.white),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
+                  ),
+                  const Divider(color: Color(0xFF27272A)),
+                  Expanded(
+                    child: logs.isEmpty
+                        ? const Center(
+                            child: Text(
+                              'No debug logs yet. Send a message to see live logs.',
+                              style: TextStyle(fontSize: 12, color: Color(0xFF8B8B95)),
+                            ),
+                          )
+                        : ListView.builder(
+                            itemCount: logs.length,
+                            reverse: true,
+                            itemBuilder: (ctx, i) {
+                              final logIndex = logs.length - 1 - i;
+                              final entry = logs[logIndex];
+                              final isError = entry.contains('❌') || entry.contains('HTTP Error');
+                              final isSuccess = entry.contains('✅');
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 2),
+                                child: SelectableText(
+                                  entry,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontFamily: 'monospace',
+                                    height: 1.4,
+                                    color: isError
+                                        ? const Color(0xFFF87171)
+                                        : (isSuccess ? const Color(0xFF34D399) : const Color(0xFFE4E4E7)),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = AppTheme.isDark;
+    final cardBg = AppTheme.cardBg;
+    final borderColor = AppTheme.borderColor;
+    final textPrimary = AppTheme.textPrimary;
+    final textSecondary = AppTheme.textSecondary;
+
+    // Render AuthScreen if user needs to authenticate or sign out
+    if (!_isAuthenticated) {
+      return AuthScreen(
+        currentServerUrl: _serverUrl,
+        currentWorkspacePath: _vpsWorkspacePath,
+        onAuthenticateSuccess: (email, password) async {
+          setState(() {
+            _isAuthenticated = true;
+          });
+          await _initializeAgentCoreConnection();
+        },
+      );
+    }
+
+    return Scaffold(
+      key: _scaffoldKey,
+      drawer: DrawerNavigation(
+        isDark: isDark,
+        cardBg: cardBg,
+        borderColor: borderColor,
+        textPrimary: textPrimary,
+        textSecondary: textSecondary,
+        selectedNavIndex: _selectedNavIndex,
+        onSelectNav: (idx) => setState(() => _selectedNavIndex = idx),
+        vpsWorkspacePath: _vpsWorkspacePath,
+        onSelectWorkspacePath: (newPath) {
+          setState(() {
+            _vpsWorkspacePath = newPath;
+            _agentCoreService = AvaAgentCoreService(
+              baseUrl: _serverUrl,
+              workspacePath: _vpsWorkspacePath,
+            );
+          });
+        },
+        onSignOut: () {
+          setState(() => _isAuthenticated = false);
+        },
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Clean Header Bar
+            HeaderBar(
+              isDark: isDark,
+              cardBg: cardBg,
+              borderColor: borderColor,
+              textPrimary: textPrimary,
+              textSecondary: textSecondary,
+              selectedModel: _selectedModelItem,
+              availableModels: _availableModels,
+              onSelectModel: (m) => setState(() => _selectedModelItem = m),
+              isCoreConnected: _isCoreConnected,
+              onOpenDrawer: () => _scaffoldKey.currentState?.openDrawer(),
+              onOpenTerminal: _showTerminalModal,
+              onOpenDebugLogs: _showDebugLogsModal,
+            ),
+
+            // Active Tab Content View
+            Expanded(
+              child: _buildActiveTabContent(isDark, cardBg, borderColor, textPrimary, textSecondary),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActiveTabContent(bool isDark, Color cardBg, Color borderColor, Color textPrimary, Color textSecondary) {
+    switch (_selectedNavIndex) {
+      case 0:
+        return ChatScreen(
+          isDark: isDark,
+          cardBg: cardBg,
+          borderColor: borderColor,
+          textPrimary: textPrimary,
+          textSecondary: textSecondary,
+          messages: _chatMessages,
+          selectedMode: _selectedMode,
+          onSelectMode: (mode) => setState(() => _selectedMode = mode),
+          vpsWorkspacePath: _vpsWorkspacePath,
+          onSendPrompt: _handleSendPrompt,
+          onInterrupt: () {
+            final sessId = _activeSessionId;
+            if (sessId != null && sessId.isNotEmpty) {
+              _agentCoreService.interruptSession(sessId);
+            }
+          },
+          onQuestionReplied: _handleQuestionReplied,
+          agentCoreService: _agentCoreService,
+          onNavigateTab: (idx) => setState(() => _selectedNavIndex = idx),
+        );
+      case 1:
+        return FilesScreen(
+          isDark: isDark,
+          cardBg: cardBg,
+          borderColor: borderColor,
+          textPrimary: textPrimary,
+          textSecondary: textSecondary,
+          vpsWorkspacePath: _vpsWorkspacePath,
+          agentCoreService: _agentCoreService,
+          onSelectFileForChat: (filePath) {
+            setState(() => _selectedNavIndex = 0);
+          },
+        );
+      case 2:
+        return ModelsScreen(
+          isDark: isDark,
+          cardBg: cardBg,
+          borderColor: borderColor,
+          textPrimary: textPrimary,
+          textSecondary: textSecondary,
+          availableModels: _availableModels,
+          selectedModel: _selectedModelItem,
+          onSelectModel: (model) => setState(() => _selectedModelItem = model),
+          onRefreshModels: _initializeAgentCoreConnection,
+        );
+      case 3:
+        return McpScreen(
+          isDark: isDark,
+          cardBg: cardBg,
+          borderColor: borderColor,
+          textPrimary: textPrimary,
+          textSecondary: textSecondary,
+        );
+      case 4:
+        return SessionsScreen(
+          cardBg: cardBg,
+          borderColor: borderColor,
+          textPrimary: textPrimary,
+          textSecondary: textSecondary,
+          agentCoreService: _agentCoreService,
+          onSelectSession: _handleSelectSession,
+        );
+      case 5:
+        return SystemScreen(
+          cardBg: cardBg,
+          borderColor: borderColor,
+          textPrimary: textPrimary,
+          textSecondary: textSecondary,
+          agentCoreService: _agentCoreService,
+        );
+      case 6:
+        return SettingsScreen(
+          isDark: isDark,
+          cardBg: cardBg,
+          borderColor: borderColor,
+          textPrimary: textPrimary,
+          textSecondary: textSecondary,
+          serverUrl: _serverUrl,
+          onUpdateServerUrl: (url) {
+            setState(() {
+              _serverUrl = url;
+              _agentCoreService = AvaAgentCoreService(baseUrl: _serverUrl, workspacePath: _vpsWorkspacePath);
+            });
+          },
+          vpsWorkspacePath: _vpsWorkspacePath,
+          onUpdateWorkspacePath: (path) {
+            setState(() {
+              _vpsWorkspacePath = path;
+              _agentCoreService = AvaAgentCoreService(baseUrl: _serverUrl, workspacePath: _vpsWorkspacePath);
+            });
+          },
+        );
+      case 7:
+        return TerminalScreen(
+          isDark: isDark,
+          cardBg: cardBg,
+          borderColor: borderColor,
+          textPrimary: textPrimary,
+          textSecondary: textSecondary,
+          vpsWorkspacePath: _vpsWorkspacePath,
+        );
+      default:
+        return ChatScreen(
+          isDark: isDark,
+          cardBg: cardBg,
+          borderColor: borderColor,
+          textPrimary: textPrimary,
+          textSecondary: textSecondary,
+          messages: _chatMessages,
+          selectedMode: _selectedMode,
+          onSelectMode: (mode) => setState(() => _selectedMode = mode),
+          vpsWorkspacePath: _vpsWorkspacePath,
+          onSendPrompt: _handleSendPrompt,
+          onInterrupt: () {
+            final sessId = _activeSessionId;
+            if (sessId != null && sessId.isNotEmpty) {
+              _agentCoreService.interruptSession(sessId);
+            }
+          },
+          onQuestionReplied: _handleQuestionReplied,
+          agentCoreService: _agentCoreService,
+          onNavigateTab: (idx) => setState(() => _selectedNavIndex = idx),
+        );
+    }
+  }
+}

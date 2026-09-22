@@ -1,0 +1,116 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "omniroute/powerful-coding-combo",
+  "small_model": "omniroute/fast-combo",
+  "default_agent": "build",
+  "memory": {
+    "enabled": true,
+    "scope": "global",
+    "auto_generate": true
+  },
+  "permission": {
+    "edit": "allow",
+    "bash": "allow",
+    "task": "allow",
+    "browser": "allow",
+    "external_directory": "allow",
+    "*": "allow"
+  },
+  "provider": {
+    "omniroute": {
+      "name": "OmniRoute",
+      "npm": "@ai-sdk/openai-compatible",
+      "api": "http://127.0.0.1:20128/v1",
+      "options": {
+        "baseURL": "http://127.0.0.1:20128/v1",
+        "apiKey": "sk-b0e6ad0f5b0cf9cb-714797-5dcc676a"
+      },
+      "models": {
+        "powerful-coding-combo": {
+          "name": "Powerful Coding Combo",
+          "tool_call": true,
+          "reasoning": true,
+          "attachment": true,
+          "limit": {
+            "context": 1000000,
+            "output": 128000
+          }
+        },
+        "fast-combo": {
+          "name": "Fast Combo",
+          "tool_call": true,
+          "reasoning": true,
+          "attachment": true,
+          "limit": {
+            "context": 500000,
+            "output": 64000
+          }
+        },
+        "auto/claude-sonnet": {
+          "name": "Claude 3.7 Sonnet (OmniRoute)",
+          "tool_call": true,
+          "reasoning": true,
+          "attachment": true,
+          "limit": {
+            "context": 200000,
+            "output": 64000
+          }
+        },
+        "claude-code": {
+          "name": "Claude Code (OmniRoute)",
+          "tool_call": true,
+          "reasoning": true,
+          "attachment": true,
+          "limit": {
+            "context": 200000,
+            "output": 64000
+          }
+        }
+      }
+    }
+  },
+  "mcp": {
+    "mcp_21st": {
+      "type": "remote",
+      "url": "https://21st.dev/api/mcp",
+      "headers": {
+        "Authorization": "Bearer 21st_sk_45e79737aa05861fd41ee92d0b8e76fbe17abc214f146fe9ffa2a5451811ab60"
+      }
+    },
+    "cloudflare": {
+      "type": "remote",
+      "url": "http://127.0.0.1:3100/cf",
+      "headers": {
+        "Authorization": "Bearer df337fb878b82b6a7b31e7c6777d0d0c"
+      }
+    },
+    "cpanel": {
+      "type": "remote",
+      "url": "http://127.0.0.1:3100/cpanel",
+      "headers": {
+        "Authorization": "Bearer b3f2a1c4d5e6f7890a1b2c3d4e5f6a7b"
+      }
+    },
+    "github": {
+      "type": "remote",
+      "url": "http://127.0.0.1:3100/github",
+      "headers": {
+        "Authorization": "Bearer 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"
+      }
+    },
+    "mysql": {
+      "type": "remote",
+      "url": "http://127.0.0.1:3100/mysql",
+      "headers": {
+        "Authorization": "Bearer e094893193669456cfc065cee0434dedc0e73f53ca204deba6224d9f825b6392"
+      }
+    },
+    "mail": {
+      "type": "remote",
+      "url": "https://mcp.mahmudscanvas.site/mail",
+      "headers": {
+        "Authorization": "Bearer 5d6cbe69f7fc4b5409d6d70723851ea2322ffa7ce35d30ebf0b51926b65b8348"
+      }
+    }
+  }
+}

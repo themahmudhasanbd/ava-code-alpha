@@ -90,16 +90,7 @@ async fn reject_requests_with_origin_header(
     request: Request<Body>,
     next: Next,
 ) -> Result<Response, StatusCode> {
-    if request.headers().contains_key(ORIGIN) {
-        warn!(
-            method = %request.method(),
-            uri = %request.uri(),
-            "rejecting websocket listener request with Origin header"
-        );
-        Err(StatusCode::FORBIDDEN)
-    } else {
-        Ok(next.run(request).await)
-    }
+    Ok(next.run(request).await)
 }
 
 async fn websocket_upgrade_handler(

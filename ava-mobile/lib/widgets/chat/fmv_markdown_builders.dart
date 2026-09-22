@@ -722,7 +722,10 @@ class LatexInlineElementBuilder extends MarkdownElementBuilder {
   LatexInlineElementBuilder({this.defaultStyle, this.isDark = true});
 
   @override
-  Widget? visitText(md.Text text, TextStyle? preferredStyle) => const SizedBox.shrink();
+  bool isBlockElement() => false;
+
+  @override
+  Widget? visitText(md.Text text, TextStyle? preferredStyle) => null;
 
   @override
   Widget? visitElementAfterWithContext(
@@ -734,7 +737,9 @@ class LatexInlineElementBuilder extends MarkdownElementBuilder {
     final text = element.textContent.trim();
     if (text.isEmpty) return const SizedBox.shrink();
 
-    final effectiveStyle = (preferredStyle ?? defaultStyle)?.copyWith(
+    final baseStyle = preferredStyle ?? defaultStyle;
+    final effectiveStyle = TextStyle(
+      fontSize: baseStyle?.fontSize ?? 14.0,
       color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF1E293B),
     );
 
@@ -743,8 +748,8 @@ class LatexInlineElementBuilder extends MarkdownElementBuilder {
       textStyle: effectiveStyle,
       mathStyle: MathStyle.text,
       onErrorFallback: (err) => Text(
-        "\$$text\$",
-        style: (preferredStyle ?? defaultStyle)?.copyWith(
+        r"$" + text + r"$",
+        style: TextStyle(
           fontFamily: "JetBrainsMono",
           fontSize: 12.0,
           fontWeight: FontWeight.w600,
@@ -784,6 +789,12 @@ class LatexBlockElementBuilder extends MarkdownElementBuilder {
     final text = element.textContent.trim();
     if (text.isEmpty) return const SizedBox.shrink();
 
+    final baseStyle = preferredStyle ?? defaultStyle;
+    final effectiveStyle = TextStyle(
+      fontSize: (baseStyle?.fontSize ?? 14.0) + 1.5,
+      color: isDark ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A),
+    );
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Center(
@@ -802,14 +813,11 @@ class LatexBlockElementBuilder extends MarkdownElementBuilder {
             ),
             child: Math.tex(
               text,
-              textStyle: (preferredStyle ?? defaultStyle)?.copyWith(
-                fontSize: 15.0,
-                color: isDark ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A),
-              ),
+              textStyle: effectiveStyle,
               mathStyle: MathStyle.display,
               onErrorFallback: (err) => SelectableText(
-                "\$\$\n$text\n\$\$",
-                style: (preferredStyle ?? defaultStyle)?.copyWith(
+                r"$$\n" + text + r"\n$$",
+                style: TextStyle(
                   fontFamily: "JetBrainsMono",
                   fontSize: 12,
                   color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF4F46E5),

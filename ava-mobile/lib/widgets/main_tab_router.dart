@@ -26,6 +26,7 @@ class KeepAliveTerminal extends StatefulWidget {
   final Color textSecondary;
   final String vpsWorkspacePath;
   final String? serverUrl;
+  final AvaAgentCoreService? agentCoreService;
 
   const KeepAliveTerminal({
     super.key,
@@ -36,6 +37,7 @@ class KeepAliveTerminal extends StatefulWidget {
     required this.textSecondary,
     required this.vpsWorkspacePath,
     this.serverUrl,
+    this.agentCoreService,
   });
 
   @override
@@ -58,6 +60,7 @@ class _KeepAliveTerminalState extends State<KeepAliveTerminal>
       textSecondary: widget.textSecondary,
       vpsWorkspacePath: widget.vpsWorkspacePath,
       serverUrl: widget.serverUrl,
+      agentCoreService: widget.agentCoreService,
     );
   }
 }
@@ -147,24 +150,9 @@ class MainTabRouter extends StatefulWidget {
 }
 
 class _MainTabRouterState extends State<MainTabRouter> {
-  final Set<int> _visitedIndices = {0};
-
   @override
-  void initState() {
-    super.initState();
-    _visitedIndices.add(widget.selectedNavIndex);
-  }
-
-  @override
-  void didUpdateWidget(MainTabRouter oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (!_visitedIndices.contains(widget.selectedNavIndex)) {
-      _visitedIndices.add(widget.selectedNavIndex);
-    }
-  }
-
-  Widget _buildTab(int index) {
-    switch (index) {
+  Widget build(BuildContext context) {
+    switch (widget.selectedNavIndex) {
       case 0:
         return ChatScreen(
           isDark: widget.isDark,
@@ -286,6 +274,7 @@ class _MainTabRouterState extends State<MainTabRouter> {
             textSecondary: widget.textSecondary,
             vpsWorkspacePath: '/',
             serverUrl: widget.serverUrl,
+            agentCoreService: widget.agentCoreService,
           ),
         );
       case 8:
@@ -334,80 +323,55 @@ class _MainTabRouterState extends State<MainTabRouter> {
           },
         );
       case 11:
-        return InteractiveSwipeToChat(
-          onDismissed: () => widget.onSwitchTab(0),
-          child: ProfileScreen(
-            isDark: widget.isDark,
-            cardBg: widget.cardBg,
-            borderColor: widget.borderColor,
-            textPrimary: widget.textPrimary,
-            textSecondary: widget.textSecondary,
-            agentCoreService: widget.agentCoreService,
-            onBack: () => widget.onSwitchTab(0),
-          ),
+        return ProfileScreen(
+          isDark: widget.isDark,
+          cardBg: widget.cardBg,
+          borderColor: widget.borderColor,
+          textPrimary: widget.textPrimary,
+          textSecondary: widget.textSecondary,
+          agentCoreService: widget.agentCoreService,
+          onBack: () => widget.onSwitchTab(0),
         );
       case 12:
-        return InteractiveSwipeToChat(
-          onDismissed: () => widget.onSwitchTab(0),
-          child: RemoteDesktopScreen(
-            isDark: widget.isDark,
-            cardBg: widget.cardBg,
-            borderColor: widget.borderColor,
-            textPrimary: widget.textPrimary,
-            textSecondary: widget.textSecondary,
-            serverUrl: widget.serverUrl,
-            onBack: () => widget.onSwitchTab(0),
-          ),
+        return RemoteDesktopScreen(
+          isDark: widget.isDark,
+          cardBg: widget.cardBg,
+          borderColor: widget.borderColor,
+          textPrimary: widget.textPrimary,
+          textSecondary: widget.textSecondary,
+          serverUrl: widget.serverUrl,
+          onBack: () => widget.onSwitchTab(0),
         );
       case 13:
-        return InteractiveSwipeToChat(
-          onDismissed: () => widget.onSwitchTab(0),
-          child: WorkspacePreferenceScreen(
-            isDark: widget.isDark,
-            cardBg: widget.cardBg,
-            borderColor: widget.borderColor,
-            textPrimary: widget.textPrimary,
-            textSecondary: widget.textSecondary,
-            vpsWorkspacePath: widget.vpsWorkspacePath,
-            onUpdateWorkspacePath: (path) => widget.onUpdateCoreService(newPath: path),
-            agentCoreService: widget.agentCoreService,
-            availableModels: widget.availableModels,
-            selectedModel: widget.selectedModel,
-            onSelectModel: widget.onSelectModel,
-            selectedMode: widget.selectedMode,
-            onSelectMode: widget.onSelectMode,
-            onBackToChat: () => widget.onSwitchTab(0),
-            onNewSession: ({workspacePath, mode}) => widget.onNewSession(),
-            onSelectFileForChat: (filePath) {
-              widget.onSelectChatAttachment(filePath);
-              widget.onSwitchTab(0);
-            },
-            initialOpenFile: widget.pendingOpenFile,
-            serverUrl: widget.serverUrl,
-            activeSessionId: widget.activeSessionId,
-            chatMessages: widget.chatMessages,
-            onNavigateTab: widget.onSwitchTab,
-            onSelectSession: widget.onSelectSession,
-          ),
+        return WorkspacePreferenceScreen(
+          isDark: widget.isDark,
+          cardBg: widget.cardBg,
+          borderColor: widget.borderColor,
+          textPrimary: widget.textPrimary,
+          textSecondary: widget.textSecondary,
+          vpsWorkspacePath: widget.vpsWorkspacePath,
+          onUpdateWorkspacePath: (path) => widget.onUpdateCoreService(newPath: path),
+          agentCoreService: widget.agentCoreService,
+          availableModels: widget.availableModels,
+          selectedModel: widget.selectedModel,
+          onSelectModel: widget.onSelectModel,
+          selectedMode: widget.selectedMode,
+          onSelectMode: widget.onSelectMode,
+          onBackToChat: () => widget.onSwitchTab(0),
+          onNewSession: ({workspacePath, mode}) => widget.onNewSession(),
+          onSelectFileForChat: (filePath) {
+            widget.onSelectChatAttachment(filePath);
+            widget.onSwitchTab(0);
+          },
+          initialOpenFile: widget.pendingOpenFile,
+          serverUrl: widget.serverUrl,
+          activeSessionId: widget.activeSessionId,
+          chatMessages: widget.chatMessages,
+          onNavigateTab: widget.onSwitchTab,
+          onSelectSession: widget.onSelectSession,
         );
       default:
         return const SizedBox.shrink();
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final safeIndex = (widget.selectedNavIndex >= 0 && widget.selectedNavIndex < 14) ? widget.selectedNavIndex : 0;
-    _visitedIndices.add(safeIndex);
-
-    return IndexedStack(
-      index: safeIndex,
-      children: List.generate(14, (index) {
-        if (!_visitedIndices.contains(index)) {
-          return const SizedBox.shrink();
-        }
-        return _buildTab(index);
-      }),
-    );
   }
 }

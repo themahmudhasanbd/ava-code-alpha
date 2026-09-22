@@ -316,7 +316,20 @@ mixin AgentCoreStreamingMixin on AgentCoreBase {
                   turnId: params["turnId"]?.toString(),
                   type: "tool",
                   tool: toolName,
-                  input: itemMap["args"] ?? itemMap["input"],
+                  input: itemMap["args"] ?? itemMap["input"] ?? itemMap["arguments"],
+                  status: "running",
+                );
+                if (!partOrder.contains(itemId)) partOrder.add(itemId);
+              } else if (itemType == "subAgentActivity") {
+                final kind = itemMap["kind"]?.toString() ?? "subagent";
+                final agentPath = itemMap["agentPath"]?.toString() ?? "";
+                livePartsMap[itemId] = MessagePartModel(
+                  id: itemId,
+                  messageId: itemId,
+                  turnId: params["turnId"]?.toString(),
+                  type: "subagent",
+                  tool: "agent",
+                  text: agentPath,
                   status: "running",
                 );
                 if (!partOrder.contains(itemId)) partOrder.add(itemId);
@@ -445,7 +458,8 @@ mixin AgentCoreStreamingMixin on AgentCoreBase {
                 final existing = livePartsMap[itemId]!;
                 final outVal = itemMap["aggregatedOutput"] ?? itemMap["output"] ?? itemMap["result"] ?? itemMap["text"];
                 final outStr = outVal != null ? outVal.toString() : existing.output;
-                livePartsMap[itemId] = existing.copyWith(status: "completed", output: outStr);
+                final durMs = itemMap["durationMs"] is num ? (itemMap["durationMs"] as num).toInt() : existing.durationMs;
+                livePartsMap[itemId] = existing.copyWith(status: "completed", output: outStr, durationMs: durMs);
                 emitLivePartsUpdate();
               }
             }
@@ -486,7 +500,7 @@ mixin AgentCoreStreamingMixin on AgentCoreBase {
         if (attachments != null && attachments.isNotEmpty) {
           for (final att in attachments) {
             turnInput.add({
-              "type": "file",
+              "type": "localImage",
               "path": att,
             });
           }

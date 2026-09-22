@@ -197,9 +197,7 @@ mixin AgentCoreSystemMixin on AgentCoreBase {
     final List<Map<String, dynamic>> servers = [];
 
     try {
-      final res = await sendRpc("mcpServerStatus/list", {
-        "detail": "minimal",
-      }).timeout(const Duration(seconds: 5));
+      final res = await sendRpc("mcpServerStatus/list", {}).timeout(const Duration(seconds: 5));
 
       if (res is Map && res["data"] is List) {
         for (final item in (res["data"] as List)) {

@@ -104,8 +104,9 @@ mixin AgentCoreSessionsMixin on AgentCoreBase {
   Future<Map<String, dynamic>?> fetchSession(String sessionId) async {
     if (sessionId.isEmpty) return null;
     try {
-      final res = await sendRpc("thread/resume", {
+      final res = await sendRpc("thread/read", {
         "threadId": sessionId,
+        "includeTurns": true,
       });
       if (res is Map && res["thread"] is Map) {
         final thread = Map<String, dynamic>.from(res["thread"] as Map);
@@ -281,14 +282,15 @@ mixin AgentCoreSessionsMixin on AgentCoreBase {
     String sessionId, {
     String? cursor,
     String? beforeCursor,
-    int limit = 50,
+    int limit = 100,
     bool isInitial = false,
   }) async {
     if (sessionId.isEmpty) return {"messages": <ChatMessageModel>[], "hasMore": false};
 
     try {
-      final res = await sendRpc("thread/resume", {
+      final res = await sendRpc("thread/read", {
         "threadId": sessionId,
+        "includeTurns": true,
       });
 
       if (res is Map && res["thread"] is Map) {
@@ -303,13 +305,17 @@ mixin AgentCoreSessionsMixin on AgentCoreBase {
             final turnMap = Map<String, dynamic>.from(turn);
             final turnId = turnMap["id"]?.toString() ?? "turn_$turnIdx";
             final rawItems = turnMap["items"];
+            final turnStatus = turnMap["status"]?.toString();
+            final turnError = turnMap["error"];
 
             if (rawItems is List) {
               String userText = "";
               String? userMsgId;
+              final List<String> userAttachments = [];
               final List<MessagePartModel> assistantParts = [];
               String assistantText = "";
               String? assistantMsgId;
+              String? reasoningAccum;
 
               for (int itemIdx = 0; itemIdx < rawItems.length; itemIdx++) {
                 final item = rawItems[itemIdx];
@@ -323,11 +329,32 @@ mixin AgentCoreSessionsMixin on AgentCoreBase {
                   final content = itemMap["content"];
                   if (content is List) {
                     for (final c in content) {
-                      if (c is Map && c["text"] != null) {
-                        userText += (userText.isNotEmpty ? "\n" : "") + c["text"].toString();
+                      if (c is Map) {
+                        if (c["text"] != null) {
+                          userText += (userText.isNotEmpty ? "\n" : "") + c["text"].toString();
+                        }
+                        if (c["path"] != null) {
+                          userAttachments.add(c["path"].toString());
+                        }
                       }
                     }
                   }
+                } else if (itemType == "reasoning") {
+                  final summaryList = itemMap["summary"] is List ? (itemMap["summary"] as List).map((e) => e.toString()).join("\n") : "";
+                  final contentList = itemMap["content"] is List ? (itemMap["content"] as List).map((e) => e.toString()).join("\n") : "";
+                  final combinedReasoning = summaryList.isNotEmpty ? summaryList : contentList;
+                  reasoningAccum = (reasoningAccum != null && reasoningAccum.isNotEmpty)
+                      ? "$reasoningAccum\n\n$combinedReasoning"
+                      : combinedReasoning;
+
+                  assistantParts.add(MessagePartModel(
+                    id: itemId,
+                    messageId: itemId,
+                    turnId: turnId,
+                    type: "reasoning",
+                    text: combinedReasoning,
+                    status: "completed",
+                  ));
                 } else {
                   final part = AgentCoreBase.parsePart(itemMap, itemIdx, messageId: itemId, turnId: turnId);
                   assistantParts.add(part);
@@ -344,20 +371,37 @@ mixin AgentCoreSessionsMixin on AgentCoreBase {
                   sender: "user",
                   text: userText,
                   timestamp: DateTime.now().toIso8601String(),
+                  attachments: userAttachments.isNotEmpty ? userAttachments : null,
                   isPending: false,
                   isHistory: true,
                 ));
               }
 
-              if (assistantParts.isNotEmpty || assistantText.isNotEmpty) {
+              // Handle turn error if failed
+              String? dynamicErrorMessage;
+              bool isTurnError = false;
+              if (turnStatus == "failed" && turnError != null) {
+                isTurnError = true;
+                dynamicErrorMessage = AgentCoreBase.extractCoreErrorMessage(turnError);
+                if (assistantText.isEmpty && assistantParts.isEmpty) {
+                  assistantText = dynamicErrorMessage.isNotEmpty
+                      ? dynamicErrorMessage
+                      : "Turn failed during execution.";
+                }
+              }
+
+              if (assistantParts.isNotEmpty || assistantText.isNotEmpty || isTurnError) {
                 messages.add(ChatMessageModel(
                   id: assistantMsgId ?? "agent_$turnId",
                   sender: "agent",
                   text: assistantText,
                   timestamp: DateTime.now().toIso8601String(),
                   parts: assistantParts,
+                  reasoningText: reasoningAccum,
                   isPending: false,
                   isHistory: true,
+                  isError: isTurnError,
+                  errorMessage: dynamicErrorMessage,
                 ));
               }
             }

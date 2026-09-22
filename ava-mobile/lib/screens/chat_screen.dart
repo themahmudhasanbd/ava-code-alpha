@@ -17,7 +17,6 @@ import '../widgets/chat/sticky_permission_dock.dart';
 import '../widgets/chat/prompt_highlight_controller.dart';
 import '../widgets/chat/chat_autocomplete_overlay.dart';
 import '../widgets/chat/chat_empty_view.dart';
-import '../widgets/chat/chat_suggestion_pills.dart';
 import '../widgets/chat/chat_attached_files_row.dart';
 import '../widgets/chat/chat_voice_input_button.dart';
 import '../widgets/chat/chat_sandbox_pill.dart';

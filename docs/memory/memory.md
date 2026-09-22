@@ -6,3 +6,12 @@
 ## Tool Calling Verification (2026-09-21)
 - **Agentic Multi-step Tool Loop**: Integrated `exec_command`, `read_file`, `write_file`, and `list_files` into `executeOpenAICompatibleTurnStreaming`.
 - **Live PM2 Status Test**: Successfully executed live `pm2 status` through tool execution and returned fully structured markdown table response.
+
+## Automated Web Deployment Pipeline (2026-09-22)
+- Script: `/var/www/ava-code/scripts/deploy-web.sh` (aliased to `ava-deploy-web` and `/var/www/ava-code/deploy.sh`)
+- Automated Pipeline Actions:
+  1. Auto stages & commits code changes and pushes to GitHub (`origin main`).
+  2. Runs optimized Flutter Web release build (`flutter build web --release --no-wasm-dry-run`).
+  3. Syncs web build bundle to `/var/www/ava.mahmudhasan.pro/`.
+  4. Fixes folder permissions (755) and reloads Nginx.
+  5. Performs live domain health check (`https://ava.mahmudhasan.pro/`).

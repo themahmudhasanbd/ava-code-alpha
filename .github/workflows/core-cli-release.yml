@@ -1,0 +1,75 @@
+name: AvA Core & CLI Multiplatform Build
+
+on:
+  push:
+    tags:
+      - 'v*'
+    paths:
+      - 'ava-rs/**'
+      - 'ava-cli/**'
+      - '.github/workflows/core-cli-release.yml'
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release Tag'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  build-core:
+    name: Build Core & CLI (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            bin_suffix: ""
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            bin_suffix: ".exe"
+          - target: x86_64-apple-darwin
+            os: macos-13
+            bin_suffix: ""
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            bin_suffix: ""
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ava-rs -> ava-rs/target
+
+      - name: Build Core Binary
+        run: |
+          cd ava-rs
+          cargo build --release --target ${{ matrix.target }} --bin ava-cli --bin host-core || cargo build --release --target ${{ matrix.target }}
+
+      - name: Package Binaries
+        shell: bash
+        run: |
+          mkdir -p dist
+          find ava-rs/target/${{ matrix.target }}/release -maxdepth 1 -type f -executable -exec cp {} dist/ \; || true
+          tar -czf "ava-core-${{ matrix.target }}.tar.gz" -C dist . || zip -r "ava-core-${{ matrix.target }}.zip" dist/
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ava-core-${{ matrix.target }}
+          path: |
+            ava-core-${{ matrix.target }}.tar.gz
+            ava-core-${{ matrix.target }}.zip
+          if-no-files-found: warn

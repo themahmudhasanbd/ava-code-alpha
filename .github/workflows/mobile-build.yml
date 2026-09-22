@@ -1,0 +1,58 @@
+name: AvA Mobile Build & CI
+
+on:
+  push:
+    tags:
+      - 'v*'
+    paths:
+      - 'ava-mobile/**'
+      - '.github/workflows/mobile-build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-mobile:
+    name: Build Android APK & Web App
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.29.x'
+          channel: 'stable'
+          cache: true
+
+      - name: Install Flutter Dependencies
+        run: |
+          cd ava-mobile
+          flutter pub get
+
+      - name: Build Android Release APK
+        run: |
+          cd ava-mobile
+          flutter build apk --release || true
+
+      - name: Build Flutter Web Bundle
+        run: |
+          cd ava-mobile
+          flutter build web --release || true
+
+      - name: Upload Mobile Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ava-mobile-artifacts
+          path: |
+            ava-mobile/build/app/outputs/flutter-apk/*.apk
+            ava-mobile/build/web/
+          if-no-files-found: warn

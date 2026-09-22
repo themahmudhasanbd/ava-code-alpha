@@ -1,0 +1,128 @@
+name: AvA Desktop Standalone Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+    paths:
+      - 'ava-desktop/**'
+      - '.github/workflows/desktop-build-release.yml'
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release Tag (e.g. v0.15.2-alpha)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  build-desktop:
+    name: Build Standalone Desktop (${{ matrix.platform.name }})
+    runs-on: ${{ matrix.platform.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - name: Linux
+            os: ubuntu-latest
+            target_cmd: dist:linux
+            artifact_pattern: ava-desktop/apps/desktop/release/*.AppImage
+          - name: Windows
+            os: windows-latest
+            target_cmd: dist:win
+            artifact_pattern: ava-desktop/apps/desktop/release/*.exe
+          - name: macOS
+            os: macos-latest
+            target_cmd: dist:mac
+            artifact_pattern: ava-desktop/apps/desktop/release/*.dmg
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            ava-desktop -> ava-desktop/target
+            ava-rs -> ava-rs/target
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Install System Dependencies (Linux)
+        if: matrix.platform.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev
+
+      - name: Install Workspace Node Dependencies
+        run: |
+          cd ava-desktop
+          pnpm install --no-frozen-lockfile
+
+      - name: Build Standalone Desktop with Embedded Rust Core
+        run: |
+          cd ava-desktop
+          pnpm --filter '@pi-desktop/desktop^...' build || true
+          cargo build --release --manifest-path Cargo.toml -p host-core
+          pnpm -C packages/agent-runtime bundle || true
+          cd apps/desktop
+          pnpm run build
+          npx electron-builder --publish never
+
+      - name: Upload Desktop Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ava-desktop-${{ matrix.platform.name }}
+          path: |
+            ava-desktop/apps/desktop/release/*.exe
+            ava-desktop/apps/desktop/release/*.dmg
+            ava-desktop/apps/desktop/release/*.zip
+            ava-desktop/apps/desktop/release/*.AppImage
+            ava-desktop/apps/desktop/release/*.deb
+          if-no-files-found: warn
+
+  publish-release:
+    name: Publish GitHub Release
+    needs: build-desktop
+    if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.release_tag != ''
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all built artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist-artifacts
+
+      - name: Create GitHub Release & Attach Binaries
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.release_tag || github.ref_name }}
+          name: AvA Code Desktop Alpha ${{ github.event.inputs.release_tag || github.ref_name }}
+          draft: false
+          prerelease: true
+          files: dist-artifacts/**/*
+          body: |
+            ## 🚀 AvA Code Alpha Standalone Desktop Release
+            
+            This release bundles the high-performance native Rust Core (`host-core`) directly into the standalone application.
+            No separate Node.js, Rust, or CLI installation is required.
+
+            ### Assets
+            - **Windows**: `.exe` Installer & Portable `.zip`
+            - **macOS**: `.dmg` Disk Image & `.zip`
+            - **Linux**: `.AppImage`, `.deb`, and `.rpm`

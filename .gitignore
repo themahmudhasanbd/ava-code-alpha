@@ -106,5 +106,4 @@ __pycache__/
 ava-cli/bin/
 
 *.apk
-ava-mobile/web/download/*.apk
-.github/workflows/
+

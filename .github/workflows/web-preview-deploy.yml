@@ -1,0 +1,65 @@
+name: AvA Desktop Web Version & Dev Server Deployment
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - 'ava-desktop/**'
+      - '.github/workflows/web-preview-deploy.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy-desktop-web:
+    name: Build & Deploy Desktop Web
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js & pnpm
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Install Dependencies
+        run: |
+          cd ava-desktop
+          pnpm install --no-frozen-lockfile
+
+      - name: Build Desktop Web Renderer
+        run: |
+          cd ava-desktop
+          pnpm --filter '@pi-desktop/desktop^...' build || true
+          cd apps/desktop
+          npx vite build --base "/${{ github.event.repository.name }}/" --outDir dist-web
+
+      - name: Setup GitHub Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ava-desktop/apps/desktop/dist-web/
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

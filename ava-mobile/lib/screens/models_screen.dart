@@ -1076,6 +1076,7 @@ class _ModelsScreenState extends State<ModelsScreen> {
     if (lower.contains('opencode')) return 'opencode';
     if (lower.contains('openrouter')) return 'openrouter';
     if (lower.contains('mistral')) return 'mistral';
+    if (lower.contains('omniroute')) return 'omniroute';
     return 'custom';
   }
 
@@ -1102,6 +1103,7 @@ class _ModelsScreenState extends State<ModelsScreen> {
     if (lower.contains('anthropic') || lower.contains('claude')) return LucideIcons.cpu;
     if (lower.contains('deepseek')) return LucideIcons.search;
     if (lower.contains('groq')) return LucideIcons.zap;
+    if (lower.contains('omniroute')) return LucideIcons.network;
     if (lower.contains('ollama')) return LucideIcons.terminal;
     return LucideIcons.plug;
   }
@@ -1114,6 +1116,7 @@ class _ModelsScreenState extends State<ModelsScreen> {
     if (lower.contains('anthropic')) return const Color(0xFFD97706);
     if (lower.contains('deepseek')) return const Color(0xFF0284C7);
     if (lower.contains('groq')) return const Color(0xFFF97316);
+    if (lower.contains('omniroute')) return const Color(0xFF6366F1);
     return const Color(0xFF64748B);
   }
 
@@ -1267,7 +1270,7 @@ class _ModelsScreenState extends State<ModelsScreen> {
                           ),
                         ),
                         Text(
-                          isAntigravity ? 'Google Antigravity' : providerName,
+                          providerName.toLowerCase() == 'omniroute' ? 'OmniRoute Gateway' : (isAntigravity ? 'Google Antigravity' : providerName),
                           style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: widget.textPrimary),
                         ),
                         const SizedBox(width: 8),

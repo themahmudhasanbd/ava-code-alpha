@@ -7,13 +7,6 @@ extension FmvAgentHeaderExt on _FormattedMessageViewState {
   // ─── AvA Codex Agent Header ──────────────────────────────────────────────────
 
   Widget _buildAgentHeader(ChatMessageModel msg, {required bool isTurnActive}) {
-    final String? modelName = msg.modelName;
-    final bool hasModel = modelName != null &&
-        modelName.isNotEmpty &&
-        modelName != 'Session Manager' &&
-        modelName != 'compaction' &&
-        !modelName.startsWith('Loading');
-
     return Row(
       children: [
         buildAvaLogoAvatar(
@@ -32,40 +25,10 @@ extension FmvAgentHeaderExt on _FormattedMessageViewState {
             color: _cPrimary,
           ),
         ),
-        if (hasModel) ...[
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-            decoration: BoxDecoration(
-              color: _cAccentPurple.withValues(alpha: widget.isDark ? 0.16 : 0.09),
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(
-                color: _cAccentPurple.withValues(alpha: 0.3),
-                width: 0.7,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(LucideIcons.cpu, size: 10, color: _cAccentPurple),
-                const SizedBox(width: 4),
-                Text(
-                  modelName,
-                  style: TextStyle(
-                    fontSize: 9.5,
-                    fontFamily: "JetBrainsMono",
-                    fontWeight: FontWeight.w700,
-                    color: _cAccentPurple,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
         const Spacer(),
         if (msg.timestamp.isNotEmpty)
           Text(
-            msg.timestamp,
+            TimeFormatter.formatTimeString(msg.timestamp, context: context),
             style: TextStyle(
               fontSize: 10.5,
               fontFamily: "Inter",
@@ -89,27 +52,6 @@ extension FmvAgentHeaderExt on _FormattedMessageViewState {
           ),
         ),
       ],
-    );
-  }
-
-  // ─── Working Shimmer Indicator ──────────────────────────────────────────────
-
-  Widget _buildAestheticCookingIndicator([String? statusText]) {
-    final text = (statusText != null && statusText.isNotEmpty) ? statusText : "Working…";
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const AiMascotAvatar(
-            size: 16,
-            awake: true,
-            gaze: MascotGaze.right,
-          ),
-          const SizedBox(width: 8),
-          _buildShimmerText(text),
-        ],
-      ),
     );
   }
 

@@ -151,6 +151,9 @@ void showModelSelectorModal({
                             final modelsList = entry.value;
                             final hasSelectedModel = modelsList.any((m) => m.id == selectedModel?.id);
                             final shouldExpand = isSearching || hasSelectedModel || groupedModels.length <= 4;
+                            final displayProvider = providerName.toLowerCase() == 'omniroute'
+                                ? 'OmniRoute Gateway'
+                                : providerName;
 
                             return Container(
                               margin: const EdgeInsets.only(bottom: 8),
@@ -167,7 +170,7 @@ void showModelSelectorModal({
                                   title: Row(
                                     children: [
                                       Text(
-                                        providerName,
+                                        displayProvider,
                                         style: TextStyle(
                                           fontSize: 13,
                                           fontWeight: FontWeight.bold,
@@ -197,13 +200,31 @@ void showModelSelectorModal({
                                     return ListTile(
                                       dense: true,
                                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-                                      title: Text(
-                                        model.name,
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
-                                          color: isSelected ? const Color(0xFF4F46E5) : textPrimary,
-                                        ),
+                                      title: Row(
+                                        children: [
+                                          Text(
+                                            model.name,
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
+                                              color: isSelected ? const Color(0xFF4F46E5) : textPrimary,
+                                            ),
+                                          ),
+                                          if (model.reasoning) ...[
+                                            const SizedBox(width: 6),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFF8B5CF6).withValues(alpha: 0.15),
+                                                borderRadius: BorderRadius.circular(4),
+                                              ),
+                                              child: const Text(
+                                                'Thinking',
+                                                style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.w700, color: Color(0xFF8B5CF6)),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
                                       ),
                                       subtitle: Text(
                                         model.id,

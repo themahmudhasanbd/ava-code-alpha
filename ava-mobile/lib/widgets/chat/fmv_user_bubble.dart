@@ -65,6 +65,7 @@ extension FmvUserBubbleExt on _FormattedMessageViewState {
 
     final isLongText = text.length > 160 || text.split('\n').length > 4;
     final isExpanded = _expandedState['user_prompt_$msgId'] ?? false;
+    final formattedTime = TimeFormatter.formatTimeString(timestamp, context: context);
 
     return Align(
       alignment: Alignment.centerRight,
@@ -140,16 +141,16 @@ extension FmvUserBubbleExt on _FormattedMessageViewState {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                                Text(
-                                  isExpanded ? "Show less" : "See more",
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontFamily: "HindSiliguri",
-                                    fontFamilyFallback: kFmvFontFamilyFallback,
-                                    fontWeight: FontWeight.w700,
-                                    color: _cAccentPurple,
-                                  ),
+                              Text(
+                                isExpanded ? "Show less" : "See more",
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontFamily: "HindSiliguri",
+                                  fontFamilyFallback: kFmvFontFamilyFallback,
+                                  fontWeight: FontWeight.w700,
+                                  color: _cAccentPurple,
                                 ),
+                              ),
                               const SizedBox(width: 2),
                               Icon(
                                 isExpanded ? LucideIcons.chevronUp : LucideIcons.chevronDown,
@@ -312,9 +313,9 @@ extension FmvUserBubbleExt on _FormattedMessageViewState {
                                   color: _cAccentPurple,
                                 ),
                               ),
-                              if (timestamp.isNotEmpty) ...[
+                              if (formattedTime.isNotEmpty) ...[
                                 Text(
-                                  ' • $timestamp',
+                                  ' • $formattedTime',
                                   style: TextStyle(
                                     fontSize: 9.5,
                                     fontFamily: "HindSiliguri",
@@ -350,9 +351,9 @@ extension FmvUserBubbleExt on _FormattedMessageViewState {
                                       color: Color(0xFFEF4444),
                                     ),
                                   ),
-                                  if (timestamp.isNotEmpty) ...[
+                                  if (formattedTime.isNotEmpty) ...[
                                     Text(
-                                      ' • $timestamp',
+                                      ' • $formattedTime',
                                       style: TextStyle(
                                         fontSize: 9.5,
                                         fontFamily: "HindSiliguri",
@@ -441,9 +442,9 @@ extension FmvUserBubbleExt on _FormattedMessageViewState {
                                 color: AppTheme.accentTeal.withValues(alpha: 0.8),
                               ),
                             ),
-                            if (timestamp.isNotEmpty) ...[
+                            if (formattedTime.isNotEmpty) ...[
                               Text(
-                                ' • $timestamp',
+                                ' • $formattedTime',
                                 style: TextStyle(
                                   fontSize: 9.5,
                                   fontFamily: "HindSiliguri",

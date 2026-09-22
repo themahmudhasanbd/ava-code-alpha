@@ -344,6 +344,8 @@ mixin AgentCoreSessionsMixin on AgentCoreBase {
                   sender: "user",
                   text: userText,
                   timestamp: DateTime.now().toIso8601String(),
+                  isPending: false,
+                  isHistory: true,
                 ));
               }
 
@@ -354,6 +356,8 @@ mixin AgentCoreSessionsMixin on AgentCoreBase {
                   text: assistantText,
                   timestamp: DateTime.now().toIso8601String(),
                   parts: assistantParts,
+                  isPending: false,
+                  isHistory: true,
                 ));
               }
             }

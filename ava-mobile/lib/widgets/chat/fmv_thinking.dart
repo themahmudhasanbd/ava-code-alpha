@@ -18,7 +18,7 @@ extension FmvThinkingExt on _FormattedMessageViewState {
   }) {
     final showLiveSpinner = isStreaming && isTurnActive;
 
-    // ── Auto-collapse logic ──────────────────────────────────────────────────
+    // ── Auto-collapse & Duration Freeze logic ────────────────────────────────
     // Track streaming→complete transition via a shadow key in _expandedState.
     final wasStreamingKey = '${partId}_wasStreaming';
     final wasStreaming = _expandedState[wasStreamingKey] == true;
@@ -30,6 +30,10 @@ extension FmvThinkingExt on _FormattedMessageViewState {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           _expandedState[wasStreamingKey] = false;
+          if (startedAt != null) {
+            final diff = DateTime.now().difference(startedAt).inMilliseconds.abs();
+            _frozenThinkingDuration[partId] = (diff / 1000.0).clamp(0.5, 300.0);
+          }
           // Collapse by default when streaming finishes, unless user manually opened it
           if (_expandedState[partId] == null) {
             setState(() {
@@ -44,15 +48,16 @@ extension FmvThinkingExt on _FormattedMessageViewState {
     // While streaming: open by default. When done: collapsed by default (or user-chosen).
     final isExpanded = isExplicitlyExpanded ?? showLiveSpinner;
 
-    // ── Duration calculation ─────────────────────────────────────────────────
+    // ── Duration calculation (Frozen once completed, never increasing) ───────
     double durSec;
     if (durationMs != null && durationMs > 0) {
       durSec = (durationMs / 1000.0);
       if (durSec <= 0) durSec = 0.5;
-    } else if (startedAt != null && !showLiveSpinner) {
+    } else if (_frozenThinkingDuration[partId] != null) {
+      durSec = _frozenThinkingDuration[partId]!;
+    } else if (startedAt != null && showLiveSpinner) {
       final diff = DateTime.now().difference(startedAt).inMilliseconds.abs();
-      durSec = (diff / 1000.0);
-      if (durSec <= 0) durSec = 0.5;
+      durSec = (diff / 1000.0).clamp(0.5, 300.0);
     } else {
       final wordCount = text.split(RegExp(r"\s+")).where((s) => s.isNotEmpty).length;
       durSec = (wordCount / 20.0).clamp(0.5, 120.0);

@@ -505,7 +505,12 @@ abstract class AgentCoreBase {
   Future<void> saveSessionMessagesToCache(String sessionId, List<ChatMessageModel> messages) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final list = messages.map((m) => m.toJson()).toList();
+      final list = messages.map((m) {
+        final json = m.toJson();
+        json['isPending'] = false;
+        json['isHistory'] = true;
+        return json;
+      }).toList();
       await prefs.setString("ava_session_msgs_$sessionId", jsonEncode(list));
     } catch (_) {}
   }
@@ -517,7 +522,20 @@ abstract class AgentCoreBase {
       if (jsonStr != null && jsonStr.isNotEmpty) {
         final decoded = jsonDecode(jsonStr);
         if (decoded is List) {
-          return decoded.whereType<Map>().map((e) => ChatMessageModel.fromJson(Map<String, dynamic>.from(e))).toList();
+          return decoded.whereType<Map>().map((e) {
+            final m = ChatMessageModel.fromJson(Map<String, dynamic>.from(e));
+            final cleanParts = m.parts.map((p) {
+              if (p.status == "running" || p.status == "pending") {
+                return p.copyWith(status: "completed");
+              }
+              return p;
+            }).toList();
+            return m.copyWith(
+              isPending: false,
+              isHistory: true,
+              parts: cleanParts,
+            );
+          }).toList();
         }
       }
     } catch (_) {}

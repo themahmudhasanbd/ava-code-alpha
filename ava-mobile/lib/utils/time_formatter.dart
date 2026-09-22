@@ -19,16 +19,16 @@ class TimeFormatter {
         (s['time_created'] as num?)?.toInt();
 
     if (epochMs == null && s['updatedAt'] != null) {
-      epochMs = DateTime.tryParse(s['updatedAt'].toString())?.millisecondsSinceEpoch;
+      epochMs = DateTime.tryParse(s['updatedAt'].toString())?.toLocal().millisecondsSinceEpoch;
     }
     if (epochMs == null && s['createdAt'] != null) {
-      epochMs = DateTime.tryParse(s['createdAt'].toString())?.millisecondsSinceEpoch;
+      epochMs = DateTime.tryParse(s['createdAt'].toString())?.toLocal().millisecondsSinceEpoch;
     }
     if (epochMs == null && s['updated_at'] != null) {
-      epochMs = DateTime.tryParse(s['updated_at'].toString())?.millisecondsSinceEpoch;
+      epochMs = DateTime.tryParse(s['updated_at'].toString())?.toLocal().millisecondsSinceEpoch;
     }
     if (epochMs == null && s['created_at'] != null) {
-      epochMs = DateTime.tryParse(s['created_at'].toString())?.millisecondsSinceEpoch;
+      epochMs = DateTime.tryParse(s['created_at'].toString())?.toLocal().millisecondsSinceEpoch;
     }
 
     if (epochMs != null && epochMs > 0 && epochMs < 10000000000) {
@@ -49,6 +49,35 @@ class TimeFormatter {
       final period = local.hour >= 12 ? 'PM' : 'AM';
       return '$h:$minute $period';
     }
+  }
+
+  /// Formats any timestamp string (ISO8601, Epoch MS, or already-formatted time) into local device time.
+  static String formatTimeString(String raw, {BuildContext? context, bool is24Hour = false}) {
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty) return '';
+
+    // Check if it's an ISO8601 string
+    final dt = DateTime.tryParse(trimmed);
+    if (dt != null) {
+      final bool device24Hour = context != null
+          ? MediaQuery.alwaysUse24HourFormatOf(context)
+          : is24Hour;
+      return formatTimeOfDay(dt.toLocal(), is24Hour: device24Hour);
+    }
+
+    // Check if it's numeric epoch milliseconds
+    final numVal = int.tryParse(trimmed);
+    if (numVal != null && numVal > 0) {
+      final epochMs = numVal < 10000000000 ? numVal * 1000 : numVal;
+      final localDt = DateTime.fromMillisecondsSinceEpoch(epochMs).toLocal();
+      final bool device24Hour = context != null
+          ? MediaQuery.alwaysUse24HourFormatOf(context)
+          : is24Hour;
+      return formatTimeOfDay(localDt, is24Hour: device24Hour);
+    }
+
+    // Already formatted time string (e.g., "10:30 AM")
+    return trimmed;
   }
 
   /// Formats last interaction time of a session, matching device timezone and format.

@@ -260,14 +260,33 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed && mounted) {
+      // 1. Eagerly reconnect WebSocket / Core channel
+      _agentCoreService.ensureSseConnected();
+      _agentCoreService.checkHealth();
+
       if (_activeSessionId != null && _activeSessionId!.isNotEmpty) {
         final currentSessId = _activeSessionId!;
+        // 2. Fetch latest session state immediately in background to eliminate sync lag
+        _agentCoreService.fetchSessionMessages(currentSessId).then((historyResult) {
+          if (!mounted || _activeSessionId != currentSessId) return;
+          final historyMsgs = (historyResult['messages'] as List<ChatMessageModel>?) ?? [];
+          if (historyMsgs.isNotEmpty) {
+            setState(() {
+              final merged = _mergeMessagesPreservingLocal(_chatMessages, historyMsgs);
+              _chatMessages.clear();
+              _chatMessages.addAll(merged);
+            });
+            unawaited(_agentCoreService.saveSessionMessagesToCache(currentSessId, _chatMessages));
+          }
+        }).catchError((_) {});
+
+        // 3. Eagerly check if the server is still running a turn
         _agentCoreService.isSessionActive(currentSessId).then((isRunning) {
-          if (!mounted) return;
-          if (isRunning && _activeSessionStreamSubscription == null) {
+          if (!mounted || _activeSessionId != currentSessId) return;
+          if (isRunning && _activeSessionStreamSubscription == null && _activePromptStreamSubscription == null) {
             _attachToActiveSessionExecution(currentSessId);
           }
-        });
+        }).catchError((_) {});
       }
     }
   }
@@ -472,8 +491,10 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
       if (m != null) return m;
     }
 
-    return _findModelByIdOrName('antigravity/gemini-3.8-flash-tiered', models: list) ??
-           _findModelByIdOrName('opencode/mimo-v2.5-free', models: list) ??
+    return _findModelByIdOrName('powerful-coding-combo', models: list) ??
+           _findModelByIdOrName('omni-codex-combo', models: list) ??
+           _findModelByIdOrName('auto/best-coding', models: list) ??
+           _findModelByIdOrName('gpt-6-astra', models: list) ??
            list.first;
   }
 

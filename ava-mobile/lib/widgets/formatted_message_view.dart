@@ -250,16 +250,32 @@ class _FormattedMessageViewState extends State<FormattedMessageView> with Single
 
           // Sequential Interleaved Execution Loop (Minimalist, Borderless Timeline Style)
           if (hasParts) ...[
+            // 1. If reasoningText exists but is not represented as a part in msg.parts, render it first
+            if (hasReasoning && !msg.parts.any((p) => p.type == "reasoning" || p.type == "thinking" || p.type == "thought")) ...[
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: _buildThinkingAccordion(
+                  "thinking-top-${msg.id}",
+                  msg.reasoningText!.trim(),
+                  isStreaming: isTurnActive && msg.text.isEmpty,
+                  isTurnActive: isTurnActive,
+                  startedAt: DateTime.tryParse(msg.timestamp),
+                ),
+              ),
+            ],
             ...msg.parts.map((part) {
               if (part.type == "reasoning" || part.type == "thinking" || part.type == "thought") {
                 final isPartStreaming = isTurnActive &&
                     (part.status == "running" ||
                         (part.status != "completed" && part == msg.parts.last && msg.text.isEmpty));
                 String text = part.text.trim();
-                if (isPartStreaming && msg.reasoningText != null && msg.reasoningText!.trim().length > text.length) {
+                if (msg.reasoningText != null && msg.reasoningText!.trim().length > text.length) {
                   text = msg.reasoningText!.trim();
                 }
-                if (text.isEmpty && !isPartStreaming) return const SizedBox.shrink();
+                if (text.isEmpty && !isPartStreaming && (msg.reasoningText == null || msg.reasoningText!.trim().isEmpty)) {
+                  return const SizedBox.shrink();
+                }
+                final effectiveText = text.isNotEmpty ? text : (msg.reasoningText?.trim() ?? "");
                 final accordionKey = part.id.isNotEmpty
                     ? "thinking-${part.id}"
                     : "thinking-${msg.id}-${msg.parts.indexOf(part)}";
@@ -267,7 +283,7 @@ class _FormattedMessageViewState extends State<FormattedMessageView> with Single
                   padding: const EdgeInsets.only(bottom: 6),
                   child: _buildThinkingAccordion(
                     accordionKey,
-                    text,
+                    effectiveText,
                     isStreaming: isPartStreaming,
                     isTurnActive: isTurnActive,
                     durationMs: part.durationMs,

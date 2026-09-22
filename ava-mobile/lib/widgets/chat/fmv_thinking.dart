@@ -20,7 +20,6 @@ extension FmvThinkingExt on _FormattedMessageViewState {
 
     // ── Auto-collapse logic ──────────────────────────────────────────────────
     // Track streaming→complete transition via a shadow key in _expandedState.
-    // When the transition is detected, queue state update via post frame callback.
     final wasStreamingKey = '${partId}_wasStreaming';
     final wasStreaming = _expandedState[wasStreamingKey] == true;
     if (showLiveSpinner && !wasStreaming) {
@@ -31,8 +30,8 @@ extension FmvThinkingExt on _FormattedMessageViewState {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           _expandedState[wasStreamingKey] = false;
-          _expandedState[partId] ??= false;
-          if (_expandedState[partId] == true) {
+          // Collapse by default when streaming finishes, unless user manually opened it
+          if (_expandedState[partId] == null) {
             setState(() {
               _expandedState[partId] = false;
             });
@@ -42,7 +41,7 @@ extension FmvThinkingExt on _FormattedMessageViewState {
     }
 
     final isExplicitlyExpanded = _expandedState[partId];
-    // While streaming: open. When done: collapsed (unless user re-opened it).
+    // While streaming: open by default. When done: collapsed by default (or user-chosen).
     final isExpanded = isExplicitlyExpanded ?? showLiveSpinner;
 
     // ── Duration calculation ─────────────────────────────────────────────────
@@ -60,14 +59,20 @@ extension FmvThinkingExt on _FormattedMessageViewState {
     }
     final String durStr = durSec >= 10 ? durSec.toStringAsFixed(0) : durSec.toStringAsFixed(1);
 
+    final cleanText = text.trim();
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Seamless Unboxed Header Trigger matching reference
+          // Seamless Unboxed Header Trigger
           InkWell(
-            onTap: () => setState(() => _expandedState[partId] = !isExpanded),
+            onTap: () {
+              setState(() {
+                _expandedState[partId] = !isExpanded;
+              });
+            },
             borderRadius: BorderRadius.circular(6),
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
@@ -80,7 +85,7 @@ extension FmvThinkingExt on _FormattedMessageViewState {
                     Icon(
                       LucideIcons.brain,
                       size: 14,
-                      color: _cFaint,
+                      color: _cSecondary,
                     ),
                   const SizedBox(width: 7),
                   // Label
@@ -112,8 +117,8 @@ extension FmvThinkingExt on _FormattedMessageViewState {
                             style: TextStyle(
                               fontFamily: "JetBrainsMono",
                               fontSize: 11.5,
-                              fontWeight: FontWeight.w600,
-                              color: _cSecondary,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF818CF8),
                             ),
                           ),
                         ],
@@ -126,8 +131,8 @@ extension FmvThinkingExt on _FormattedMessageViewState {
                     curve: Curves.easeOutCubic,
                     child: Icon(
                       LucideIcons.chevronDown,
-                      size: 12,
-                      color: _cFaint.withValues(alpha: 0.7),
+                      size: 13,
+                      color: _cFaint.withValues(alpha: 0.8),
                     ),
                   ),
                 ],
@@ -149,23 +154,26 @@ extension FmvThinkingExt on _FormattedMessageViewState {
               ),
               child: showLiveSpinner
                   ? AnimatedTypewriterText(
-                      text: text.isNotEmpty ? text : "Thinking…",
+                      text: cleanText.isNotEmpty ? cleanText : "Analyzing context & synthesizing plan…",
                       isLive: true,
                       builder: (animatedText) => _renderThinkingMarkdown(animatedText, isLive: true),
                     )
-                  : _renderThinkingMarkdown(text, isLive: false),
+                  : _renderThinkingMarkdown(
+                      cleanText.isNotEmpty ? cleanText : "Thinking process completed.",
+                      isLive: false,
+                    ),
             ),
         ],
       ),
     );
   }
 
-  /// 3x3 Pixel Dot Grid Loader matching reference PixelDotsLoader
+  /// AvA Animated Mascot Emoji/Blob Icon Loader
   Widget _buildPixelDotsLoader() {
-    return const OrganicBlobGlowLoader(
-      size: 13,
-      primaryColor: Color(0xFF6366F1),
-      secondaryColor: Color(0xFF8B5CF6),
+    return const AiMascotAvatar(
+      size: 14,
+      awake: true,
+      gaze: MascotGaze.right,
     );
   }
 
@@ -179,10 +187,10 @@ extension FmvThinkingExt on _FormattedMessageViewState {
         fontWeight: FontWeight.w600,
       ),
       colors: [
-        _cAccentPurple.withValues(alpha: 0.6),
+        _cAccentPurple.withValues(alpha: 0.7),
         _cAccentPurple,
         const Color(0xFF38BDF8),
-        _cAccentPurple.withValues(alpha: 0.6),
+        _cAccentPurple.withValues(alpha: 0.7),
       ],
     );
   }
@@ -232,26 +240,6 @@ extension FmvThinkingExt on _FormattedMessageViewState {
           textPrimary: _cPrimary,
           textSecondary: _cSecondary,
           onOpenFile: widget.onOpenFile,
-        ),
-        "table": ScrollableTableBuilder(
-          context: context,
-          borderColor: _cBorder,
-          tableBg: _cCodeBg,
-          headerBg: const Color(0xFF141926),
-          headStyle: TextStyle(
-            fontFamily: "HindSiliguri",
-            fontFamilyFallback: kFmvFontFamilyFallback,
-            fontSize: 12.0,
-            fontWeight: FontWeight.w700,
-            color: _cPrimary,
-          ),
-          bodyStyle: TextStyle(
-            fontFamily: "HindSiliguri",
-            fontFamilyFallback: kFmvFontFamilyFallback,
-            fontSize: 12.0,
-            height: 1.45,
-            color: _cSecondary,
-          ),
         ),
       },
       onTapLink: (text, href, title) async {

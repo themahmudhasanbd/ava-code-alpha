@@ -95,7 +95,19 @@ extension FmvMarkdownExt on _FormattedMessageViewState {
       return _cachedMarkdownWidget!;
     }
 
-    final String markdownData = isLive ? '$text ▋' : text;
+    // Format streaming markdown and close dangling code fences so UI layout does not break
+    String markdownData;
+    if (isLive) {
+      final codeFenceCount = RegExp(r'```').allMatches(text).length;
+      if (codeFenceCount % 2 != 0) {
+        markdownData = '$text\n```\n▋';
+      } else {
+        markdownData = '$text ▋';
+      }
+    } else {
+      markdownData = text;
+    }
+
     _cachedMarkdownText = text;
     _cachedMarkdownIsLive = isLive;
     _cachedMarkdownBuilt = true;
@@ -123,26 +135,6 @@ extension FmvMarkdownExt on _FormattedMessageViewState {
           textPrimary: _cPrimary,
           textSecondary: _cSecondary,
           onOpenFile: widget.onOpenFile,
-        ),
-        "table": ScrollableTableBuilder(
-          context: context,
-          borderColor: _cBorder,
-          tableBg: _cCodeBg,
-          headerBg: const Color(0xFF141926),
-          headStyle: TextStyle(
-            fontFamily: "HindSiliguri",
-            fontFamilyFallback: kFmvFontFamilyFallback,
-            fontSize: 12.5,
-            fontWeight: FontWeight.w700,
-            color: _cPrimary,
-          ),
-          bodyStyle: TextStyle(
-            fontFamily: "HindSiliguri",
-            fontFamilyFallback: kFmvFontFamilyFallback,
-            fontSize: 12.5,
-            height: 1.45,
-            color: _cPrimary,
-          ),
         ),
       },
       onTapLink: (text, href, title) async {

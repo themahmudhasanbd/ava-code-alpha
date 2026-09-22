@@ -101,10 +101,10 @@ extension FmvAgentHeaderExt on _FormattedMessageViewState {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const OrganicBlobGlowLoader(
-            size: 14,
-            primaryColor: Color(0xFF6366F1),
-            secondaryColor: Color(0xFF8B5CF6),
+          const AiMascotAvatar(
+            size: 16,
+            awake: true,
+            gaze: MascotGaze.right,
           ),
           const SizedBox(width: 8),
           _buildShimmerText(text),
@@ -123,10 +123,10 @@ extension FmvAgentHeaderExt on _FormattedMessageViewState {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const OrganicBlobGlowLoader(
-            size: 16,
-            primaryColor: Color(0xFF6366F1),
-            secondaryColor: Color(0xFF8B5CF6),
+          const AiMascotAvatar(
+            size: 18,
+            awake: true,
+            gaze: MascotGaze.right,
           ),
           const SizedBox(width: 8),
           Container(

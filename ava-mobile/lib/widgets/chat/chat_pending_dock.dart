@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../formatted_message_view.dart';
 
 /// Sticky Pending Dock — pinned above the prompt box when agent is active.
 ///
-/// Shows the current running tool name + elapsed timer.
+/// Shows the AvA Mascot Blob Avatar, current running tool name + elapsed timer.
 /// Tapping the interrupt button calls [onInterrupt].
-class ChatPendingDock extends StatefulWidget {
+class ChatPendingDock extends StatelessWidget {
   final bool isSending;
   final bool isDark;
   final Color borderColor;
@@ -26,39 +27,11 @@ class ChatPendingDock extends StatefulWidget {
   });
 
   @override
-  State<ChatPendingDock> createState() => _ChatPendingDockState();
-}
-
-class _ChatPendingDockState extends State<ChatPendingDock>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _pulseController;
-  late Animation<double> _pulseAnim;
-  final _startTime = DateTime.now();
-
-  @override
-  void initState() {
-    super.initState();
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    )..repeat(reverse: true);
-    _pulseAnim = Tween<double>(begin: 0.4, end: 1.0).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _pulseController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    if (!widget.isSending) return const SizedBox.shrink();
+    if (!isSending) return const SizedBox.shrink();
 
-    final bg = widget.isDark ? const Color(0xFF13131A) : Colors.white;
-    final runningTool = widget.currentToolName;
+    final bg = isDark ? const Color(0xFF13131A) : Colors.white;
+    final runningTool = currentToolName;
 
     return Container(
       margin: const EdgeInsets.fromLTRB(14, 4, 14, 6),
@@ -67,12 +40,12 @@ class _ChatPendingDockState extends State<ChatPendingDock>
         color: bg,
         borderRadius: BorderRadius.circular(13),
         border: Border.all(
-          color: widget.borderColor.withValues(alpha: widget.isDark ? 0.5 : 0.35),
+          color: borderColor.withValues(alpha: isDark ? 0.5 : 0.35),
           width: 0.8,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: widget.isDark ? 0.2 : 0.05),
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -80,17 +53,11 @@ class _ChatPendingDockState extends State<ChatPendingDock>
       ),
       child: Row(
         children: [
-          // Pulsing activity dot
-          FadeTransition(
-            opacity: _pulseAnim,
-            child: Container(
-              width: 7,
-              height: 7,
-              decoration: const BoxDecoration(
-                color: Color(0xFF38BDF8),
-                shape: BoxShape.circle,
-              ),
-            ),
+          // AvA Mascot Animated Blob
+          const AiMascotAvatar(
+            size: 16,
+            awake: true,
+            gaze: MascotGaze.right,
           ),
           const SizedBox(width: 10),
 
@@ -122,7 +89,7 @@ class _ChatPendingDockState extends State<ChatPendingDock>
                           fontSize: 11.5,
                           fontFamily: 'Inter',
                           fontWeight: FontWeight.w500,
-                          color: widget.textSecondary,
+                          color: textSecondary,
                         ),
                       ),
                     ],
@@ -133,27 +100,27 @@ class _ChatPendingDockState extends State<ChatPendingDock>
                       fontSize: 11.5,
                       fontFamily: 'Inter',
                       fontWeight: FontWeight.w600,
-                      color: widget.textSecondary,
+                      color: textSecondary,
                     ),
                   ),
           ),
 
           // Elapsed timer
           _ElapsedTimer(
-            startTime: _startTime,
+            startTime: DateTime.now(),
             textStyle: TextStyle(
               fontSize: 10.5,
               fontFamily: 'JetBrainsMono',
               fontWeight: FontWeight.w600,
-              color: widget.textSecondary.withValues(alpha: 0.6),
+              color: textSecondary.withValues(alpha: 0.6),
             ),
           ),
 
           // Interrupt button
-          if (widget.onInterrupt != null) ...[
+          if (onInterrupt != null) ...[
             const SizedBox(width: 10),
             InkWell(
-              onTap: widget.onInterrupt,
+              onTap: onInterrupt,
               borderRadius: BorderRadius.circular(8),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),

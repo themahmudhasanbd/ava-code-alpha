@@ -76,6 +76,7 @@ flutter:
   assets:
     - assets/logo.png
     - assets/fonts/
+    - assets/fonts/katex/
     - assets/providers/
 
   fonts:
@@ -118,3 +119,59 @@ flutter:
         - asset: assets/fonts/NotoSansBengali-Regular.ttf
         - asset: assets/fonts/NotoSansBengali-Bold.ttf
           weight: 700
+
+    - family: KaTeX_Main
+      fonts:
+        - asset: assets/fonts/katex/KaTeX_Main-Regular.ttf
+        - asset: assets/fonts/katex/KaTeX_Main-Italic.ttf
+          style: italic
+        - asset: assets/fonts/katex/KaTeX_Main-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/katex/KaTeX_Main-BoldItalic.ttf
+          weight: 700
+          style: italic
+    - family: KaTeX_Math
+      fonts:
+        - asset: assets/fonts/katex/KaTeX_Math-Italic.ttf
+          style: italic
+        - asset: assets/fonts/katex/KaTeX_Math-BoldItalic.ttf
+          weight: 700
+          style: italic
+    - family: KaTeX_AMS
+      fonts:
+        - asset: assets/fonts/katex/KaTeX_AMS-Regular.ttf
+    - family: KaTeX_Caligraphic
+      fonts:
+        - asset: assets/fonts/katex/KaTeX_Caligraphic-Regular.ttf
+        - asset: assets/fonts/katex/KaTeX_Caligraphic-Bold.ttf
+          weight: 700
+    - family: KaTeX_Fraktur
+      fonts:
+        - asset: assets/fonts/katex/KaTeX_Fraktur-Regular.ttf
+        - asset: assets/fonts/katex/KaTeX_Fraktur-Bold.ttf
+          weight: 700
+    - family: KaTeX_SansSerif
+      fonts:
+        - asset: assets/fonts/katex/KaTeX_SansSerif-Regular.ttf
+        - asset: assets/fonts/katex/KaTeX_SansSerif-Italic.ttf
+          style: italic
+        - asset: assets/fonts/katex/KaTeX_SansSerif-Bold.ttf
+          weight: 700
+    - family: KaTeX_Script
+      fonts:
+        - asset: assets/fonts/katex/KaTeX_Script-Regular.ttf
+    - family: KaTeX_Typewriter
+      fonts:
+        - asset: assets/fonts/katex/KaTeX_Typewriter-Regular.ttf
+    - family: KaTeX_Size1
+      fonts:
+        - asset: assets/fonts/katex/KaTeX_Size1-Regular.ttf
+    - family: KaTeX_Size2
+      fonts:
+        - asset: assets/fonts/katex/KaTeX_Size2-Regular.ttf
+    - family: KaTeX_Size3
+      fonts:
+        - asset: assets/fonts/katex/KaTeX_Size3-Regular.ttf
+    - family: KaTeX_Size4
+      fonts:
+        - asset: assets/fonts/katex/KaTeX_Size4-Regular.ttf

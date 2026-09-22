@@ -722,6 +722,9 @@ class LatexInlineElementBuilder extends MarkdownElementBuilder {
   LatexInlineElementBuilder({this.defaultStyle, this.isDark = true});
 
   @override
+  Widget? visitText(md.Text text, TextStyle? preferredStyle) => const SizedBox.shrink();
+
+  @override
   Widget? visitElementAfterWithContext(
     BuildContext context,
     md.Element element,
@@ -741,7 +744,12 @@ class LatexInlineElementBuilder extends MarkdownElementBuilder {
       mathStyle: MathStyle.text,
       onErrorFallback: (err) => Text(
         "\$$text\$",
-        style: preferredStyle ?? defaultStyle,
+        style: (preferredStyle ?? defaultStyle)?.copyWith(
+          fontFamily: "JetBrainsMono",
+          fontSize: 12.0,
+          fontWeight: FontWeight.w600,
+          color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF4F46E5),
+        ),
       ),
     );
   }
@@ -762,6 +770,9 @@ class LatexBlockElementBuilder extends MarkdownElementBuilder {
 
   @override
   bool isBlockElement() => true;
+
+  @override
+  Widget? visitText(md.Text text, TextStyle? preferredStyle) => const SizedBox.shrink();
 
   @override
   Widget? visitElementAfterWithContext(
@@ -801,6 +812,7 @@ class LatexBlockElementBuilder extends MarkdownElementBuilder {
                 style: (preferredStyle ?? defaultStyle)?.copyWith(
                   fontFamily: "JetBrainsMono",
                   fontSize: 12,
+                  color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF4F46E5),
                 ),
               ),
             ),

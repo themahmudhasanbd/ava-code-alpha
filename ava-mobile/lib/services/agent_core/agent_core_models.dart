@@ -98,7 +98,7 @@ mixin AgentCoreModelsMixin on AgentCoreBase {
     }
 
     try {
-      // 1. Check active server config for default model
+      // 1. Read active server config for default model and provider
       String? configDefaultModel;
       try {
         final cfgRes = await sendRpc("config/read", {"cwd": "/"});
@@ -110,63 +110,76 @@ mixin AgentCoreModelsMixin on AgentCoreBase {
         }
       } catch (_) {}
 
-      // 2. Fetch models from model/list
-      final res = await sendRpc("model/list", {});
-      if (res is Map && res["data"] is List && (res["data"] as List).isNotEmpty) {
-        final List<AvaModelItem> parsed = [];
-        String? defaultModelId = configDefaultModel;
+      final Map<String, AvaModelItem> mergedMap = {};
 
-        for (final item in (res["data"] as List)) {
-          if (item is! Map) continue;
-          final id = item["id"]?.toString() ?? item["model"]?.toString() ?? "";
-          if (id.isEmpty) continue;
-
-          final name = item["displayName"]?.toString() ?? item["name"]?.toString() ?? id;
-          final isDef = item["isDefault"] == true;
-          if (isDef && defaultModelId == null) {
-            defaultModelId = id;
-          }
-
-          final inputModalities = item["inputModalities"];
-          final supportsImages = inputModalities is List ? inputModalities.contains("image") : true;
-          final reasoningList = item["supportedReasoningEfforts"];
-          final hasReasoning = reasoningList is List && reasoningList.isNotEmpty;
-
-          parsed.add(AvaModelItem(
-            id: id,
-            name: name,
-            provider: "omniroute",
-            providerKey: "omniroute",
-            modelKey: id,
-            contextLimit: 1048576,
-            reasoning: hasReasoning,
-            supportsImages: supportsImages,
-          ));
-        }
-
-        if (parsed.isNotEmpty) {
-          AgentCoreBase.cachedCatalogModels = parsed;
-          final defId = defaultModelId ?? parsed.first.id;
-          AgentCoreBase.cachedDefaultModelId = defId;
-          AgentCoreBase.addDebugLog("fetchCatalogInfo: ${parsed.length} models loaded from AvA Core");
-
-          await saveModelsToCache({
-            "models": parsed.map((e) => e.toJson()).toList(),
-            "defaultModelId": defId,
-          });
-
-          return {"models": parsed, "defaultModelId": defId};
-        }
+      // 2. Pre-populate with curated OmniRoute AvA combos
+      for (final defModel in defaultModelList) {
+        mergedMap[defModel.id] = defModel;
       }
 
-      // If model/list returned empty, use configured defaultModelList with server default model
-      final effectiveDefault = configDefaultModel ?? defaultModelList.first.id;
-      AgentCoreBase.cachedCatalogModels = defaultModelList;
-      AgentCoreBase.cachedDefaultModelId = effectiveDefault;
-      return {
-        "models": defaultModelList,
-        "defaultModelId": effectiveDefault,
-      };
+      // 3. Fetch models from model/list and merge
+      try {
+        final res = await sendRpc("model/list", {});
+        if (res is Map && res["data"] is List) {
+          for (final item in (res["data"] as List)) {
+            if (item is! Map) continue;
+            final id = item["id"]?.toString() ?? item["model"]?.toString() ?? "";
+            if (id.isEmpty) continue;
+
+            final name = item["displayName"]?.toString() ?? item["name"]?.toString() ?? id;
+            final inputModalities = item["inputModalities"];
+            final supportsImages = inputModalities is List ? inputModalities.contains("image") : true;
+            final reasoningList = item["supportedReasoningEfforts"];
+            final hasReasoning = reasoningList is List && reasoningList.isNotEmpty;
+
+            if (!mergedMap.containsKey(id)) {
+              mergedMap[id] = AvaModelItem(
+                id: id,
+                name: name,
+                provider: "omniroute",
+                providerKey: "omniroute",
+                modelKey: id,
+                contextLimit: 1048576,
+                reasoning: hasReasoning,
+                supportsImages: supportsImages,
+              );
+            }
+          }
+        }
+      } catch (_) {}
+
+      // 4. Ensure configured default model is present and prioritized
+      final String effectiveDefaultId = configDefaultModel ?? "powerful-coding-combo";
+      if (!mergedMap.containsKey(effectiveDefaultId)) {
+        mergedMap[effectiveDefaultId] = AvaModelItem(
+          id: effectiveDefaultId,
+          name: effectiveDefaultId == "powerful-coding-combo" ? "Powerful Coding Combo" : effectiveDefaultId,
+          provider: "omniroute",
+          providerKey: "omniroute",
+          modelKey: effectiveDefaultId,
+          contextLimit: 1048576,
+          reasoning: true,
+          supportsImages: true,
+        );
+      }
+
+      final List<AvaModelItem> parsed = [];
+      // Put default model first
+      if (mergedMap.containsKey(effectiveDefaultId)) {
+        parsed.add(mergedMap.remove(effectiveDefaultId)!);
+      }
+      parsed.addAll(mergedMap.values);
+
+      AgentCoreBase.cachedCatalogModels = parsed;
+      AgentCoreBase.cachedDefaultModelId = effectiveDefaultId;
+      AgentCoreBase.addDebugLog("fetchCatalogInfo: ${parsed.length} models loaded (default: $effectiveDefaultId)");
+
+      await saveModelsToCache({
+        "models": parsed.map((e) => e.toJson()).toList(),
+        "defaultModelId": effectiveDefaultId,
+      });
+
+      return {"models": parsed, "defaultModelId": effectiveDefaultId};
     } catch (err) {
       AgentCoreBase.addDebugLog("fetchCatalogInfo error: $err");
       final cached = await loadModelsFromCache();
@@ -183,10 +196,10 @@ mixin AgentCoreModelsMixin on AgentCoreBase {
     }
 
     AgentCoreBase.cachedCatalogModels = defaultModelList;
-    AgentCoreBase.cachedDefaultModelId = defaultModelList.first.id;
+    AgentCoreBase.cachedDefaultModelId = "powerful-coding-combo";
     return {
       "models": defaultModelList,
-      "defaultModelId": defaultModelList.first.id,
+      "defaultModelId": "powerful-coding-combo",
     };
   }
 

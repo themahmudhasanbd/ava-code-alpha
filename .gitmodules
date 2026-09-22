@@ -1,0 +1,4 @@
+[submodule "ava-desktop"]
+	path = ava-desktop
+	url = https://github.com/vastsa/PI-Desktop.git
+	branch = main

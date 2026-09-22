@@ -18,31 +18,13 @@ permissions:
   contents: write
 
 jobs:
-  build-desktop:
-    name: Build Standalone Desktop (${{ matrix.platform.name }})
-    runs-on: ${{ matrix.platform.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        platform:
-          - name: Linux
-            os: ubuntu-latest
-            target_cmd: dist:linux
-            artifact_pattern: ava-desktop/apps/desktop/release/*.AppImage
-          - name: Windows
-            os: windows-latest
-            target_cmd: dist:win
-            artifact_pattern: ava-desktop/apps/desktop/release/*.exe
-          - name: macOS
-            os: macos-latest
-            target_cmd: dist:mac
-            artifact_pattern: ava-desktop/apps/desktop/release/*.dmg
+  build-linux-deb:
+    name: Build Linux DEB Package
+    runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout repository (no submodules)
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
       - name: Setup Rust Toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -50,9 +32,7 @@ jobs:
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: |
-            ava-desktop -> ava-desktop/target
-            ava-rs -> ava-rs/target
+          workspaces: ava-desktop -> ava-desktop/target
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -64,65 +44,88 @@ jobs:
         with:
           version: 9
 
-      - name: Install System Dependencies (Linux)
-        if: matrix.platform.os == 'ubuntu-latest'
+      - name: Install Linux System Dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev
+          sudo apt-get update -qq
+          sudo apt-get install -y \
+            libgtk-3-dev \
+            libwebkit2gtk-4.1-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            dpkg \
+            fakeroot
 
-      - name: Install Workspace Node Dependencies
+      - name: Install Node Workspace Dependencies
         run: |
           cd ava-desktop
           pnpm install --no-frozen-lockfile
 
-      - name: Build Standalone Desktop with Embedded Rust Core
+      - name: Build Shared Packages
         run: |
           cd ava-desktop
           pnpm --filter '@pi-desktop/desktop^...' build || true
-          cargo build --release --manifest-path Cargo.toml -p host-core
-          pnpm -C packages/agent-runtime bundle || true
-          cd apps/desktop
-          pnpm run build
-          npx electron-builder --publish never
 
-      - name: Upload Desktop Artifacts
+      - name: Build Rust host-core (release)
+        run: |
+          cd ava-desktop
+          cargo build --release -p host-core
+
+      - name: Bundle Agent Runtime Sidecar
+        run: |
+          cd ava-desktop
+          pnpm -C packages/agent-runtime bundle || true
+
+      - name: Build Electron Renderer & Main
+        run: |
+          cd ava-desktop/apps/desktop
+          npx electron-vite build
+
+      - name: Package Linux DEB
+        run: |
+          cd ava-desktop/apps/desktop
+          npx electron-builder --linux deb --publish never
+
+      - name: List release artifacts
+        run: ls -lh ava-desktop/apps/desktop/release/
+
+      - name: Upload Linux DEB Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ava-desktop-${{ matrix.platform.name }}
+          name: ava-desktop-linux-deb
           path: |
-            ava-desktop/apps/desktop/release/*.exe
-            ava-desktop/apps/desktop/release/*.dmg
-            ava-desktop/apps/desktop/release/*.zip
-            ava-desktop/apps/desktop/release/*.AppImage
             ava-desktop/apps/desktop/release/*.deb
-          if-no-files-found: warn
+          if-no-files-found: error
+          retention-days: 30
 
   publish-release:
-    name: Publish GitHub Release
-    needs: build-desktop
+    name: Attach DEB to GitHub Release
+    needs: build-linux-deb
     if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.release_tag != ''
     runs-on: ubuntu-latest
     steps:
-      - name: Download all built artifacts
+      - name: Download DEB artifact
         uses: actions/download-artifact@v4
         with:
-          path: dist-artifacts
+          name: ava-desktop-linux-deb
+          path: dist-deb
 
-      - name: Create GitHub Release & Attach Binaries
+      - name: Create GitHub Release & Attach DEB
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.inputs.release_tag || github.ref_name }}
-          name: AvA Code Desktop Alpha ${{ github.event.inputs.release_tag || github.ref_name }}
+          name: AvA Code Alpha ${{ github.event.inputs.release_tag || github.ref_name }}
           draft: false
           prerelease: true
-          files: dist-artifacts/**/*
+          files: dist-deb/*.deb
           body: |
-            ## 🚀 AvA Code Alpha Standalone Desktop Release
-            
-            This release bundles the high-performance native Rust Core (`host-core`) directly into the standalone application.
-            No separate Node.js, Rust, or CLI installation is required.
+            ## 🚀 AvA Code Alpha — Linux DEB Release
 
-            ### Assets
-            - **Windows**: `.exe` Installer & Portable `.zip`
-            - **macOS**: `.dmg` Disk Image & `.zip`
-            - **Linux**: `.AppImage`, `.deb`, and `.rpm`
+            Standalone desktop app with embedded native Rust Core (`host-core`).
+            No Node.js, Rust or CLI installation required.
+
+            ### Install on Debian/Ubuntu
+            ```bash
+            sudo dpkg -i ava-code-alpha_*_amd64.deb
+            # or
+            sudo apt install ./ava-code-alpha_*_amd64.deb
+            ```

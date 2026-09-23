@@ -322,6 +322,11 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
           } else {
             result.add(local);
           }
+        } else if (local.isPending) {
+          final isActivelyStreaming = _currentlyStreamingPendingId == local.id && _activePromptStreamSubscription != null;
+          if (isActivelyStreaming) {
+            result.add(local);
+          }
         } else {
           result.add(local);
         }

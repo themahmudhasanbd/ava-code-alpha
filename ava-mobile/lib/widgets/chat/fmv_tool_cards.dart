@@ -569,26 +569,26 @@ extension FmvToolCardsExt on _FormattedMessageViewState {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                            color: _cSecondary.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(4),
-                            border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.35), width: 0.7),
+                            border: Border.all(color: _cBorder.withValues(alpha: 0.7), width: 0.7),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(LucideIcons.fileCode, size: 10, color: Color(0xFF10B981)),
+                              Icon(LucideIcons.fileCode, size: 10, color: _cSecondary),
                               const SizedBox(width: 4),
                               Text(
                                 _fileNameFromPath(targetFilePath),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 10.5,
                                   fontFamily: "JetBrainsMono",
                                   fontWeight: FontWeight.w600,
-                                  color: Color(0xFF10B981),
+                                  color: _cSecondary,
                                 ),
                               ),
                               const SizedBox(width: 3),
-                              const Icon(LucideIcons.externalLink, size: 9, color: Color(0xFF10B981)),
+                              Icon(LucideIcons.externalLink, size: 9, color: _cSecondary),
                             ],
                           ),
                         ),

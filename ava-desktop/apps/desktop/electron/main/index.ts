@@ -515,6 +515,8 @@ const dataDir = desktopDataDir(isDevelopmentBuild);
 // it as a parameter, and a profile split across two directories is the
 // divergence D236 closes.
 process.env.PI_DESKTOP_DATA_DIR = dataDir;
+process.env.AVA_DESKTOP_DATA_DIR = dataDir;
+process.env.AVA_CODE_DATA_DIR = dataDir;
 
 // Agent extensions (D387/D388, ADR 0214): plugins contribute the modules,
 // the sidecar loads them; this bridge carries commands, diagnostics, and

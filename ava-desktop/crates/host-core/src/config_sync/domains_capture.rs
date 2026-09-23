@@ -505,7 +505,20 @@ pub(crate) fn capture_instructions(
 }
 
 fn global_instruction_path() -> Option<PathBuf> {
-    dirs::home_dir().map(|home| home.join(".pi").join("agent").join("AGENTS.md"))
+    dirs::home_dir().map(|home| {
+        let candidates = [
+            home.join(".ava-code").join("AGENTS.md"),
+            home.join("AGENTS.md"),
+            home.join(".codex").join("AGENTS.md"),
+            home.join(".pi").join("agent").join("AGENTS.md"),
+        ];
+        for candidate in &candidates {
+            if candidate.exists() {
+                return candidate.clone();
+            }
+        }
+        home.join(".ava-code").join("AGENTS.md")
+    })
 }
 
 fn read_instruction_file(path: &Path) -> Result<Option<String>> {

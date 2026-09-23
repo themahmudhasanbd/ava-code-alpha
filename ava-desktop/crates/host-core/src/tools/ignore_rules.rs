@@ -127,17 +127,23 @@ pub fn workspace_ignore_file(ignore_root: &Path) -> Option<PathBuf> {
 
 /// The user's global ignore file (`<data_dir>/ignore`), when present.
 pub fn user_global_ignore_file() -> Option<PathBuf> {
-    let data_dir = std::env::var_os("AVA_DESKTOP_DATA_DIR")
+    let data_dir = std::env::var_os("AVA_CODE_DATA_DIR")
+        .or_else(|| std::env::var_os("AVA_DESKTOP_DATA_DIR"))
         .or_else(|| std::env::var_os("PI_DESKTOP_DATA_DIR"))
         .map(PathBuf::from)
         .or_else(|| {
             dirs::home_dir().map(|home| {
-                let ava_dir = home.join(".ava-desktop");
+                let ava_code_dir = home.join(".ava-code");
+                let ava_desktop_dir = home.join(".ava-desktop");
                 let pi_dir = home.join(".pi-desktop");
-                if !ava_dir.exists() && pi_dir.exists() {
+                if ava_code_dir.exists() {
+                    ava_code_dir
+                } else if ava_desktop_dir.exists() {
+                    ava_desktop_dir
+                } else if pi_dir.exists() {
                     pi_dir
                 } else {
-                    ava_dir
+                    ava_code_dir
                 }
             })
         })?;

@@ -57,17 +57,23 @@ async fn main() -> anyhow::Result<()> {
         .with_writer(std::io::stderr)
         .init();
 
-    let data_dir = std::env::var("AVA_DESKTOP_DATA_DIR")
+    let data_dir = std::env::var("AVA_CODE_DATA_DIR")
+        .or_else(|_| std::env::var("AVA_DESKTOP_DATA_DIR"))
         .or_else(|_| std::env::var("PI_DESKTOP_DATA_DIR"))
         .map(std::path::PathBuf::from)
         .unwrap_or_else(|_| {
             let home = dirs::home_dir().unwrap_or_else(|| std::path::PathBuf::from("."));
-            let ava_dir = home.join(".ava-desktop");
+            let ava_code_dir = home.join(".ava-code");
+            let ava_desktop_dir = home.join(".ava-desktop");
             let pi_dir = home.join(".pi-desktop");
-            if !ava_dir.exists() && pi_dir.exists() {
+            if ava_code_dir.exists() {
+                ava_code_dir
+            } else if ava_desktop_dir.exists() {
+                ava_desktop_dir
+            } else if pi_dir.exists() {
                 pi_dir
             } else {
-                ava_dir
+                ava_code_dir
             }
         });
 

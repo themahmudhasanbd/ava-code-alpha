@@ -16,8 +16,9 @@
 use ignore::WalkBuilder;
 use std::path::{Path, PathBuf};
 
-/// Workspace-root ignore file name (spec 15 §5).
-pub const WORKSPACE_IGNORE_FILE: &str = ".pi-desktopignore";
+/// Workspace-root ignore file names.
+pub const WORKSPACE_IGNORE_FILES: &[&str] = &[".avaignore", ".avadesktopignore", ".pi-desktopignore"];
+pub const WORKSPACE_IGNORE_FILE: &str = ".avaignore";
 
 /// Exact file names on the security denylist (spec 15 §3).
 const SENSITIVE_FILE_NAMES: &[&str] = &["id_rsa", "id_ed25519", "credentials.json", ".env"];
@@ -115,15 +116,31 @@ fn is_default_ignored_file_name(name: &str) -> bool {
 
 /// The workspace-root ignore file, when present.
 pub fn workspace_ignore_file(ignore_root: &Path) -> Option<PathBuf> {
-    let candidate = ignore_root.join(WORKSPACE_IGNORE_FILE);
-    candidate.is_file().then_some(candidate)
+    for name in WORKSPACE_IGNORE_FILES {
+        let candidate = ignore_root.join(name);
+        if candidate.is_file() {
+            return Some(candidate);
+        }
+    }
+    None
 }
 
 /// The user's global ignore file (`<data_dir>/ignore`), when present.
 pub fn user_global_ignore_file() -> Option<PathBuf> {
-    let data_dir = std::env::var_os("PI_DESKTOP_DATA_DIR")
+    let data_dir = std::env::var_os("AVA_DESKTOP_DATA_DIR")
+        .or_else(|| std::env::var_os("PI_DESKTOP_DATA_DIR"))
         .map(PathBuf::from)
-        .or_else(|| dirs::home_dir().map(|home| home.join(".pi-desktop")))?;
+        .or_else(|| {
+            dirs::home_dir().map(|home| {
+                let ava_dir = home.join(".ava-desktop");
+                let pi_dir = home.join(".pi-desktop");
+                if !ava_dir.exists() && pi_dir.exists() {
+                    pi_dir
+                } else {
+                    ava_dir
+                }
+            })
+        })?;
     let candidate = data_dir.join("ignore");
     candidate.is_file().then_some(candidate)
 }

@@ -88,7 +88,13 @@ pub(crate) fn upsert_project_row(conn: &Connection, raw: &str, touch: bool) -> R
 
 impl Database {
     pub fn open_in_dir(data_dir: &Path) -> Result<Self> {
-        Self::open(&data_dir.join("pi.sqlite"))
+        let ava_db = data_dir.join("ava.sqlite");
+        let pi_db = data_dir.join("pi.sqlite");
+        if !ava_db.exists() && pi_db.exists() {
+            Self::open(&pi_db)
+        } else {
+            Self::open(&ava_db)
+        }
     }
 
     /// Open a specific database file, bootstrapping the latest schema on a

@@ -9,7 +9,9 @@ import {
   type CloseBehavior,
   type KeybindingOverrides,
   type NativeMenuAction,
+  providerCreateInputFromDraft,
 } from "@pi-desktop/shared";
+import { scanModelConfigs } from "../importers/model-config";
 import { installApplicationMenu } from "../application-menu";
 import {
   installPluginAssetProtocol,
@@ -314,6 +316,29 @@ export function registerApplicationStartup(deps: StartupDependencies): void {
         applyApplicationMenuSettings(stored);
         applyDeveloperMode(stored);
         await applyNetworkProxyFromAppSettings(stored);
+
+        try {
+          const providerList = await host.call<{ providers: Array<{ id: string }> }>("providers.list", { includeDisabled: true });
+          if (!providerList?.providers || providerList.providers.length === 0) {
+            const drafts = await scanModelConfigs();
+            for (const draft of drafts) {
+              try {
+                await host.call("providers.create", providerCreateInputFromDraft(draft));
+                logger.app("provider", "info", "auto-imported model config provider on initial boot", {
+                  data: { source: draft.source, name: draft.name, id: draft.externalId },
+                });
+              } catch (e) {
+                logger.app("provider", "warn", "failed to auto-import provider draft", {
+                  data: { name: draft.name, error: e instanceof Error ? e.message : String(e) },
+                });
+              }
+            }
+          }
+        } catch (e) {
+          logger.app("provider", "warn", "auto-import scan check error", {
+            data: e instanceof Error ? e.message : String(e),
+          });
+        }
       } catch {
         // Keep the OS-locale menu until settings can be read again, while
         // retaining the historical default launcher fallback for this failure.

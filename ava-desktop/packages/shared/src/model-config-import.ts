@@ -384,15 +384,26 @@ export function parseCodexModelConfig(
   const defaultModel = stringValue(extracted.root.model);
   for (const [tableKey, fields] of extracted.tables) {
     if (!tableKey.startsWith("model_providers.")) continue;
+    if (tableKey.endsWith(".http_headers") || tableKey.endsWith(".headers")) continue;
     const id = tableKey.slice("model_providers.".length);
     if (!id) continue;
     if (fields.requires_openai_auth === true && !stringValue(fields.env_key) && !stringValue(fields.api_key)) {
       continue;
     }
+    const headersTable =
+      extracted.tables.get(`${tableKey}.http_headers`) ??
+      extracted.tables.get(`${tableKey}.headers`);
+    const headerAuth =
+      stringValue(headersTable?.Authorization) ??
+      stringValue(headersTable?.authorization) ??
+      stringValue(headersTable?.["x-api-key"]) ??
+      stringValue(headersTable?.["X-Api-Key"]);
+    const headerSecret = headerAuth ? secretFromAuthHeader({ Authorization: headerAuth }) : undefined;
     const baseUrl = stringValue(fields.base_url) ?? stringValue(fields.baseUrl);
     const envKey = stringValue(fields.env_key) ?? stringValue(fields.envKey);
     const secret = firstSecret(
       resolveSecret(stringValue(fields.api_key) ?? stringValue(fields.apiKey), env),
+      headerSecret,
       envKey ? env[envKey] : undefined,
     );
     const wire = stringValue(fields.wire_api) ?? stringValue(fields.wireApi);

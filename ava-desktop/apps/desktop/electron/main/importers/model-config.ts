@@ -77,7 +77,9 @@ async function scanCodex(
   env: ModelConfigImportEnv,
 ): Promise<ModelConfigImportDraft[]> {
   const candidates = [
+    path.join(home, ".ava-code", "config.toml"),
     path.join(home, ".ava", "config.toml"),
+    path.join(home, ".config", "ava-code", "config.toml"),
     path.join(home, ".config", "ava", "config.toml"),
     path.join(home, ".codex", "config.toml"),
   ];
@@ -95,8 +97,8 @@ async function scanCodex(
     }
   }
 
-  // Also check profile .config.toml files in ~/.codex and ~/.ava
-  for (const dir of [path.join(home, ".ava"), path.join(home, ".codex")]) {
+  // Also check profile .config.toml files in ~/.ava-code, ~/.ava, and ~/.codex
+  for (const dir of [path.join(home, ".ava-code"), path.join(home, ".ava"), path.join(home, ".codex")]) {
     try {
       const files = await fs.readdir(dir);
       for (const f of files) {

@@ -46,7 +46,6 @@ import { ProjectsPage } from "../../pages/ProjectsPage";
 import { AgentSkillsPage } from "../../components/settings/AgentSkillsPage";
 import { AgentMcpPage } from "../../components/settings/AgentMcpPage";
 import { AgentSubagentsPage } from "../../components/settings/AgentSubagentsPage";
-import { RemoteHostsPage } from "../../components/settings/RemoteHostsPage";
 import {
   CommandShellRow,
   ContextUsageDisplayRow,
@@ -59,8 +58,6 @@ import { AgentInstructionsSection, UpdatesRow } from "./agent-sections";
 import { ImportSection } from "./import-page";
 import { PromptEnhancementCard } from "./prompt-enhancement-card";
 import { CloseBehaviorSection, DeveloperSection } from "./developer-sections";
-import { PluginScenicThemesDestination } from "../../components/settings/PluginScenicThemesDestination";
-import { ConfigSyncPage } from "../../components/settings/ConfigSyncPage";
 
 type SettingsTab = ReturnType<typeof useAppStore.getState>["settingsTab"];
 
@@ -95,25 +92,7 @@ export function SettingsPage() {
   const [query, setQuery] = useState("");
   const [recoveringSettings, setRecoveringSettings] = useState(!settings);
   const [settingsRecoveryFailed, setSettingsRecoveryFailed] = useState(false);
-  const [extensions, setExtensions] = useState<PluginScenicThemesDestinationMeta[]>([]);
-  const [activeExtension, setActiveExtension] = useState<PluginScenicThemesDestinationMeta | null>(null);
 
-  useEffect(() => {
-    const refresh = () => void api.listPluginScenicThemesDestinations().then(setExtensions, () => setExtensions([]));
-    refresh();
-    return api.onPluginChanged(refresh);
-  }, []);
-
-  useEffect(() => {
-    if (activeExtension && !extensions.some((entry) => entry.ref === activeExtension.ref)) {
-      setActiveExtension(null);
-      setSettingsTab("general");
-    }
-  }, [activeExtension, extensions, setSettingsTab]);
-
-  // A hidden destination must not keep rendering: leave the page the rail no
-  // longer offers (for example Remote Hosts once developer mode is switched
-  // off) and fall back to General.
   useEffect(() => {
     if (!settings || !tabHidden) return;
     setSettingsTab("general");
@@ -206,8 +185,6 @@ export function SettingsPage() {
       subagents: <IconBot size={14} />,
       import: <IconDownload size={14} />,
       projects: <IconArchive size={14} />,
-      sync: <IconCloudDown size={14} />,
-      remoteHosts: <IconGlobe size={14} />,
       about: <IconInfo size={14} />,
     };
     return navEntries.map((entry) => ({
@@ -282,43 +259,14 @@ export function SettingsPage() {
                   <button
                     key={item.id}
                     className={cx("settings-nav-item", tab === item.id && "active")}
-                    onClick={() => {
-                      setActiveExtension(null);
-                      setSettingsTab(item.id);
-                    }}
+                    onClick={() => setSettingsTab(item.id)}
                   >
                     <span className="settings-nav-icon">{item.icon}</span>
                     <span className="settings-nav-label">{t(item.labelKey)}</span>
-                    {item.id === "remoteHosts" ? (
-                      <Badge tone="warning" className="settings-nav-experimental">
-                        {t("settings.remoteHosts.experimental")}
-                      </Badge>
-                    ) : null}
                   </button>
                 ))}
               </div>
             ))
-          )}
-          {extensions.length > 0 && (
-            <div className="settings-nav-group">
-              <div className="settings-nav-group-label">{t("settings.groupExtensions")}</div>
-              {extensions.filter((entry) => {
-                const q = query.trim().toLowerCase();
-                return !q || [entry.label, ...entry.keywords].some((value) => value.toLowerCase().includes(q));
-              }).map((entry) => {
-                const ExtensionIcon = pluginViewIcon(entry.icon) ?? IconPalette;
-                return (
-                  <button
-                    key={entry.ref}
-                    className={cx("settings-nav-item", activeExtension?.ref === entry.ref && "active")}
-                    onClick={() => setActiveExtension(entry)}
-                  >
-                    <span className="settings-nav-icon"><ExtensionIcon size={14} /></span>
-                    <span className="settings-nav-label">{entry.label}</span>
-                  </button>
-                );
-              })}
-            </div>
           )}
         </div>
 
@@ -342,15 +290,8 @@ export function SettingsPage() {
         <div className="settings-content-inner">
           <div className="settings-content-enter">
           <h1 className="settings-section-title">
-            <span>{activeExtension?.label ?? t(activeTitleKey)}</span>
-            {!activeExtension && tab === "remoteHosts" && !tabHidden ? (
-              <Badge tone="warning">{t("settings.remoteHosts.experimental")}</Badge>
-            ) : null}
+            <span>{t(activeTitleKey)}</span>
           </h1>
-
-          {activeExtension ? (
-            <PluginScenicThemesDestination destination={activeExtension} selectTheme={selectPluginTheme} />
-          ) : <>
 
           {tabNeedsSettings && !settings ? (
             <div className="settings-recovery" role="status" aria-live="polite">
@@ -523,10 +464,6 @@ export function SettingsPage() {
 
           {tab === "projects" && <ProjectsPage />}
 
-          {tab === "sync" && <ConfigSyncPage />}
-
-          {tab === "remoteHosts" && !tabHidden && <RemoteHostsPage />}
-
           {tab === "about" && (
             <div className="settings-stack">
               <SettingsCard>
@@ -564,7 +501,6 @@ export function SettingsPage() {
               )}
             </div>
           )}
-          </>}
 
           </div>
         </div>

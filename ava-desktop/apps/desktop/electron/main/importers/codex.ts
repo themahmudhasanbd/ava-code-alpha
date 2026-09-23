@@ -12,7 +12,8 @@ import type {
 } from "./types";
 import { importedSessionId, toIso, truncateTitle } from "./types";
 
-const SESSIONS_DIR = path.join(os.homedir(), ".codex", "sessions");
+const SESSIONS_DIR = path.join(os.homedir(), ".ava", "sessions");
+const CODEX_SESSIONS_DIR = path.join(os.homedir(), ".codex", "sessions");
 
 function readLfJsonl(
   stream: Readable,
@@ -170,10 +171,10 @@ async function listSessionFiles(
 ): Promise<{ files: string[]; truncated: boolean }> {
   const out: string[] = [];
   let truncated = false;
-  const walk = async (dir: string, depth: number) => {
+  const walk = async (targetDir: string, depth: number) => {
     let entries: string[] = [];
     try {
-      entries = await fs.readdir(dir);
+      entries = await fs.readdir(targetDir);
     } catch {
       return;
     }
@@ -183,7 +184,7 @@ async function listSessionFiles(
         truncated = true;
         return;
       }
-      const full = path.join(dir, entry);
+      const full = path.join(targetDir, entry);
       if (entry.endsWith(".jsonl")) {
         out.push(full);
       } else if (depth < 3) {
@@ -192,6 +193,9 @@ async function listSessionFiles(
     }
   };
   await walk(dir, 0);
+  if (dir === SESSIONS_DIR && out.length < maxFiles) {
+    await walk(CODEX_SESSIONS_DIR, 0);
+  }
   return { files: out, truncated };
 }
 

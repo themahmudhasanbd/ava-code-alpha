@@ -76,9 +76,48 @@ async function scanCodex(
   home: string,
   env: ModelConfigImportEnv,
 ): Promise<ModelConfigImportDraft[]> {
-  const text = await readText(path.join(home, ".codex", "config.toml"));
-  if (text == null) return [];
-  return parseCodexModelConfig(text, env);
+  const candidates = [
+    path.join(home, ".ava", "config.toml"),
+    path.join(home, ".config", "ava", "config.toml"),
+    path.join(home, ".codex", "config.toml"),
+  ];
+  const results: ModelConfigImportDraft[] = [];
+
+  for (const candidate of candidates) {
+    const text = await readText(candidate);
+    if (text) {
+      const parsed = parseCodexModelConfig(text, env);
+      for (const p of parsed) {
+        if (!results.some((existing) => draftMatchesExisting(p, [existing]))) {
+          results.push(p);
+        }
+      }
+    }
+  }
+
+  // Also check profile .config.toml files in ~/.codex and ~/.ava
+  for (const dir of [path.join(home, ".ava"), path.join(home, ".codex")]) {
+    try {
+      const files = await fs.readdir(dir);
+      for (const f of files) {
+        if (f.endsWith(".config.toml") && f !== "config.toml") {
+          const text = await readText(path.join(dir, f));
+          if (text) {
+            const parsed = parseCodexModelConfig(text, env);
+            for (const p of parsed) {
+              if (!results.some((existing) => draftMatchesExisting(p, [existing]))) {
+                results.push(p);
+              }
+            }
+          }
+        }
+      }
+    } catch {
+      // Directory may not exist
+    }
+  }
+
+  return results;
 }
 
 async function scanPi(

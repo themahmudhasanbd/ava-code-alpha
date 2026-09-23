@@ -22,17 +22,19 @@ import { APP_NAME } from "@pi-desktop/shared";
  * `PI_DESKTOP_DATA_DIR` still overrides either profile outright.
  */
 
+import { existsSync } from "node:fs";
+
 /** `userData` directory of a development installation, beside the shipped one. */
 export const DEVELOPMENT_INSTALLATION_NAME = `${APP_NAME} Dev`;
 
 /** Data directory of a shipped installation, below the user's home. */
-export const INSTALLATION_DATA_DIR_NAME = ".pi-desktop";
+export const INSTALLATION_DATA_DIR_NAME = ".ava-desktop";
 
 /** Data directory of a development installation, below the user's home. */
-export const DEVELOPMENT_DATA_DIR_NAME = ".pi-desktop-dev";
+export const DEVELOPMENT_DATA_DIR_NAME = ".ava-desktop-dev";
 
 export type DataDirInput = {
-  /** `PI_DESKTOP_DATA_DIR`; an explicit directory wins over either profile. */
+  /** `AVA_DESKTOP_DATA_DIR` or `PI_DESKTOP_DATA_DIR`; an explicit directory wins over either profile. */
   override: string | undefined;
   /** True for a development build. */
   development: boolean;
@@ -40,31 +42,25 @@ export type DataDirInput = {
   home: string;
 };
 
-/**
- * The data directory one installation owns.
- *
- * `PI_DESKTOP_DATA_DIR` stays the escape hatch it always was: an explicit
- * directory wins, which is how the E2E harnesses, the capture rig, and
- * side-by-side profiles keep choosing their own root. The result is absolute,
- * because it reaches host-core as a child-process environment variable from a
- * working directory that need not be this one, and because `homedir()` is the
- * only other input that could be relative. Without an override the profile
- * picks the name, and that name is the whole difference between the two
- * installations.
- */
 export function resolveDataDir({
   override,
   development,
   home,
 }: DataDirInput): string {
-  const explicit = override?.trim();
+  const explicit = (process.env.AVA_DESKTOP_DATA_DIR || override)?.trim();
   if (explicit) return resolve(explicit);
-  return resolve(
-    join(
-      home,
-      development ? DEVELOPMENT_DATA_DIR_NAME : INSTALLATION_DATA_DIR_NAME,
-    ),
+  const targetDir = join(
+    home,
+    development ? DEVELOPMENT_DATA_DIR_NAME : INSTALLATION_DATA_DIR_NAME,
   );
+  const legacyDir = join(
+    home,
+    development ? ".pi-desktop-dev" : ".pi-desktop",
+  );
+  if (!existsSync(targetDir) && existsSync(legacyDir)) {
+    return resolve(legacyDir);
+  }
+  return resolve(targetDir);
 }
 
 /**

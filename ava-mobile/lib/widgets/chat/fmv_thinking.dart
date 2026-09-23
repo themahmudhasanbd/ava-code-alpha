@@ -101,7 +101,7 @@ extension FmvThinkingExt on _FormattedMessageViewState {
                             style: TextStyle(
                               fontSize: 12,
                               fontFamily: "Inter",
-                              color: _cAccentPurple,
+                              color: _cSecondary,
                               fontWeight: FontWeight.w600,
                             ),
                           )
@@ -112,7 +112,7 @@ extension FmvThinkingExt on _FormattedMessageViewState {
                         style: TextStyle(
                           fontSize: 12,
                           fontFamily: "Inter",
-                          color: _cPrimary,
+                          color: _cSecondary,
                           fontWeight: FontWeight.w500,
                         ),
                         children: [
@@ -123,7 +123,7 @@ extension FmvThinkingExt on _FormattedMessageViewState {
                               fontFamily: "JetBrainsMono",
                               fontSize: 11.5,
                               fontWeight: FontWeight.w700,
-                              color: const Color(0xFF818CF8),
+                              color: _cPrimary,
                             ),
                           ),
                         ],
@@ -192,10 +192,10 @@ extension FmvThinkingExt on _FormattedMessageViewState {
         fontWeight: FontWeight.w600,
       ),
       colors: [
-        _cAccentPurple.withValues(alpha: 0.7),
-        _cAccentPurple,
-        const Color(0xFF38BDF8),
-        _cAccentPurple.withValues(alpha: 0.7),
+        _cSecondary.withValues(alpha: 0.6),
+        _cPrimary,
+        _cSecondary.withValues(alpha: 0.9),
+        _cSecondary.withValues(alpha: 0.6),
       ],
     );
   }

@@ -14,7 +14,7 @@ class _ToolMeta {
 extension FmvToolCardsExt on _FormattedMessageViewState {
   _ToolMeta _resolveToolMeta(String toolName, String? summary, {bool isFailed = false}) {
     if (isFailed) {
-      return _ToolMeta(LucideIcons.circleAlert, const Color(0xFFEF4444), const Color(0xFFEF4444).withValues(alpha: 0.14), "Failed");
+      return _ToolMeta(LucideIcons.circleAlert, _statusFailed, _statusFailedBg, "Failed");
     }
 
     final t = toolName.toLowerCase().trim();
@@ -25,84 +25,159 @@ extension FmvToolCardsExt on _FormattedMessageViewState {
     if (t == "edit_file" || t == "write_file" || t == "edit" || t == "write" || t == "apply_patch" ||
         combined.contains("edit") || combined.contains("write") || combined.contains("patch") ||
         combined.contains("create") || combined.contains("update") || combined.contains("save_memory")) {
-      return _ToolMeta(LucideIcons.fileCode2, const Color(0xFFF59E0B), const Color(0xFFF59E0B).withValues(alpha: 0.14), "Edit");
+      return _ToolMeta(
+        LucideIcons.fileCode2,
+        const Color(0xFFE2E8F0),
+        const Color(0xFFF59E0B).withValues(alpha: 0.12),
+        "Edit",
+      );
     }
 
     // 2. Read / Inspect / Parse / View / Cat
     if (t == "read_file" || t == "file_read" || t == "read" || t == "inspect" ||
         combined.contains("read") || combined.contains("inspect") || combined.contains("parse") ||
         combined.contains("view") || combined.contains("get_context")) {
-      return _ToolMeta(LucideIcons.fileText, const Color(0xFF94A3B8), const Color(0xFF94A3B8).withValues(alpha: 0.14), "Read");
+      return _ToolMeta(
+        LucideIcons.fileText,
+        const Color(0xFF94A3B8),
+        const Color(0xFF94A3B8).withValues(alpha: 0.10),
+        "Read",
+      );
     }
 
     // 3. Run / Exec / Bash / Terminal / Cmd / Test / Compile / App Terminal
     if (t == "execute_command" || t == "bash" || t == "run" || t == "exec" || t == "terminal" || t == "app_terminal" ||
         combined.contains("bash") || combined.contains("terminal") || combined.contains("command") ||
         combined.contains("exec") || combined.contains("run") || combined.contains("test") || combined.contains("compile")) {
-      return _ToolMeta(LucideIcons.terminal, const Color(0xFF8B5CF6), const Color(0xFF8B5CF6).withValues(alpha: 0.14), "Run");
+      return _ToolMeta(
+        LucideIcons.terminal,
+        const Color(0xFFA5B4FC),
+        const Color(0xFF6366F1).withValues(alpha: 0.12),
+        "Run",
+      );
     }
 
     // 4. Search / Query / Lookup / Glob / Grep / Find
     if (t == "search_web" || t == "websearch" || t == "glob" || t == "grep" || t == "search" ||
         combined.contains("search") || combined.contains("grep") || combined.contains("glob") ||
         combined.contains("find") || combined.contains("lookup")) {
-      return _ToolMeta(LucideIcons.search, const Color(0xFF38BDF8), const Color(0xFF38BDF8).withValues(alpha: 0.14), "Search");
+      return _ToolMeta(
+        LucideIcons.search,
+        const Color(0xFF7DD3FC),
+        const Color(0xFF38BDF8).withValues(alpha: 0.10),
+        "Search",
+      );
     }
 
     // 5. Database / SQL / Redis / MySQL / Query Database
     if (t == "query_database" || t == "database" || t == "sql" || t == "db" ||
         combined.contains("database") || combined.contains("sql") || combined.contains("redis") || combined.contains("db")) {
-      return _ToolMeta(LucideIcons.database, const Color(0xFF10B981), const Color(0xFF10B981).withValues(alpha: 0.14), "SQL Query");
+      return _ToolMeta(
+        LucideIcons.database,
+        const Color(0xFF6EE7B7),
+        const Color(0xFF10B981).withValues(alpha: 0.10),
+        "SQL Query",
+      );
     }
 
     // 6. Deploy / Canary / Cluster / Cpu / Preview / Sandbox
     if (t == "cluster_exec" || t == "deploy" || t == "preview" || t == "sandbox" ||
         combined.contains("deploy") || combined.contains("canary") || combined.contains("cluster") || combined.contains("preview") || combined.contains("cpu")) {
-      return _ToolMeta(LucideIcons.cpu, const Color(0xFF06B6D4), const Color(0xFF06B6D4).withValues(alpha: 0.14), "Deploy Canary");
+      return _ToolMeta(
+        LucideIcons.cpu,
+        const Color(0xFF67E8F9),
+        const Color(0xFF06B6D4).withValues(alpha: 0.10),
+        "Deploy",
+      );
     }
 
     // 7. Security / Audit / Vulnerability / Shield
     if (t == "vuln_scan" || combined.contains("security") || combined.contains("audit") || combined.contains("shield")) {
-      return _ToolMeta(LucideIcons.shieldAlert, const Color(0xFFEF4444), const Color(0xFFEF4444).withValues(alpha: 0.14), "Security Audit");
+      return _ToolMeta(
+        LucideIcons.shieldAlert,
+        const Color(0xFFFCA5A5),
+        const Color(0xFFEF4444).withValues(alpha: 0.10),
+        "Security",
+      );
     }
 
     // 8. Speech / Voice / Audio / TTS / STT
     if (t == "speech" || t == "tts" || t == "stt" || combined.contains("voice") || combined.contains("audio") || combined.contains("speech")) {
-      return _ToolMeta(LucideIcons.mic, const Color(0xFFEC4899), const Color(0xFFEC4899).withValues(alpha: 0.14), "Voice");
+      return _ToolMeta(
+        LucideIcons.mic,
+        const Color(0xFFF472B6),
+        const Color(0xFFEC4899).withValues(alpha: 0.10),
+        "Voice",
+      );
     }
 
     // 9. Web / Browser / Scrape / Webfetch
     if (t == "browser" || t == "webfetch" || t == "scrape" || combined.contains("browser") || combined.contains("web") || combined.contains("http")) {
-      return _ToolMeta(LucideIcons.globe, const Color(0xFF38BDF8), const Color(0xFF38BDF8).withValues(alpha: 0.14), "Web Browser");
+      return _ToolMeta(
+        LucideIcons.globe,
+        const Color(0xFF7DD3FC),
+        const Color(0xFF38BDF8).withValues(alpha: 0.10),
+        "Browser",
+      );
     }
 
     // 10. Subagent / Task
     if (t == "task" || t == "subagent" || t == "invoke_subagent" || combined.contains("subagent")) {
-      return _ToolMeta(LucideIcons.bot, const Color(0xFFA855F7), const Color(0xFFA855F7).withValues(alpha: 0.14), "Subagent");
+      return _ToolMeta(
+        LucideIcons.bot,
+        const Color(0xFFC084FC),
+        const Color(0xFFA855F7).withValues(alpha: 0.10),
+        "Subagent",
+      );
     }
 
     // 11. Manage Task / Schedule
     if (t == "manage_task" || t == "schedule" || combined.contains("task")) {
-      return _ToolMeta(LucideIcons.layers, const Color(0xFF6366F1), const Color(0xFF6366F1).withValues(alpha: 0.14), "Task Manager");
+      return _ToolMeta(
+        LucideIcons.layers,
+        const Color(0xFFA5B4FC),
+        const Color(0xFF6366F1).withValues(alpha: 0.10),
+        "Task Manager",
+      );
     }
 
     // 12. Questions & Permissions
     if (combined.contains("question") || combined.contains("permission")) {
-      return _ToolMeta(LucideIcons.helpCircle, const Color(0xFFF59E0B), const Color(0xFFF59E0B).withValues(alpha: 0.14), "Agent Question");
+      return _ToolMeta(
+        LucideIcons.helpCircle,
+        const Color(0xFFFCD34D),
+        const Color(0xFFF59E0B).withValues(alpha: 0.10),
+        "Agent Question",
+      );
     }
 
     // 13. Mail / Postfix
     if (combined.contains("mail") || combined.contains("postfix")) {
-      return _ToolMeta(LucideIcons.mail, const Color(0xFFEC4899), const Color(0xFFEC4899).withValues(alpha: 0.14), "Mail");
+      return _ToolMeta(
+        LucideIcons.mail,
+        const Color(0xFFF472B6),
+        const Color(0xFFEC4899).withValues(alpha: 0.10),
+        "Mail",
+      );
     }
 
     // 14. cPanel
     if (combined.contains("cpanel")) {
-      return _ToolMeta(LucideIcons.server, const Color(0xFFF97316), const Color(0xFFF97316).withValues(alpha: 0.14), "cPanel");
+      return _ToolMeta(
+        LucideIcons.server,
+        const Color(0xFFFDBA74),
+        const Color(0xFFF97316).withValues(alpha: 0.10),
+        "cPanel",
+      );
     }
 
     // 15. Default Fallback
-    return _ToolMeta(LucideIcons.command, const Color(0xFF94A3B8), const Color(0xFF94A3B8).withValues(alpha: 0.14), toolName.isNotEmpty ? toolName : "Tool");
+    return _ToolMeta(
+      LucideIcons.command,
+      _cSecondary,
+      _cSecondary.withValues(alpha: 0.10),
+      toolName.isNotEmpty ? toolName : "Tool",
+    );
   }
   // ─── Shared helper: extract question data from a tool part ────────────────────
 

@@ -209,30 +209,30 @@ class _FormattedMessageViewState extends State<FormattedMessageView> with Single
     super.dispose();
   }
 
-  // ── High-Contrast Dynamic Color Tokens ─────────────────────────────────────
-  Color get _cPrimary => widget.isDark ? const Color(0xFFFAFAFA) : const Color(0xFF0F172A);
-  Color get _cSecondary => widget.isDark ? const Color(0xFFA1A1AA) : const Color(0xFF334155);
-  Color get _cFaint => widget.isDark ? const Color(0xFF71717A) : const Color(0xFF64748B);
+  // ── High-Contrast Dynamic Color Tokens (Sleek Codex Terminal Palette) ──────
+  Color get _cPrimary => widget.isDark ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A);
+  Color get _cSecondary => widget.isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569);
+  Color get _cFaint => widget.isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8);
   Color get _cCardBg => widget.isDark ? widget.cardBg : Colors.white;
-  Color get _cBorder => widget.isDark ? widget.borderColor : const Color(0xFFCBD5E1);
-  Color get _cInset => widget.isDark ? const Color(0xFF111114) : const Color(0xFFF1F5F9);
-  Color get _cCodeBg => const Color(0xFF0B0F19);
-  Color get _cInlineCodeBg => widget.isDark ? const Color(0xFF1E2433) : const Color(0xFFEEF2FF);
-  Color get _cInlineCodeText => widget.isDark ? const Color(0xFF38BDF8) : const Color(0xFF4F46E5);
-  Color get _cAccentPurple => const Color(0xFF4F46E5);
+  Color get _cBorder => widget.isDark ? widget.borderColor : const Color(0xFFE2E8F0);
+  Color get _cInset => widget.isDark ? const Color(0xFF11141B) : const Color(0xFFF8FAFC);
+  Color get _cCodeBg => const Color(0xFF090D16);
+  Color get _cInlineCodeBg => widget.isDark ? const Color(0xFF182030) : const Color(0xFFF1F5F9);
+  Color get _cInlineCodeText => widget.isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB);
+  Color get _cAccentPurple => const Color(0xFF6366F1);
 
-  // Defined High-Contrast Colors for Tool Execution States
-  Color get _statusRunning => const Color(0xFF38BDF8); // Sky Blue / Cyan
-  Color get _statusRunningBg => const Color(0xFF0284C7).withValues(alpha: 0.14);
-  Color get _statusRunningBorder => const Color(0xFF38BDF8).withValues(alpha: 0.40);
+  // Defined Calm, High-Contrast Colors for Tool Execution States
+  Color get _statusRunning => const Color(0xFF38BDF8); // Sky Cyan
+  Color get _statusRunningBg => const Color(0xFF0284C7).withValues(alpha: 0.10);
+  Color get _statusRunningBorder => const Color(0xFF38BDF8).withValues(alpha: 0.30);
 
-  Color get _statusSuccess => const Color(0xFF10B981); // Emerald Green
-  Color get _statusSuccessBg => const Color(0xFF10B981).withValues(alpha: 0.14);
-  Color get _statusSuccessBorder => const Color(0xFF10B981).withValues(alpha: 0.35);
+  Color get _statusSuccess => const Color(0xFF10B981); // Calm Emerald
+  Color get _statusSuccessBg => const Color(0xFF10B981).withValues(alpha: 0.08);
+  Color get _statusSuccessBorder => const Color(0xFF10B981).withValues(alpha: 0.25);
 
-  Color get _statusFailed => const Color(0xFFEF4444); // Rose Crimson Red
-  Color get _statusFailedBg => const Color(0xFFEF4444).withValues(alpha: 0.14);
-  Color get _statusFailedBorder => const Color(0xFFEF4444).withValues(alpha: 0.40);
+  Color get _statusFailed => const Color(0xFFEF4444); // Crimson Red
+  Color get _statusFailedBg => const Color(0xFFEF4444).withValues(alpha: 0.08);
+  Color get _statusFailedBorder => const Color(0xFFEF4444).withValues(alpha: 0.30);
 
   // ── Build ──────────────────────────────────────────────────────────────────
 
@@ -447,24 +447,24 @@ class _FormattedMessageViewState extends State<FormattedMessageView> with Single
                       },
                       borderRadius: BorderRadius.circular(6),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
                         decoration: BoxDecoration(
-                          color: _cAccentPurple.withValues(alpha: 0.12),
+                          color: _cSecondary.withValues(alpha: widget.isDark ? 0.12 : 0.08),
                           borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: _cAccentPurple.withValues(alpha: 0.3), width: 0.6),
+                          border: Border.all(color: _cBorder.withValues(alpha: 0.6), width: 0.6),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(LucideIcons.copy, size: 11, color: _cAccentPurple),
+                            Icon(LucideIcons.copy, size: 11, color: _cSecondary),
                             const SizedBox(width: 4),
                             Text(
                               "Copy",
                               style: TextStyle(
                                 fontSize: 10.5,
                                 fontFamily: "Inter",
-                                fontWeight: FontWeight.w700,
-                                color: _cAccentPurple,
+                                fontWeight: FontWeight.w600,
+                                color: _cSecondary,
                               ),
                             ),
                           ],

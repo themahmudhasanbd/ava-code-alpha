@@ -74,9 +74,9 @@ extension FmvAgentHeaderExt on _FormattedMessageViewState {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: _cAccentPurple.withValues(alpha: 0.08),
+              color: widget.isDark ? const Color(0xFF182030) : const Color(0xFFF1F5F9),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: _cAccentPurple.withValues(alpha: 0.20), width: 0.8),
+              border: Border.all(color: _cBorder.withValues(alpha: 0.8), width: 0.8),
             ),
             child: _buildShimmerText(statusText),
           ),

@@ -73,9 +73,9 @@ extension FmvQuestionPermissionExt on _FormattedMessageViewState {
         margin: const EdgeInsets.symmetric(vertical: 6),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: _cAccentPurple.withValues(alpha: widget.isDark ? 0.08 : 0.04),
+          color: widget.isDark ? const Color(0xFF131826) : const Color(0xFFF8FAFC),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: _cAccentPurple.withValues(alpha: 0.35), width: 1.1),
+          border: Border.all(color: _cBorder, width: 1.0),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -84,12 +84,12 @@ extension FmvQuestionPermissionExt on _FormattedMessageViewState {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(5),
+                  padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: _cAccentPurple.withValues(alpha: 0.18),
+                    color: _cSecondary.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  child: Icon(LucideIcons.helpCircle, size: 14, color: _cAccentPurple),
+                  child: Icon(LucideIcons.helpCircle, size: 13, color: _cPrimary),
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -98,7 +98,7 @@ extension FmvQuestionPermissionExt on _FormattedMessageViewState {
                     fontSize: 10.5,
                     fontFamily: "Inter",
                     fontWeight: FontWeight.w800,
-                    color: _cAccentPurple,
+                    color: _cPrimary,
                     letterSpacing: 0.4,
                   ),
                 ),
@@ -106,12 +106,12 @@ extension FmvQuestionPermissionExt on _FormattedMessageViewState {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
                   decoration: BoxDecoration(
-                    color: _cAccentPurple.withValues(alpha: 0.12),
+                    color: _cSecondary.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     "Action Required",
-                    style: TextStyle(fontSize: 9.5, fontFamily: "Inter", fontWeight: FontWeight.w700, color: _cAccentPurple),
+                    style: TextStyle(fontSize: 9.5, fontFamily: "Inter", fontWeight: FontWeight.w700, color: _cSecondary),
                   ),
                 ),
               ],
@@ -149,11 +149,11 @@ extension FmvQuestionPermissionExt on _FormattedMessageViewState {
                       duration: const Duration(milliseconds: 120),
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
-                        color: isSelected ? _cAccentPurple.withValues(alpha: 0.22) : _cInset,
+                        color: isSelected ? _cPrimary.withValues(alpha: widget.isDark ? 0.18 : 0.10) : _cInset,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: isSelected ? _cAccentPurple : _cBorder,
-                          width: isSelected ? 1.2 : 0.8,
+                          color: isSelected ? _cPrimary : _cBorder,
+                          width: isSelected ? 1.1 : 0.8,
                         ),
                       ),
                       child: Row(
@@ -162,7 +162,7 @@ extension FmvQuestionPermissionExt on _FormattedMessageViewState {
                           Icon(
                             isSelected ? LucideIcons.checkCircle2 : LucideIcons.circle,
                             size: 11,
-                            color: isSelected ? _cAccentPurple : _cSecondary,
+                            color: isSelected ? _cPrimary : _cSecondary,
                           ),
                           const SizedBox(width: 5),
                           Text(
@@ -171,7 +171,7 @@ extension FmvQuestionPermissionExt on _FormattedMessageViewState {
                               fontSize: 11.5,
                               fontFamily: "PlusJakartaSans",
                               fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                              color: isSelected ? _cAccentPurple : _cPrimary,
+                              color: isSelected ? _cPrimary : _cSecondary,
                             ),
                           ),
                         ],
@@ -234,17 +234,22 @@ extension FmvQuestionPermissionExt on _FormattedMessageViewState {
                     height: 36,
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(colors: [Color(0xFF6366F1), Color(0xFF4F46E5)]),
+                      color: widget.isDark ? Colors.white : Colors.black,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(LucideIcons.cornerDownLeft, size: 12, color: Colors.white),
-                        SizedBox(width: 5),
+                        Icon(LucideIcons.cornerDownLeft, size: 12, color: widget.isDark ? Colors.black : Colors.white),
+                        const SizedBox(width: 5),
                         Text(
                           "Reply",
-                          style: TextStyle(fontSize: 11.5, fontFamily: "Inter", fontWeight: FontWeight.w700, color: Colors.white),
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontFamily: "Inter",
+                            fontWeight: FontWeight.w700,
+                            color: widget.isDark ? Colors.black : Colors.white,
+                          ),
                         ),
                       ],
                     ),
@@ -377,9 +382,9 @@ extension FmvQuestionPermissionExt on _FormattedMessageViewState {
       margin: const EdgeInsets.symmetric(vertical: 6),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFD97706).withValues(alpha: widget.isDark ? 0.08 : 0.05),
+        color: widget.isDark ? const Color(0xFF16161E) : const Color(0xFFFFFBEB),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFD97706).withValues(alpha: 0.4), width: 1.0),
+        border: Border.all(color: _cBorder, width: 1.0),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -419,7 +424,7 @@ extension FmvQuestionPermissionExt on _FormattedMessageViewState {
             ),
             child: SelectableText(
               command,
-              style: const TextStyle(fontFamily: "JetBrainsMono", fontSize: 11.5, color: Color(0xFFD97706)),
+              style: TextStyle(fontFamily: "JetBrainsMono", fontSize: 11.5, color: widget.isDark ? const Color(0xFFFDE68A) : const Color(0xFFB45309)),
             ),
           ),
           const SizedBox(height: 10),

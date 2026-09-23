@@ -9,7 +9,27 @@ mixin AgentCoreSessionsMixin on AgentCoreBase {
 
   Future<bool> isSessionActive(String id) async {
     if (id.isEmpty) return false;
-    return id == activeRunningSessionId && isStreaming;
+    if (id == activeRunningSessionId && isStreaming) return true;
+    try {
+      final res = await sendRpc("thread/read", {
+        "threadId": id,
+        "includeTurns": true,
+      });
+      if (res is Map && res["thread"] is Map) {
+        final thread = Map<String, dynamic>.from(res["thread"] as Map);
+        final turns = thread["turns"];
+        if (turns is List && turns.isNotEmpty) {
+          final lastTurn = turns.last;
+          if (lastTurn is Map) {
+            final status = lastTurn["status"]?.toString();
+            if (status == "running" || status == "in_progress" || status == "pending" || status == "waiting_input") {
+              return true;
+            }
+          }
+        }
+      }
+    } catch (_) {}
+    return false;
   }
 
   String? getSessionCursor(String id) => _sessionCursors[id];

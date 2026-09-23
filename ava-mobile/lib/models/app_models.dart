@@ -802,13 +802,19 @@ class AvaModelItem {
 
   String get effectiveProviderKey {
     if (providerKey.isNotEmpty) return providerKey;
-    if (id.contains('/')) return id.split('/')[0].trim();
-    return provider.toLowerCase().trim();
+    if (id.startsWith("omniroute/")) return "omniroute";
+    if (id.startsWith("custom/")) return "custom";
+    if (id.startsWith("openai/")) return "openai";
+    if (id.startsWith("anthropic/")) return "anthropic";
+    return provider.toLowerCase().trim().isEmpty ? "omniroute" : provider.toLowerCase().trim();
   }
 
   String get effectiveModelKey {
     if (modelKey.isNotEmpty) return modelKey;
-    if (id.contains('/')) return id.split('/').sublist(1).join('/').trim();
+    if (id.startsWith("omniroute/")) return id.substring("omniroute/".length);
+    if (id.startsWith("custom/")) return id.substring("custom/".length);
+    if (id.startsWith("openai/")) return id.substring("openai/".length);
+    if (id.startsWith("anthropic/")) return id.substring("anthropic/".length);
     return id.trim();
   }
 

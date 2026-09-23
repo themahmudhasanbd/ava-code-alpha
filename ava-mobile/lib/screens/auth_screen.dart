@@ -750,11 +750,12 @@ class _AuthScreenState extends State<AuthScreen> {
                               ),
                             ),
                             const SizedBox(height: 18),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
+                            Wrap(
+                              alignment: WrapAlignment.center,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              spacing: 6,
                               children: [
                                 Icon(LucideIcons.shieldCheck, size: 12, color: textSecondary.withValues(alpha: 0.7)),
-                                const SizedBox(width: 6),
                                 Text(
                                   "Protected with Native AvA Core Handshake",
                                   style: TextStyle(

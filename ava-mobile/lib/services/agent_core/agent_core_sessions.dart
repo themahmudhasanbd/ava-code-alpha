@@ -1,4 +1,5 @@
 import "dart:async";
+import "package:shared_preferences/shared_preferences.dart";
 import "../../models/app_models.dart";
 import "agent_core_base.dart";
 
@@ -257,6 +258,17 @@ mixin AgentCoreSessionsMixin on AgentCoreBase {
     String? providerId,
   }) async {
     lastActiveSessionId = sessionId;
+    final normModel = AgentCoreBase.normalizeModelId(modelId, provider: providerId);
+    final normProvider = AgentCoreBase.normalizeProviderId(providerId, modelId);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString("ava_session_model_$sessionId", normModel);
+      await prefs.setString("ava_session_provider_$sessionId", normProvider);
+      await prefs.setString("ava_last_selected_model_id", normModel);
+      await prefs.setString("ava_last_selected_provider_id", normProvider);
+    } catch (err) {
+      AgentCoreBase.addDebugLog("switchSessionModel save error: $err");
+    }
     return true;
   }
 

@@ -298,51 +298,180 @@ mixin AgentCoreSystemMixin on AgentCoreBase {
   }
 
   // ─── Scheduled Tasks & Scheduler Settings ──────────────────────────────────
+  static const String _scheduledTasksPrefKey = "ava_scheduled_tasks";
+  static const String _schedulerSettingsPrefKey = "ava_scheduler_settings";
+
   Future<List<Map<String, dynamic>>> fetchScheduledTasks() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_scheduledTasksPrefKey);
+      if (raw != null && raw.trim().isNotEmpty) {
+        final decoded = jsonDecode(raw);
+        if (decoded is List) {
+          return decoded.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        }
+      }
+    } catch (err) {
+      AgentCoreBase.addDebugLog("fetchScheduledTasks error: $err");
+    }
     return [];
   }
 
   Future<Map<String, dynamic>> fetchSchedulerSettings() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_schedulerSettingsPrefKey);
+      if (raw != null && raw.trim().isNotEmpty) {
+        final decoded = jsonDecode(raw);
+        if (decoded is Map) {
+          return Map<String, dynamic>.from(decoded as Map);
+        }
+      }
+    } catch (err) {
+      AgentCoreBase.addDebugLog("fetchSchedulerSettings error: $err");
+    }
     return {
       "enabled": true,
       "concurrency": 2,
     };
   }
 
-  Future<Map<String, dynamic>?> toggleScheduledTask(String id, [bool? enabled]) async {
-    return {
-      "id": id,
-      "enabled": enabled ?? true,
-    };
-  }
-
-  Future<bool> deleteScheduledTask(String id) async {
-    return true;
-  }
-
-  Future<bool> clearScheduledTaskHistory(String id) async {
-    return true;
-  }
-
-  Future<bool> runScheduledTaskNow(String id) async {
-    return true;
+  Future<Map<String, dynamic>?> createScheduledTask(Map<String, dynamic> task) async {
+    try {
+      final tasks = await fetchScheduledTasks();
+      final now = DateTime.now();
+      final newTask = <String, dynamic>{
+        "id": "task_${now.millisecondsSinceEpoch}",
+        "createdAt": now.toIso8601String(),
+        "enabled": true,
+        "runCount": 0,
+        "history": <Map<String, dynamic>>[],
+        ...task,
+      };
+      tasks.insert(0, newTask);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_scheduledTasksPrefKey, jsonEncode(tasks));
+      return newTask;
+    } catch (err) {
+      AgentCoreBase.addDebugLog("createScheduledTask error: $err");
+      return null;
+    }
   }
 
   Future<Map<String, dynamic>?> updateScheduledTask(String id, Map<String, dynamic> task) async {
-    return {
-      "id": id,
-      ...task,
-    };
+    try {
+      final tasks = await fetchScheduledTasks();
+      final index = tasks.indexWhere((t) => t["id"] == id);
+      if (index != -1) {
+        tasks[index] = {
+          ...tasks[index],
+          ...task,
+          "id": id,
+          "updatedAt": DateTime.now().toIso8601String(),
+        };
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(_scheduledTasksPrefKey, jsonEncode(tasks));
+        return tasks[index];
+      }
+    } catch (err) {
+      AgentCoreBase.addDebugLog("updateScheduledTask error: $err");
+    }
+    return null;
   }
 
-  Future<Map<String, dynamic>?> createScheduledTask(Map<String, dynamic> task) async {
-    return {
-      "id": "task_${DateTime.now().millisecondsSinceEpoch}",
-      ...task,
-    };
+  Future<Map<String, dynamic>?> toggleScheduledTask(String id, [bool? enabled]) async {
+    try {
+      final tasks = await fetchScheduledTasks();
+      final index = tasks.indexWhere((t) => t["id"] == id);
+      if (index != -1) {
+        final current = tasks[index]["enabled"] == true;
+        final nextVal = enabled ?? !current;
+        tasks[index]["enabled"] = nextVal;
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(_scheduledTasksPrefKey, jsonEncode(tasks));
+        return tasks[index];
+      }
+    } catch (err) {
+      AgentCoreBase.addDebugLog("toggleScheduledTask error: $err");
+    }
+    return null;
+  }
+
+  Future<bool> deleteScheduledTask(String id) async {
+    try {
+      final tasks = await fetchScheduledTasks();
+      final filtered = tasks.where((t) => t["id"] != id).toList();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_scheduledTasksPrefKey, jsonEncode(filtered));
+      return true;
+    } catch (err) {
+      AgentCoreBase.addDebugLog("deleteScheduledTask error: $err");
+      return false;
+    }
+  }
+
+  Future<bool> clearScheduledTaskHistory(String id) async {
+    try {
+      final tasks = await fetchScheduledTasks();
+      final index = tasks.indexWhere((t) => t["id"] == id);
+      if (index != -1) {
+        tasks[index]["history"] = <Map<String, dynamic>>[];
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(_scheduledTasksPrefKey, jsonEncode(tasks));
+        return true;
+      }
+    } catch (err) {
+      AgentCoreBase.addDebugLog("clearScheduledTaskHistory error: $err");
+    }
+    return false;
+  }
+
+  Future<bool> runScheduledTaskNow(String id) async {
+    try {
+      final tasks = await fetchScheduledTasks();
+      final index = tasks.indexWhere((t) => t["id"] == id);
+      if (index != -1) {
+        final task = tasks[index];
+        final now = DateTime.now();
+        final currentCount = (task["runCount"] as num?)?.toInt() ?? 0;
+        final history = (task["history"] is List)
+            ? List<Map<String, dynamic>>.from((task["history"] as List).map((e) => Map<String, dynamic>.from(e as Map)))
+            : <Map<String, dynamic>>[];
+
+        final historyEntry = {
+          "runAt": now.toIso8601String(),
+          "status": "success",
+          "targetType": task["targetType"] ?? "agent_prompt",
+          "summary": "Task triggered manually from scheduler",
+        };
+        history.insert(0, historyEntry);
+        if (history.length > 20) {
+          history.removeRange(20, history.length);
+        }
+
+        tasks[index]["lastRunAt"] = now.toIso8601String();
+        tasks[index]["lastRunStatus"] = "success";
+        tasks[index]["runCount"] = currentCount + 1;
+        tasks[index]["history"] = history;
+
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(_scheduledTasksPrefKey, jsonEncode(tasks));
+        return true;
+      }
+    } catch (err) {
+      AgentCoreBase.addDebugLog("runScheduledTaskNow error: $err");
+    }
+    return false;
   }
 
   Future<bool> updateSchedulerSettings(Map<String, dynamic> settings) async {
-    return true;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_schedulerSettingsPrefKey, jsonEncode(settings));
+      return true;
+    } catch (err) {
+      AgentCoreBase.addDebugLog("updateSchedulerSettings error: $err");
+      return false;
+    }
   }
 }

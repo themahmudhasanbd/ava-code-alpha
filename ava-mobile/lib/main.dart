@@ -374,11 +374,11 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
         if (provMatch != null) explicitProvider = provMatch.group(1)?.trim();
         clean = (explicitModel ?? raw).trim().toLowerCase();
       } else {
-        if (raw.contains('/')) {
-          final parts = raw.split('/');
+        if (raw.startsWith("omniroute/") || raw.startsWith("custom/") || raw.startsWith("openai/") || raw.startsWith("anthropic/")) {
+          final parts = raw.split("/");
           if (parts.length >= 2) {
             explicitProvider = parts[0].trim();
-            explicitModel = parts.sublist(1).join('/').trim();
+            explicitModel = parts.sublist(1).join("/").trim();
           }
         }
         clean = raw.toLowerCase();
@@ -444,21 +444,36 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
     if (query is AvaModelItem) return query;
     if (query != null && query.toString().trim().isNotEmpty) {
       final raw = query.toString().trim();
-      String pKey = 'opencode';
+      String pKey = "omniroute";
       String mKey = raw;
       String name = raw;
       if (query is Map) {
-        pKey = query['providerID']?.toString() ?? query['provider']?.toString() ?? 'opencode';
-        mKey = query['modelID']?.toString() ?? query['id']?.toString() ?? query['model']?.toString() ?? raw;
-        name = query['name']?.toString() ?? mKey;
-      } else if (raw.contains('/')) {
-        final parts = raw.split('/');
-        pKey = parts[0].trim();
-        mKey = parts.sublist(1).join('/').trim();
+        pKey = query["providerID"]?.toString() ?? query["provider"]?.toString() ?? "omniroute";
+        mKey = query["modelID"]?.toString() ?? query["id"]?.toString() ?? query["model"]?.toString() ?? raw;
+        name = query["name"]?.toString() ?? mKey;
+      } else if (raw.startsWith("omniroute/")) {
+        pKey = "omniroute";
+        mKey = raw.substring("omniroute/".length);
         name = mKey;
+      } else if (raw.startsWith("custom/")) {
+        pKey = "custom";
+        mKey = raw.substring("custom/".length);
+        name = mKey;
+      } else if (raw.startsWith("openai/")) {
+        pKey = "openai";
+        mKey = raw.substring("openai/".length);
+        name = mKey;
+      } else if (raw.startsWith("anthropic/")) {
+        pKey = "anthropic";
+        mKey = raw.substring("anthropic/".length);
+        name = mKey;
+      } else {
+        pKey = "omniroute";
+        mKey = raw;
+        name = raw;
       }
       return AvaModelItem(
-        id: raw.contains('/') ? raw : '$pKey/$mKey',
+        id: raw.startsWith("${pKey}/") ? raw : (pKey == "omniroute" ? raw : "${pKey}/${mKey}"),
         name: name,
         provider: pKey,
         providerKey: pKey,
@@ -471,9 +486,9 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
         : (AvaAgentCoreService.defaultModelList.isNotEmpty
             ? AvaAgentCoreService.defaultModelList.first
             : const AvaModelItem(
-                id: 'opencode/mimo-v2.5-free',
-                name: 'MiMo v2.5 Free',
-                provider: 'opencode',
+                id: "powerful-coding-combo",
+                name: "Powerful Coding Combo",
+                provider: "omniroute",
               ));
   }
 
@@ -965,20 +980,22 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
           });
         }
 
-        // 3. Authoritatively fetch session metadata from backend
-        try {
-          final sessDetails = await _agentCoreService.fetchSession(currentSessId);
-          if (sessDetails != null && mounted) {
-            final rawSessModel = sessDetails['model'] ?? (sessDetails['data'] is Map ? sessDetails['data']['model'] : null);
-            if (rawSessModel != null) {
-              final resolvedFromBackend = _createOrFindModel(rawSessModel);
-              sessionModel = resolvedFromBackend;
-              setState(() => _selectedModelItem = resolvedFromBackend);
-              unawaited(prefs.setString('ava_session_model_$currentSessId', resolvedFromBackend.id));
-              unawaited(prefs.setString('ava_last_selected_model_id', resolvedFromBackend.id));
+        // 3. Authoritatively fetch session metadata from backend only if not yet set locally
+        if (sessionModel == null) {
+          try {
+            final sessDetails = await _agentCoreService.fetchSession(currentSessId);
+            if (sessDetails != null && mounted) {
+              final rawSessModel = sessDetails["model"] ?? (sessDetails["data"] is Map ? sessDetails["data"]["model"] : null);
+              if (rawSessModel != null) {
+                final resolvedFromBackend = _createOrFindModel(rawSessModel);
+                sessionModel = resolvedFromBackend;
+                setState(() => _selectedModelItem = resolvedFromBackend);
+                unawaited(prefs.setString("ava_session_model_$currentSessId", resolvedFromBackend.id));
+                unawaited(prefs.setString("ava_last_selected_model_id", resolvedFromBackend.id));
+              }
             }
-          }
-        } catch (e) { print('Ignored error: $e'); }
+          } catch (e) { print("Ignored error: $e"); }
+        }
 
         // 4. Fetch latest messages (limit: 100)
         final historyResult = await _agentCoreService.fetchSessionMessages(currentSessId, limit: 100);
@@ -1646,16 +1663,16 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
           }
         }
       }
+      if (targetModel == null) {
+        final savedLast = prefs.getString("ava_last_selected_model_id");
+        if (savedLast != null && savedLast.isNotEmpty) {
+          targetModel = _createOrFindModel(savedLast, models: models);
+        }
+      }
       if (targetModel == null && _selectedModelItem != null) {
         targetModel = _findModelByIdOrName(_selectedModelItem!.id, models: models) ??
                       _findModelByIdOrName(_selectedModelItem!.name, models: models) ??
                       _selectedModelItem;
-      }
-      if (targetModel == null) {
-        final savedLast = prefs.getString('ava_last_selected_model_id');
-        if (savedLast != null && savedLast.isNotEmpty) {
-          targetModel = _createOrFindModel(savedLast, models: models);
-        }
       }
       if (targetModel == null && models.isNotEmpty) {
         targetModel = await _resolveDefaultModel(models: models) ?? models.first;
@@ -1706,16 +1723,16 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
             }
           }
         }
+        if (targetModel == null) {
+          final savedLast = prefs.getString("ava_last_selected_model_id");
+          if (savedLast != null && savedLast.isNotEmpty) {
+            targetModel = _createOrFindModel(savedLast, models: models);
+          }
+        }
         if (targetModel == null && _selectedModelItem != null) {
           targetModel = _findModelByIdOrName(_selectedModelItem!.id, models: models) ??
                         _findModelByIdOrName(_selectedModelItem!.name, models: models) ??
                         _selectedModelItem;
-        }
-        if (targetModel == null) {
-          final savedLast = prefs.getString('ava_last_selected_model_id');
-          if (savedLast != null && savedLast.isNotEmpty) {
-            targetModel = _createOrFindModel(savedLast, models: models);
-          }
         }
         if (targetModel == null && models.isNotEmpty) {
           targetModel = await _resolveDefaultModel(models: models) ?? models.first;

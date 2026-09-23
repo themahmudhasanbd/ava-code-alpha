@@ -160,6 +160,9 @@ abstract class AgentCoreBase {
   Future<void> _connectWebSocket() async {
     if (_isDisposed || _isWsConnecting) return;
     _isWsConnecting = true;
+    if (connectionStatusNotifier.value != CoreConnectionStatus.connected) {
+      connectionStatusNotifier.value = CoreConnectionStatus.syncing;
+    }
 
     try {
       final wsUrl = _resolveWebSocketUrl();
@@ -205,11 +208,6 @@ abstract class AgentCoreBase {
   }
 
   void _onWsDisconnected() {
-    if (!_isDisposed && (_wsReconnectTimer == null || !_wsReconnectTimer!.isActive)) {
-      connectionStatusNotifier.value = CoreConnectionStatus.reconnecting;
-    } else {
-      updateConnectionState(false);
-    }
     _wsSubscription?.cancel();
     _wsSubscription = null;
     _wsChannel = null;
@@ -221,10 +219,16 @@ abstract class AgentCoreBase {
     }
     _pendingRpc.clear();
 
-    if (!_isDisposed && (_wsReconnectTimer == null || !_wsReconnectTimer!.isActive)) {
+    if (_isDisposed) return;
+
+    isConnectedNotifier.value = false;
+    if (_wsReconnectTimer == null || !_wsReconnectTimer!.isActive) {
+      connectionStatusNotifier.value = CoreConnectionStatus.reconnecting;
       _wsReconnectTimer = Timer(const Duration(seconds: 3), () {
         _connectWebSocket();
       });
+    } else {
+      connectionStatusNotifier.value = CoreConnectionStatus.disconnected;
     }
   }
 
@@ -309,8 +313,8 @@ abstract class AgentCoreBase {
     });
   }
 
-  Future<void> ensureSseConnected() async {
-    if (_wsChannel == null) {
+  Future<void> ensureSseConnected({bool forceReconnect = false}) async {
+    if (_wsChannel == null || !isConnectedNotifier.value || forceReconnect) {
       await _connectWebSocket();
     }
   }
@@ -318,15 +322,17 @@ abstract class AgentCoreBase {
   void updateConnectionState(bool isHealthy) {
     if (_isDisposed) return;
     if (isHealthy) {
-      if (!isConnectedNotifier.value) {
-        isConnectedNotifier.value = true;
-        connectionStatusNotifier.value = CoreConnectionStatus.connected;
+      final wasConnected = isConnectedNotifier.value && connectionStatusNotifier.value == CoreConnectionStatus.connected;
+      isConnectedNotifier.value = true;
+      connectionStatusNotifier.value = CoreConnectionStatus.connected;
+      if (!wasConnected) {
         addDebugLog("Core connection status: ONLINE (Connected)");
       }
     } else {
-      if (isConnectedNotifier.value) {
-        isConnectedNotifier.value = false;
-        connectionStatusNotifier.value = CoreConnectionStatus.disconnected;
+      final wasConnected = isConnectedNotifier.value;
+      isConnectedNotifier.value = false;
+      connectionStatusNotifier.value = CoreConnectionStatus.disconnected;
+      if (wasConnected) {
         addDebugLog("Core connection status: OFFLINE (Disconnected)");
       }
     }
@@ -335,18 +341,22 @@ abstract class AgentCoreBase {
   Future<bool> checkHealth() async {
     if (_isDisposed) return false;
     try {
-      if (_wsChannel != null && isConnectedNotifier.value) {
-        return true;
-      }
       final cleanBase = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
       final response = await http
           .get(Uri.parse("$cleanBase/healthz"), headers: authHeaders)
           .timeout(const Duration(seconds: 4));
       if (response.statusCode == 200 || response.statusCode == 204 || response.statusCode == 400 || response.statusCode == 401 || response.statusCode == 403) {
         updateConnectionState(true);
+        if (_wsChannel == null && !_isWsConnecting) {
+          _connectWebSocket();
+        }
         return true;
       }
     } catch (_) {}
+    if (_wsChannel != null && isConnectedNotifier.value) {
+      return true;
+    }
+    updateConnectionState(false);
     return false;
   }
 
@@ -385,8 +395,12 @@ abstract class AgentCoreBase {
     if (provider != null && provider.trim().isNotEmpty) {
       return provider.trim();
     }
-    if (modelId != null && modelId.contains("/")) {
-      return modelId.split("/").first;
+    if (modelId != null) {
+      final clean = modelId.trim();
+      if (clean.startsWith("omniroute/")) return "omniroute";
+      if (clean.startsWith("custom/")) return "custom";
+      if (clean.startsWith("openai/")) return "openai";
+      if (clean.startsWith("anthropic/")) return "anthropic";
     }
     return "omniroute";
   }
@@ -394,8 +408,17 @@ abstract class AgentCoreBase {
   static String normalizeModelId(String? raw, {String? provider}) {
     final clean = (raw ?? "").trim();
     if (clean.isEmpty) return "powerful-coding-combo";
-    if (clean.contains("/")) {
-      return clean.split("/").last;
+    if (clean.startsWith("omniroute/")) {
+      return clean.substring("omniroute/".length);
+    }
+    if (clean.startsWith("custom/")) {
+      return clean.substring("custom/".length);
+    }
+    if (clean.startsWith("openai/")) {
+      return clean.substring("openai/".length);
+    }
+    if (clean.startsWith("anthropic/")) {
+      return clean.substring("anthropic/".length);
     }
     return clean;
   }
@@ -508,8 +531,9 @@ abstract class AgentCoreBase {
 
   Future<void> saveSessionMessagesToCache(String sessionId, List<ChatMessageModel> messages) async {
     try {
+      final coalesced = ChatMessageModel.coalesceList(messages);
       final prefs = await SharedPreferences.getInstance();
-      final list = messages.map((m) {
+      final list = coalesced.map((m) {
         final json = m.toJson();
         json['isPending'] = false;
         json['isHistory'] = true;
@@ -526,7 +550,7 @@ abstract class AgentCoreBase {
       if (jsonStr != null && jsonStr.isNotEmpty) {
         final decoded = jsonDecode(jsonStr);
         if (decoded is List) {
-          return decoded.whereType<Map>().map((e) {
+          final list = decoded.whereType<Map>().map((e) {
             final m = ChatMessageModel.fromJson(Map<String, dynamic>.from(e));
             final cleanParts = m.parts.map((p) {
               if (p.status == "running" || p.status == "pending") {
@@ -540,6 +564,7 @@ abstract class AgentCoreBase {
               parts: cleanParts,
             );
           }).toList();
+          return ChatMessageModel.coalesceList(list);
         }
       }
     } catch (_) {}

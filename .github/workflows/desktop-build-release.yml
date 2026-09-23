@@ -4,9 +4,8 @@ on:
   push:
     tags:
       - 'v*'
-    paths:
-      - 'ava-desktop/**'
-      - '.github/workflows/desktop-build-release.yml'
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       release_tag:

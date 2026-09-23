@@ -211,17 +211,17 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
     final cleanExisting = existing.where((m) => m.id != 'loading-hist').toList();
     if (cleanExisting.isEmpty) return incoming;
 
-    final List<ChatMessageModel> result = List<ChatMessageModel>.from(incoming);
+    final List<ChatMessageModel> incomingMerged = List<ChatMessageModel>.from(incoming);
 
     // 1. Enrich incoming messages with local timeline events, questions, permissions, and reasoning
-    for (int i = 0; i < result.length; i++) {
-      final inc = result[i];
+    for (int i = 0; i < incomingMerged.length; i++) {
+      final inc = incomingMerged[i];
       final matchIdx = cleanExisting.indexWhere((e) =>
           e.id == inc.id ||
           (e.sender == inc.sender && inc.text.trim().isNotEmpty && e.text.trim() == inc.text.trim()));
       if (matchIdx != -1) {
         final local = cleanExisting[matchIdx];
-        result[i] = inc.copyWith(
+        incomingMerged[i] = inc.copyWith(
           timelineEvents: inc.timelineEvents.isNotEmpty ? inc.timelineEvents : local.timelineEvents,
           questionData: inc.questionData ?? local.questionData,
           permissionData: inc.permissionData ?? local.permissionData,
@@ -230,17 +230,39 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
       }
     }
 
-    // 2. Preserve local user prompts (sending, failed, or recently sent) that have not appeared in server list yet
-    final unmatchedUserMsgs = cleanExisting.where((m) {
-      if (m.sender != 'user') return false;
-      final alreadyMatched = result.any((inc) =>
-          inc.id == m.id || inc.text.trim() == m.text.trim()
-      );
-      return !alreadyMatched;
-    }).toList();
+    // 2. Build chronologically aligned sequence starting from cleanExisting order
+    // This strictly prevents newly arrived server turns from leaping above older failed or pending prompts.
+    final List<ChatMessageModel> result = [];
+    int incomingCursor = 0;
 
-    for (final uMsg in unmatchedUserMsgs) {
-      result.add(uMsg);
+    for (int i = 0; i < cleanExisting.length; i++) {
+      final local = cleanExisting[i];
+      final incIdx = incomingMerged.indexWhere((inc) =>
+          inc.id == local.id ||
+          (inc.sender == local.sender && inc.text.trim().isNotEmpty && inc.text.trim() == local.text.trim()));
+
+      if (incIdx != -1) {
+        // Add any earlier incoming server items that came before this matched item
+        while (incomingCursor < incIdx) {
+          if (!result.any((m) => m.id == incomingMerged[incomingCursor].id)) {
+            result.add(incomingMerged[incomingCursor]);
+          }
+          incomingCursor++;
+        }
+        result.add(incomingMerged[incIdx]);
+        incomingCursor = incIdx + 1;
+      } else {
+        // Keep local message in its exact chronological slot (failed prompts, error turns, un-synced user messages)
+        result.add(local);
+      }
+    }
+
+    // Append any trailing incoming messages from server
+    while (incomingCursor < incomingMerged.length) {
+      if (!result.any((m) => m.id == incomingMerged[incomingCursor].id)) {
+        result.add(incomingMerged[incomingCursor]);
+      }
+      incomingCursor++;
     }
 
     // 3. Preserve active pending agent turn ONLY if actively streaming right now
@@ -2317,15 +2339,21 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
               final sourceParts = cleanParts ?? _chatMessages[idx].parts;
               final finalizedParts = sourceParts.map((p) => p.status == 'running' ? (isSuccess ? p.copyWith(status: 'completed') : p.copyWith(status: 'failed')) : p).toList();
 
+              final isTurnFailed = !isSuccess && !isInterrupted;
+              final dynamicErr = isTurnFailed ? (finalReply.isNotEmpty ? finalReply : 'Task ended with an error.') : null;
+              if (isTurnFailed) {
+                markPromptFailed(dynamicErr ?? 'Execution failed');
+              }
+
               _replacePendingMessageImmediate(pendingId, ChatMessageModel(
                 id: pendingId,
                 sender: 'agent',
                 text: finalText,
                 timestamp: TimeOfDay.now().format(context),
                 isPending: false,
-                isError: !isSuccess && !isInterrupted,
+                isError: isTurnFailed,
                 modelName: selectedModelName,
-                errorMessage: (isSuccess || isInterrupted) ? null : (finalReply.isNotEmpty ? finalReply : 'Task ended with an error.'),
+                errorMessage: dynamicErr,
                 reasoningText: finalReason,
                 parts: finalizedParts,
                 timelineEvents: List.from(accumulatedTimeline),
@@ -2477,6 +2505,7 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
             // or preparing the continuation step.
           } else if (type == 'error' || type.toLowerCase().contains('error') || type == 'session.failed') {
             final errMsg = event['error']?.toString() ?? event['message']?.toString() ?? 'Agent execution error encountered.';
+            markPromptFailed(errMsg);
             // ── Finish ongoing turn notification on error ──
             final errSessId = _activeSessionId ?? '';
             if (errSessId.isNotEmpty) {
@@ -2506,6 +2535,8 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
                 reasoningText: accumulatedReasoning.isNotEmpty ? accumulatedReasoning : currentMsg.reasoningText,
                 parts: finalizedParts,
                 timelineEvents: List.from(accumulatedTimeline),
+                questionData: currentQuestion ?? currentMsg.questionData,
+                permissionData: currentPermission ?? currentMsg.permissionData,
               ));
             }
             _currentlyStreamingPendingId = null;
@@ -2516,6 +2547,7 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
           } else if (type == 'session.next.step.failed') {
             final errMap = event['error'];
             final errMsg = errMap is Map ? (errMap['message']?.toString() ?? 'Step failed.') : (errMap?.toString() ?? 'Step failed.');
+            markPromptFailed(errMsg);
             if (mounted) {
               AppToast.error(context, 'AvA Step Failed: $errMsg');
             }

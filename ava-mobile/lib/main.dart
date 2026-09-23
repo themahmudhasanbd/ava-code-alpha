@@ -234,75 +234,97 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
     } catch (e) { print('Ignored error: $e'); }
   }
 
-  List<ChatMessageModel> _mergeMessagesPreservingLocal(List<ChatMessageModel> existing, List<ChatMessageModel> incoming) {
-    if (incoming.isEmpty) return existing;
-    if (existing.isEmpty) return incoming;
+ List<ChatMessageModel> _mergeMessagesPreservingLocal(List<ChatMessageModel> existing, List<ChatMessageModel> incoming) {
+   if (incoming.isEmpty) return existing;
+    if (existing.isEmpty) {
+      return incoming.map((m) => m.sender == 'user' ? m.copyWith(deliveryStatus: 'sent', isPending: false) : m).toList();
+    }
 
-    final cleanExisting = existing.where((m) => m.id != 'loading-hist').toList();
-    if (cleanExisting.isEmpty) return incoming;
+   final cleanExisting = existing.where((m) => m.id != 'loading-hist').toList();
+    if (cleanExisting.isEmpty) {
+      return incoming.map((m) => m.sender == 'user' ? m.copyWith(deliveryStatus: 'sent', isPending: false) : m).toList();
+    }
 
-    final List<ChatMessageModel> incomingMerged = List<ChatMessageModel>.from(incoming);
+    final List<ChatMessageModel> incomingMerged = incoming.map((m) {
+      if (m.sender == 'user') {
+        return m.copyWith(deliveryStatus: 'sent', isPending: false);
+      }
+      return m;
+    }).toList();
+
+    bool matches(ChatMessageModel local, ChatMessageModel inc) {
+      if (local.id.isNotEmpty && inc.id.isNotEmpty && local.id == inc.id) {
+        return true;
+      }
+      if (local.sender != inc.sender) return false;
+
+      // If both have established non-temporary server IDs and they differ, they are distinct messages
+      final bool localIsTemp = local.id.startsWith('pending') ||
+          local.id.startsWith('active') ||
+          local.id.startsWith('user_') ||
+          RegExp(r'^\d{10,}$').hasMatch(local.id);
+      final bool incIsTemp = inc.id.startsWith('pending') ||
+          inc.id.startsWith('active') ||
+          inc.id.startsWith('user_') ||
+          RegExp(r'^\d{10,}$').hasMatch(inc.id);
+
+      if (local.id.isNotEmpty && inc.id.isNotEmpty && !localIsTemp && !incIsTemp && local.id != inc.id) {
+        return false;
+      }
+
+      if (local.sender == 'user') {
+        final localSanitized = sanitizeUserDisplayText(local.text).trim();
+        final incSanitized = sanitizeUserDisplayText(inc.text).trim();
+        if (localSanitized.isNotEmpty && incSanitized.isNotEmpty && localSanitized == incSanitized) return true;
+        if (local.text.trim().isNotEmpty && inc.text.trim().isNotEmpty && local.text.trim() == inc.text.trim()) return true;
+      } else if (local.sender == 'agent') {
+        if (local.parentId != null && inc.parentId != null && local.parentId!.isNotEmpty && local.parentId == inc.parentId) return true;
+        final localTxt = local.text.trim();
+        final incTxt = inc.text.trim();
+        if (localTxt.isNotEmpty && incTxt.isNotEmpty && (localTxt == incTxt || (localIsTemp && (localTxt.contains(incTxt) || incTxt.contains(localTxt))))) {
+          return true;
+        }
+      }
+      return false;
+    }
 
     // 1. Enrich incoming messages with local timeline events, questions, permissions, and reasoning
+    final Set<String> matchedLocalIds = {};
     for (int i = 0; i < incomingMerged.length; i++) {
       final inc = incomingMerged[i];
-      final matchIdx = cleanExisting.indexWhere((e) =>
-          e.id == inc.id ||
-          (e.sender == inc.sender && inc.text.trim().isNotEmpty && e.text.trim() == inc.text.trim()));
+      final matchIdx = cleanExisting.indexWhere((e) => matches(e, inc));
       if (matchIdx != -1) {
         final local = cleanExisting[matchIdx];
+        matchedLocalIds.add(local.id);
         incomingMerged[i] = inc.copyWith(
           timelineEvents: inc.timelineEvents.isNotEmpty ? inc.timelineEvents : local.timelineEvents,
           questionData: inc.questionData ?? local.questionData,
           permissionData: inc.permissionData ?? local.permissionData,
           reasoningText: (inc.reasoningText != null && inc.reasoningText!.isNotEmpty) ? inc.reasoningText : local.reasoningText,
+          attachments: inc.attachments.isNotEmpty ? inc.attachments : local.attachments,
+          deliveryStatus: inc.sender == 'user' ? 'sent' : inc.deliveryStatus,
         );
       }
     }
 
-    // 2. Build chronologically aligned sequence starting from cleanExisting order
-    // This strictly prevents newly arrived server turns from leaping above older failed or pending prompts.
-    final List<ChatMessageModel> result = [];
-    int incomingCursor = 0;
+    // 2. Build sequence starting with authoritative server timeline order
+    final List<ChatMessageModel> result = List.from(incomingMerged);
 
-    for (int i = 0; i < cleanExisting.length; i++) {
-      final local = cleanExisting[i];
-      final incIdx = incomingMerged.indexWhere((inc) =>
-          inc.id == local.id ||
-          (inc.sender == local.sender && inc.text.trim().isNotEmpty && inc.text.trim() == local.text.trim()));
-
-      if (incIdx != -1) {
-        // Add any earlier incoming server items that came before this matched item
-        while (incomingCursor < incIdx) {
-          if (!result.any((m) => m.id == incomingMerged[incomingCursor].id)) {
-            result.add(incomingMerged[incomingCursor]);
+    // 3. Append any unmatched local messages (in-flight user prompts or active streaming turns)
+    for (final local in cleanExisting) {
+      if (matchedLocalIds.contains(local.id)) continue;
+      final alreadyInResult = result.any((m) => matches(local, m));
+      if (!alreadyInResult) {
+        if (local.sender == 'user') {
+          final isActivelyStreaming = _currentlyStreamingPendingId != null && _activePromptStreamSubscription != null;
+          if (!isActivelyStreaming) {
+            result.add(local.copyWith(deliveryStatus: 'sent', isPending: false));
+          } else {
+            result.add(local);
           }
-          incomingCursor++;
+        } else {
+          result.add(local);
         }
-        result.add(incomingMerged[incIdx]);
-        incomingCursor = incIdx + 1;
-      } else {
-        // Keep local message in its exact chronological slot (failed prompts, error turns, un-synced user messages)
-        result.add(local);
-      }
-    }
-
-    // Append any trailing incoming messages from server
-    while (incomingCursor < incomingMerged.length) {
-      if (!result.any((m) => m.id == incomingMerged[incomingCursor].id)) {
-        result.add(incomingMerged[incomingCursor]);
-      }
-      incomingCursor++;
-    }
-
-    // 3. Preserve active pending agent turn ONLY if actively streaming right now
-    if (_currentlyStreamingPendingId != null && _activePromptStreamSubscription != null) {
-      final activePendingAgent = cleanExisting.where((m) =>
-          m.id == _currentlyStreamingPendingId && m.isPending && !result.any((inc) => inc.id == m.id)
-      ).toList();
-
-      for (final pAgent in activePendingAgent) {
-        result.add(pAgent);
       }
     }
 
@@ -1928,13 +1950,19 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
       unawaited(_agentCoreService.saveSessionMessagesToCache(sessionToSend, _chatMessages));
     }
 
-    bool promptMarkedSent = false;
-    void markPromptSent() {
-      if (promptMarkedSent) return;
-      promptMarkedSent = true;
-      final uIdx = _chatMessages.indexWhere((m) => m.id == userMsgId);
-      if (uIdx != -1) {
-        _chatMessages[uIdx] = _chatMessages[uIdx].copyWith(deliveryStatus: 'sent');
+   bool promptMarkedSent = false;
+   void markPromptSent() {
+     if (promptMarkedSent) return;
+     promptMarkedSent = true;
+      bool changed = false;
+      for (int i = 0; i < _chatMessages.length; i++) {
+        if (_chatMessages[i].sender == 'user' &&
+            (_chatMessages[i].id == userMsgId || _chatMessages[i].deliveryStatus == 'sending' || _chatMessages[i].isPending)) {
+          _chatMessages[i] = _chatMessages[i].copyWith(deliveryStatus: 'sent', isPending: false);
+          changed = true;
+        }
+      }
+      if (changed) {
         _scheduleRebuild();
       }
     }
@@ -2396,10 +2424,19 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
               final sourceParts = cleanParts ?? _chatMessages[idx].parts;
               final finalizedParts = sourceParts.map((p) => p.status == 'running' ? (isSuccess ? p.copyWith(status: 'completed') : p.copyWith(status: 'failed')) : p).toList();
 
-              final isTurnFailed = !isSuccess && !isInterrupted;
-              final dynamicErr = isTurnFailed ? (finalReply.isNotEmpty ? finalReply : 'Task ended with an error.') : null;
-              if (isTurnFailed) {
-                markPromptFailed(dynamicErr ?? 'Execution failed');
+             final isTurnFailed = !isSuccess && !isInterrupted;
+             final dynamicErr = isTurnFailed ? (finalReply.isNotEmpty ? finalReply : 'Task ended with an error.') : null;
+             if (isTurnFailed) {
+               markPromptFailed(dynamicErr ?? 'Execution failed');
+              } else {
+                markPromptSent();
+              }
+
+              // Ensure all preceding user messages are confirmed sent
+              for (int i = 0; i < _chatMessages.length; i++) {
+                if (_chatMessages[i].sender == 'user' && (_chatMessages[i].deliveryStatus == 'sending' || _chatMessages[i].isPending)) {
+                  _chatMessages[i] = _chatMessages[i].copyWith(deliveryStatus: 'sent', isPending: false);
+                }
               }
 
               _replacePendingMessageImmediate(pendingId, ChatMessageModel(

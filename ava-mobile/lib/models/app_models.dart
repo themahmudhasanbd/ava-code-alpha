@@ -539,34 +539,35 @@ class ChatMessageModel {
             trimmedText.startsWith('<task_status') ||
             trimmedText.startsWith('<synthetic_prompt') ||
             (trimmedText.startsWith('<task') && trimmedText.contains('state='));
-        if (isEngineInternalPrompt) {
-          continue;
-        }
-        result.add(msg);
-        turnBoundary = false;
-        continue;
-      }
+       if (isEngineInternalPrompt) {
+         continue;
+       }
+       result.add(msg);
+        turnBoundary = true;
+       continue;
+     }
 
-      // 3. Tool results or internal messages
-      if (msg.sender == 'tool') {
-        if (!turnBoundary && result.isNotEmpty && result.last.sender == 'agent' && !result.last.isCompactionMessage) {
-          result[result.length - 1] = _mergeAgentMessages(result.last, msg);
-        } else {
-          result.add(msg.copyWith(sender: 'agent'));
-          turnBoundary = false;
-        }
-        continue;
-      }
+     // 3. Tool results or internal messages
+     if (msg.sender == 'tool') {
+       if (!turnBoundary && result.isNotEmpty && result.last.sender == 'agent' && !result.last.isCompactionMessage) {
+         result[result.length - 1] = _mergeAgentMessages(result.last, msg);
+       } else {
+         result.add(msg.copyWith(sender: 'agent'));
+         turnBoundary = false;
+       }
+       continue;
+     }
 
-      // 4. Agent / Assistant messages: coalesce consecutive steps within the SAME execution turn
-      if (msg.sender == 'agent' || msg.sender == 'assistant') {
-        final bool shouldMergeWithLast = !turnBoundary &&
-            result.isNotEmpty &&
-            result.last.sender == 'agent' &&
-            !result.last.isCompactionMessage;
+     // 4. Agent / Assistant messages: coalesce consecutive steps within the SAME execution turn
+     if (msg.sender == 'agent' || msg.sender == 'assistant') {
+       final bool shouldMergeWithLast = !turnBoundary &&
+           result.isNotEmpty &&
+           result.last.sender == 'agent' &&
+            !result.last.isCompactionMessage &&
+            _isSameAgentTurn(result.last, msg);
 
-        if (shouldMergeWithLast) {
-          result[result.length - 1] = _mergeAgentMessages(result.last, msg);
+       if (shouldMergeWithLast) {
+         result[result.length - 1] = _mergeAgentMessages(result.last, msg);
         } else {
           // Drop completely empty non-pending assistant messages that have no content
           final bool isCompletelyEmpty = !msg.isPending &&
@@ -588,19 +589,45 @@ class ChatMessageModel {
       turnBoundary = false;
     }
 
-    // Final pass: clean any trailing empty messages that have no visible contents
-    return result.where((m) {
-      if (m.sender == 'agent') {
-        if (m.isPending || m.isError || m.questionData != null || m.permissionData != null || m.isCompactionMessage) {
-          return true;
-        }
-        return m.parts.isNotEmpty || m.text.trim().isNotEmpty || (m.reasoningText != null && m.reasoningText!.trim().isNotEmpty);
-      }
+   // Final pass: clean any trailing empty messages that have no visible contents
+   return result.where((m) {
+     if (m.sender == 'agent') {
+       if (m.isPending || m.isError || m.questionData != null || m.permissionData != null || m.isCompactionMessage) {
+         return true;
+       }
+       return m.parts.isNotEmpty || m.text.trim().isNotEmpty || (m.reasoningText != null && m.reasoningText!.trim().isNotEmpty);
+     }
+     return true;
+   }).toList();
+ }
+
+  static bool _isSameAgentTurn(ChatMessageModel a, ChatMessageModel b) {
+    if (a.id.isNotEmpty && b.id.isNotEmpty && a.id == b.id) return true;
+    if (a.parentId != null && b.parentId != null && a.parentId!.isNotEmpty && a.parentId == b.parentId) return true;
+    if (a.isPending || b.isPending) return true;
+    if (a.isSynthetic || b.isSynthetic) return true;
+    final aTurnIds = a.parts.map((p) => p.turnId).where((t) => t != null && t.isNotEmpty).toSet();
+    final bTurnIds = b.parts.map((p) => p.turnId).where((t) => t != null && t.isNotEmpty).toSet();
+    if (aTurnIds.isNotEmpty && bTurnIds.isNotEmpty && aTurnIds.intersection(bTurnIds).isNotEmpty) {
       return true;
-    }).toList();
+    }
+    // If one of the steps is intermediate (no final text, or only tool calls/reasoning), they belong to the same multi-step turn
+    if (a.text.trim().isEmpty || b.text.trim().isEmpty) return true;
+
+    // If one text is a progressive expansion or duplicate of the other
+    final aTxt = a.text.trim();
+    final bTxt = b.text.trim();
+    if (aTxt == bTxt || aTxt.contains(bTxt) || bTxt.contains(aTxt)) return true;
+    if (a.reasoningText != null && b.reasoningText != null &&
+        (a.reasoningText!.contains(b.reasoningText!) || b.reasoningText!.contains(a.reasoningText!))) {
+      return true;
+    }
+
+    // Two distinct completed agent messages with different IDs and distinct, non-overlapping texts are separate standalone turns
+    return false;
   }
 
-  static ChatMessageModel _mergeAgentMessages(ChatMessageModel target, ChatMessageModel source) {
+static ChatMessageModel _mergeAgentMessages(ChatMessageModel target, ChatMessageModel source) {
     // 1. Parts merging and deduplication
     final List<MessagePartModel> combinedParts = List.from(target.parts);
 
@@ -770,7 +797,7 @@ class ChatMessageModel {
       }
     }
 
-    final bool combinedPending = target.isPending && source.isPending;
+    final bool combinedPending = target.isPending || source.isPending;
     final bool combinedError = target.isError || source.isError;
     final String? combinedErrorMsg = source.errorMessage ?? target.errorMessage;
     final String? combinedModel = source.modelName ?? target.modelName;
@@ -1020,4 +1047,3 @@ class QueuedPromptItem {
     queuedAt: json['queuedAt'] != null ? DateTime.tryParse(json['queuedAt'].toString()) : null,
   );
 }
-

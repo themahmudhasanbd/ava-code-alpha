@@ -1494,9 +1494,32 @@ class _ChatScreenState extends State<ChatScreen> {
         onPermissionDecision: widget.onPermissionDecision,
         onOpenFile: widget.onOpenFile,
         onOpenSession: (sessionId) => widget.onSelectSession?.call({'id': sessionId}),
-        onRetry: msg.sender == 'user'
-            ? () => widget.onSendPrompt(msg.text, attachments: msg.attachments)
-            : null,
+        onRetry: () {
+          if (msg.sender == 'user') {
+            final String prompt = msg.text.isNotEmpty
+                ? msg.text
+                : (msg.attachments.isNotEmpty
+                    ? 'Please inspect and process the following attached file(s):\n${msg.attachments.map((f) => "- $f").join("\n")}'
+                    : '');
+            if (prompt.isNotEmpty || msg.attachments.isNotEmpty) {
+              widget.onSendPrompt(prompt, attachments: msg.attachments, userDisplayText: msg.text);
+            }
+          } else if (msg.sender == 'agent') {
+            // Find the preceding user prompt for this agent turn
+            final precedingUserIdx = messages.lastIndexWhere((m) => m.sender == 'user', msgIdx);
+            if (precedingUserIdx != -1) {
+              final userMsg = messages[precedingUserIdx];
+              final String prompt = userMsg.text.isNotEmpty
+                  ? userMsg.text
+                  : (userMsg.attachments.isNotEmpty
+                      ? 'Please inspect and process the following attached file(s):\n${userMsg.attachments.map((f) => "- $f").join("\n")}'
+                      : '');
+              if (prompt.isNotEmpty || userMsg.attachments.isNotEmpty) {
+                widget.onSendPrompt(prompt, attachments: userMsg.attachments, userDisplayText: userMsg.text);
+              }
+            }
+          }
+        },
         onOptionSelected: (answer) {
           _promptController.text = answer;
           _handleSend();

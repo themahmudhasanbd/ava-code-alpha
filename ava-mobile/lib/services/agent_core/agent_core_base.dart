@@ -558,11 +558,12 @@ abstract class AgentCoreBase {
               }
               return p;
             }).toList();
-            return m.copyWith(
-              isPending: false,
-              isHistory: true,
-              parts: cleanParts,
-            );
+           return m.copyWith(
+             isPending: false,
+             isHistory: true,
+              deliveryStatus: m.sender == 'user' ? 'sent' : m.deliveryStatus,
+             parts: cleanParts,
+           );
           }).toList();
           return ChatMessageModel.coalesceList(list);
         }

@@ -260,12 +260,15 @@ extension FmvUserBubbleExt on _FormattedMessageViewState {
                       }).toList(),
                     ),
                   ],
-                  Builder(
-                    builder: (context) {
-                      final deliveryStatus = widget.message.deliveryStatus ?? (widget.message.isPending ? 'sending' : 'sent');
-                      final isSending = deliveryStatus == 'sending';
-                      final isFailed = deliveryStatus == 'failed' || widget.message.isError;
-                      final errorMsg = widget.message.errorMessage ?? '';
+                 Builder(
+                   builder: (context) {
+                      String deliveryStatus = widget.message.deliveryStatus ?? (widget.message.isPending ? 'sending' : 'sent');
+                      if (deliveryStatus == 'sending' && (widget.message.isHistory || !widget.message.isPending)) {
+                        deliveryStatus = 'sent';
+                      }
+                     final isSending = deliveryStatus == 'sending';
+                     final isFailed = deliveryStatus == 'failed' || widget.message.isError;
+                     final errorMsg = widget.message.errorMessage ?? '';
 
                       if (isSending) {
                         return Padding(

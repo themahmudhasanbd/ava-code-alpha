@@ -11,7 +11,7 @@ class StickyPermissionDock extends StatelessWidget {
     final startIdx = (messages.length - 10).clamp(0, messages.length);
     for (int i = messages.length - 1; i >= startIdx; i--) {
       final msg = messages[i];
-      if (msg.sender == 'user') continue;
+      if (msg.sender == 'user' || !msg.isPending) continue;
       final p = msg.permissionData;
       if (p != null && p['answered'] != true) {
         final pId = (p['requestID'] ?? p['id'] ?? '').toString();

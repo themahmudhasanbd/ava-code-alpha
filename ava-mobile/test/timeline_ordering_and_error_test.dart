@@ -201,5 +201,84 @@ void main() {
       expect(merged[2].text, 'Prompt that succeeded');
       expect(merged[3].text, 'Result of prompt that succeeded');
     });
+
+    test('3. StickyPermissionDock and StickyQuestionDock ignore finished turns and only show active pending turns', () {
+      final finishedQuestionMsg = ChatMessageModel(
+        id: 'agent_turn_1',
+        sender: 'agent',
+        text: 'Finished turn text',
+        timestamp: '12:00',
+        isPending: false,
+        questionData: {
+          'requestID': 'q_expired_1',
+          'question': 'Are you sure?',
+          'answered': false,
+        },
+        permissionData: {
+          'requestID': 'p_expired_1',
+          'command': 'rm -rf /tmp',
+          'answered': false,
+        },
+      );
+
+      final activeQuestionMsg = ChatMessageModel(
+        id: 'agent_turn_2',
+        sender: 'agent',
+        text: '',
+        timestamp: '12:05',
+        isPending: true,
+        questionData: {
+          'requestID': 'q_active_2',
+          'question': 'Which file to edit?',
+          'answered': false,
+        },
+        permissionData: {
+          'requestID': 'p_active_2',
+          'command': 'npm install',
+          'answered': false,
+        },
+      );
+
+      expect(activeQuestionMsg.isPending, isTrue);
+      expect(finishedQuestionMsg.isPending, isFalse);
+
+      final mixed = [finishedQuestionMsg, activeQuestionMsg];
+      final activeQ = mixed.firstWhere((m) => m.isPending && m.questionData != null && m.questionData!['answered'] != true);
+      expect(activeQ.questionData!['requestID'], equals('q_active_2'));
+      final activeP = mixed.firstWhere((m) => m.isPending && m.permissionData != null && m.permissionData!['answered'] != true);
+      expect(activeP.permissionData!['requestID'], equals('p_active_2'));
+    });
+
+    test('4. Merging active streaming turn with non-pending intermediate part preserves isPending true', () {
+      final activeTarget = ChatMessageModel(
+        id: 'pending_1',
+        sender: 'agent',
+        text: 'Starting work...',
+        timestamp: '12:00',
+        isPending: true,
+      );
+
+      final toolStep = ChatMessageModel(
+        id: 'tool_step_1',
+        sender: 'agent',
+        text: '',
+        timestamp: '12:00',
+        isPending: false,
+        parts: [
+          MessagePartModel(id: 'p1', type: 'tool', tool: 'read_file', status: 'completed'),
+        ],
+      );
+
+      final coalesced = ChatMessageModel.coalesceList([
+        ChatMessageModel(id: 'u1', sender: 'user', text: 'Inspect code', timestamp: '12:00'),
+        activeTarget,
+        toolStep,
+      ]);
+
+      expect(coalesced.length, equals(2));
+      expect(coalesced[1].sender, equals('agent'));
+      expect(coalesced[1].isPending, isTrue);
+      expect(coalesced[1].parts.length, equals(1));
+    });
   });
 }

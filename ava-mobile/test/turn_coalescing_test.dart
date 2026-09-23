@@ -172,8 +172,37 @@ void main() {
       expect(restored.length, equals(2));
       expect(restored[0].sender, equals('user'));
       expect(restored[1].sender, equals('agent'));
-      expect(restored[1].text, equals('Done with build.'));
-      expect(restored[1].parts.length, equals(1));
+     expect(restored[1].text, equals('Done with build.'));
+     expect(restored[1].parts.length, equals(1));
+   });
+
+    test('7. Multi-turn conversation keeps distinct turns separated and user delivery status sent', () {
+      final turns = [
+        ChatMessageModel(id: 'u1', sender: 'user', text: 'First turn prompt', timestamp: '12:00', deliveryStatus: 'sent'),
+        ChatMessageModel(id: 'a1', sender: 'agent', text: 'First turn answer', timestamp: '12:00', isPending: false),
+        ChatMessageModel(id: 'u2', sender: 'user', text: 'hello kono file update koiro nah', timestamp: '12:05', deliveryStatus: 'sent'),
+        ChatMessageModel(id: 'a2', sender: 'agent', text: 'Understood, no files modified.', timestamp: '12:06', isPending: false),
+      ];
+
+      final result = ChatMessageModel.coalesceList(turns);
+      expect(result.length, equals(4));
+      expect(result[0].text, equals('First turn prompt'));
+      expect(result[1].text, equals('First turn answer'));
+      expect(result[2].text, equals('hello kono file update koiro nah'));
+      expect(result[2].deliveryStatus, equals('sent'));
+      expect(result[3].text, equals('Understood, no files modified.'));
+    });
+
+    test('8. Consecutive distinct completed agent turns are not mixed into one', () {
+      final turns = [
+        ChatMessageModel(id: 'a1', sender: 'agent', text: 'First standalone turn', timestamp: '12:00', isPending: false),
+        ChatMessageModel(id: 'a2', sender: 'agent', text: 'Second standalone turn', timestamp: '12:05', isPending: false),
+      ];
+
+      final result = ChatMessageModel.coalesceList(turns);
+      expect(result.length, equals(2));
+      expect(result[0].text, equals('First standalone turn'));
+      expect(result[1].text, equals('Second standalone turn'));
     });
   });
 }

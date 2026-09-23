@@ -11,7 +11,7 @@ class StickyQuestionDock extends StatefulWidget {
     final startIdx = (messages.length - 10).clamp(0, messages.length);
     for (int i = messages.length - 1; i >= startIdx; i--) {
       final msg = messages[i];
-      if (msg.sender == 'user') continue;
+      if (msg.sender == 'user' || !msg.isPending) continue;
       final q = msg.questionData;
       if (q != null && q['answered'] != true) {
         final qId = q['requestID']?.toString() ?? q['id']?.toString() ?? '';

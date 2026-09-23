@@ -300,7 +300,7 @@ class _FormattedMessageViewState extends State<FormattedMessageView> with Single
               ),
             ],
             ...msg.parts.map((part) {
-              final isPartStreaming = isTurnActive && (part.status == "running" || part.status == "pending");
+              final isPartStreaming = isTurnActive && (part.status == "running" || part.status == "pending" || part.status == null);
 
               if (part.type == "reasoning" || part.type == "thought" || part.type == "thinking") {
                 final effectiveText = part.text.trim().isNotEmpty
@@ -341,13 +341,36 @@ class _FormattedMessageViewState extends State<FormattedMessageView> with Single
 
               return const SizedBox.shrink();
             }),
-            // 2. If msg.text exists but no text part was rendered in parts, render msg.text
-            if (!msg.parts.any((p) => p.type == "text" && p.text.trim().isNotEmpty) && msg.text.trim().isNotEmpty) ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 3),
-                child: _buildMarkdown(msg.text, isUser: false, isLive: isTurnActive, isHistory: msg.isHistory),
-              ),
-            ],
+            // 2. If msg.text exists and has content not fully covered by the rendered text parts, render the remaining/final text
+            () {
+              final textParts = msg.parts
+                  .where((p) => p.type == "text" && p.text.trim().isNotEmpty)
+                  .map((p) => p.text.trim())
+                  .toList();
+              final String combinedPartsText = textParts.join("\n\n").trim();
+              final String cleanMsgText = msg.text.trim();
+
+              if (cleanMsgText.isNotEmpty) {
+                if (combinedPartsText.isEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 3),
+                    child: _buildMarkdown(cleanMsgText, isUser: false, isLive: isTurnActive, isHistory: msg.isHistory),
+                  );
+                } else if (cleanMsgText != combinedPartsText && !combinedPartsText.contains(cleanMsgText)) {
+                  String trailingText = cleanMsgText;
+                  if (cleanMsgText.startsWith(combinedPartsText)) {
+                    trailingText = cleanMsgText.substring(combinedPartsText.length).trim();
+                  }
+                  if (trailingText.isNotEmpty) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 3),
+                      child: _buildMarkdown(trailingText, isUser: false, isLive: isTurnActive, isHistory: msg.isHistory),
+                    );
+                  }
+                }
+              }
+              return const SizedBox.shrink();
+            }(),
           ] else if (msg.reasoningText != null && msg.reasoningText!.trim().isNotEmpty) ...[
             _buildThinkingAccordion(
               "${msg.id}_reasoning",

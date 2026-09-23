@@ -377,17 +377,18 @@ mixin AgentCoreSessionsMixin on AgentCoreBase {
                 }
               }
 
-              if (userText.isNotEmpty) {
-                messages.add(ChatMessageModel(
-                  id: userMsgId ?? "user_$turnId",
-                  sender: "user",
-                  text: userText,
-                  timestamp: DateTime.now().toIso8601String(),
-                  attachments: userAttachments.isNotEmpty ? userAttachments : null,
-                  isPending: false,
-                  isHistory: true,
-                ));
-              }
+             if (userText.isNotEmpty) {
+               messages.add(ChatMessageModel(
+                 id: userMsgId ?? "user_$turnId",
+                 sender: "user",
+                 text: userText,
+                 timestamp: DateTime.now().toIso8601String(),
+                 attachments: userAttachments.isNotEmpty ? userAttachments : null,
+                 isPending: false,
+                  deliveryStatus: "sent",
+                 isHistory: true,
+               ));
+             }
 
               // Handle turn error if failed
               String? dynamicErrorMessage;

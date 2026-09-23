@@ -36,21 +36,23 @@ extension FmvAgentHeaderExt on _FormattedMessageViewState {
               color: _cFaint,
             ),
           ),
-        const SizedBox(width: 6),
-        InkWell(
-          onTap: () {
-            final String copyText = msg.text.trim().isNotEmpty
-                ? msg.text
-                : msg.parts.where((p) => p.text.trim().isNotEmpty).map((p) => p.text).join('\n\n');
-            Clipboard.setData(ClipboardData(text: copyText));
-            AppToast.copied(context, "Copied response to clipboard");
-          },
-          borderRadius: BorderRadius.circular(4),
-          child: Padding(
-            padding: const EdgeInsets.all(4),
-            child: Icon(LucideIcons.copy, size: 13, color: _cFaint),
+        if (!isTurnActive && (msg.text.trim().isNotEmpty || msg.parts.isNotEmpty)) ...[
+          const SizedBox(width: 6),
+          InkWell(
+            onTap: () {
+              final String copyText = msg.text.trim().isNotEmpty
+                  ? msg.text
+                  : msg.parts.where((p) => p.text.trim().isNotEmpty).map((p) => p.text).join('\n\n');
+              Clipboard.setData(ClipboardData(text: copyText));
+              AppToast.copied(context, "Copied response to clipboard");
+            },
+            borderRadius: BorderRadius.circular(4),
+            child: Padding(
+              padding: const EdgeInsets.all(4),
+              child: Icon(LucideIcons.copy, size: 13, color: _cFaint),
+            ),
           ),
-        ),
+        ],
       ],
     );
   }

@@ -407,7 +407,7 @@ class _FormattedMessageViewState extends State<FormattedMessageView> with Single
             _buildPermissionCard(msg.permissionData!),
 
           // ── Bottom Action Bar: Timestamp, Turn Duration & 1-Tap Copy ───────
-          if (!isTurnActive && (msg.text.trim().isNotEmpty || msg.parts.isNotEmpty)) ...[
+          if (!isTurnActive && !msg.isPending && (msg.text.trim().isNotEmpty || msg.parts.isNotEmpty)) ...[
             const SizedBox(height: 6),
             () {
               final durStr = _computeTurnDuration(msg);

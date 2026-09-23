@@ -234,13 +234,13 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
     } catch (e) { print('Ignored error: $e'); }
   }
 
- List<ChatMessageModel> _mergeMessagesPreservingLocal(List<ChatMessageModel> existing, List<ChatMessageModel> incoming) {
-   if (incoming.isEmpty) return existing;
+  List<ChatMessageModel> _mergeMessagesPreservingLocal(List<ChatMessageModel> existing, List<ChatMessageModel> incoming) {
+    if (incoming.isEmpty) return existing;
     if (existing.isEmpty) {
       return incoming.map((m) => m.sender == 'user' ? m.copyWith(deliveryStatus: 'sent', isPending: false) : m).toList();
     }
 
-   final cleanExisting = existing.where((m) => m.id != 'loading-hist').toList();
+    final cleanExisting = existing.where((m) => m.id != 'loading-hist').toList();
     if (cleanExisting.isEmpty) {
       return incoming.map((m) => m.sender == 'user' ? m.copyWith(deliveryStatus: 'sent', isPending: false) : m).toList();
     }
@@ -258,7 +258,6 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
       }
       if (local.sender != inc.sender) return false;
 
-      // If both have established non-temporary server IDs and they differ, they are distinct messages
       final bool localIsTemp = local.id.startsWith('pending') ||
           local.id.startsWith('active') ||
           local.id.startsWith('user_') ||
@@ -289,13 +288,11 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
     }
 
     // 1. Enrich incoming messages with local timeline events, questions, permissions, and reasoning
-    final Set<String> matchedLocalIds = {};
     for (int i = 0; i < incomingMerged.length; i++) {
       final inc = incomingMerged[i];
       final matchIdx = cleanExisting.indexWhere((e) => matches(e, inc));
       if (matchIdx != -1) {
         final local = cleanExisting[matchIdx];
-        matchedLocalIds.add(local.id);
         incomingMerged[i] = inc.copyWith(
           timelineEvents: inc.timelineEvents.isNotEmpty ? inc.timelineEvents : local.timelineEvents,
           questionData: inc.questionData ?? local.questionData,
@@ -307,14 +304,25 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
       }
     }
 
-    // 2. Build sequence starting with authoritative server timeline order
-    final List<ChatMessageModel> result = List.from(incomingMerged);
+    // 2. Build aligned chronological sequence starting from cleanExisting order
+    final List<ChatMessageModel> result = [];
+    int incomingCursor = 0;
 
-    // 3. Append any unmatched local messages (in-flight user prompts or active streaming turns)
-    for (final local in cleanExisting) {
-      if (matchedLocalIds.contains(local.id)) continue;
-      final alreadyInResult = result.any((m) => matches(local, m));
-      if (!alreadyInResult) {
+    for (int i = 0; i < cleanExisting.length; i++) {
+      final local = cleanExisting[i];
+      final incIdx = incomingMerged.indexWhere((inc) => matches(local, inc));
+
+      if (incIdx != -1) {
+        while (incomingCursor < incIdx) {
+          if (!result.any((m) => matches(m, incomingMerged[incomingCursor]))) {
+            result.add(incomingMerged[incomingCursor]);
+          }
+          incomingCursor++;
+        }
+        result.add(incomingMerged[incIdx]);
+        incomingCursor = incIdx + 1;
+      } else {
+        // Keep local message in its exact chronological position (failed prompts, active streams, un-synced user messages)
         if (local.sender == 'user') {
           final isActivelyStreaming = _currentlyStreamingPendingId != null && _activePromptStreamSubscription != null;
           if (!isActivelyStreaming) {
@@ -322,15 +330,18 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
           } else {
             result.add(local);
           }
-        } else if (local.isPending) {
-          final isActivelyStreaming = _currentlyStreamingPendingId == local.id && _activePromptStreamSubscription != null;
-          if (isActivelyStreaming) {
-            result.add(local);
-          }
         } else {
           result.add(local);
         }
       }
+    }
+
+    // Append any trailing incoming messages from server
+    while (incomingCursor < incomingMerged.length) {
+      if (!result.any((m) => matches(m, incomingMerged[incomingCursor]))) {
+        result.add(incomingMerged[incomingCursor]);
+      }
+      incomingCursor++;
     }
 
     return ChatMessageModel.coalesceList(result);
@@ -2462,10 +2473,13 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
               if (_activeSessionId != null && _activeSessionId!.isNotEmpty) {
                 final currentSessionId = _activeSessionId!;
                 unawaited(_agentCoreService.saveSessionMessagesToCache(currentSessionId, _chatMessages));
-                unawaited(Future.delayed(const Duration(milliseconds: 600), () {
+                unawaited(Future.delayed(const Duration(milliseconds: 1200), () {
+                  if (!mounted || _activeSessionId != currentSessionId) return;
+                  if (_currentlyStreamingPendingId != null && _activePromptStreamSubscription != null) return;
                   _agentCoreService.fetchSession(currentSessionId);
                   _agentCoreService.fetchSessionMessages(currentSessionId, limit: 100).then((res) {
                     if (!mounted || _activeSessionId != currentSessionId) return;
+                    if (_currentlyStreamingPendingId != null && _activePromptStreamSubscription != null) return;
                     final msgs = (res['messages'] as List<ChatMessageModel>?) ?? [];
                     if (msgs.isNotEmpty) {
                       setState(() {

@@ -1,0 +1,19 @@
+import { ssrRenderAttrs } from "vue/server-renderer";
+import { useSSRContext } from "vue";
+import { _ as _export_sfc } from "./plugin-vue_export-helper.1tPrXgE0.js";
+const __pageData = JSON.parse('{"title":"ADR 0288: Package-local theme assets remain available","description":"","frontmatter":{},"headers":[],"relativePath":"adr/0288-package-local-theme-assets.md","filePath":"adr/0288-package-local-theme-assets.md","lastUpdated":1789739860000}');
+const _sfc_main = { name: "adr/0288-package-local-theme-assets.md" };
+function _sfc_ssrRender(_ctx, _push, _parent, _attrs, $props, $setup, $data, $options) {
+  _push(`<div${ssrRenderAttrs(_attrs)}><h1 id="adr-0288-package-local-theme-assets-remain-available" tabindex="-1">ADR 0288: Package-local theme assets remain available <a class="header-anchor" href="#adr-0288-package-local-theme-assets-remain-available" aria-label="Permalink to &quot;ADR 0288: Package-local theme assets remain available&quot;">​</a></h1><ul><li>Status: Accepted for implementation</li><li>Date: 2026-09-17</li><li>Decision: D445</li><li>Amends: ADR 0255</li></ul><h2 id="context" tabindex="-1">Context <a class="header-anchor" href="#context" aria-label="Permalink to &quot;Context&quot;">​</a></h2><p>ADR 0255 made external absolute paths available to theme contributions. That supports a theme whose plugin owns a user-selected image outside its package, but an absolute path cannot identify an image in an installed marketplace archive on another machine.</p><p>Host-rendered scenic Settings destinations need preview images and background images that travel with their theme package. Requiring an absolute path would make a packaged theme either non-portable or dependent on a separate file selection capability.</p><h2 id="decision" tabindex="-1">Decision <a class="header-anchor" href="#decision" aria-label="Permalink to &quot;Decision&quot;">​</a></h2><ol><li>A declared theme asset may be either an extension-whitelisted absolute path or an extension-whitelisted package-relative path.</li><li>The host resolves a package-relative path with <code>resolveInsidePlugin</code>, rejects traversal and <code>node_modules</code>, verifies existence and the shared asset budget, then records the resolved file under its package-relative key.</li><li>Absolute assets retain ADR 0255&#39;s existing validation, percent-encoded URL keys, and runtime registration behavior.</li><li>The <code>plugin-asset:</code> protocol remains the sole renderer access path. It only serves a file recorded by the loaded plugin&#39;s asset registry, uses the extension MIME allowlist, no-store, nosniff, and revokes the registry on disable, unload, or crash.</li><li>Scenic card previews must name one declared asset owned by the same plugin. They do not add filesystem, network, renderer-DOM, or image-upload authority.</li></ol><h2 id="consequences" tabindex="-1">Consequences <a class="header-anchor" href="#consequences" aria-label="Permalink to &quot;Consequences&quot;">​</a></h2><ul><li>Marketplace theme packs can ship portable local art without exposing arbitrary filesystem reads.</li><li>Existing themes that intentionally name an external absolute path keep working.</li><li>Theme authors must declare every image and font; an undeclared CSS <code>url()</code> is rejected before it reaches the renderer.</li></ul></div>`);
+}
+const _sfc_setup = _sfc_main.setup;
+_sfc_main.setup = (props, ctx) => {
+  const ssrContext = useSSRContext();
+  (ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("adr/0288-package-local-theme-assets.md");
+  return _sfc_setup ? _sfc_setup(props, ctx) : void 0;
+};
+const _0288PackageLocalThemeAssets = /* @__PURE__ */ _export_sfc(_sfc_main, [["ssrRender", _sfc_ssrRender]]);
+export {
+  __pageData,
+  _0288PackageLocalThemeAssets as default
+};

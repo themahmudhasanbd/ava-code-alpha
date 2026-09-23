@@ -1,0 +1,19 @@
+import { ssrRenderAttrs } from "vue/server-renderer";
+import { useSSRContext } from "vue";
+import { _ as _export_sfc } from "./plugin-vue_export-helper.1tPrXgE0.js";
+const __pageData = JSON.parse('{"title":"ADR 0261: Plugin Appearance Extensions","description":"","frontmatter":{},"headers":[],"relativePath":"adr/0261-plugin-appearance-extensions.md","filePath":"adr/0261-plugin-appearance-extensions.md","lastUpdated":1789642367000}');
+const _sfc_main = { name: "adr/0261-plugin-appearance-extensions.md" };
+function _sfc_ssrRender(_ctx, _push, _parent, _attrs, $props, $setup, $data, $options) {
+  _push(`<div${ssrRenderAttrs(_attrs)}><h1 id="adr-0261-plugin-appearance-extensions" tabindex="-1">ADR 0261: Plugin Appearance Extensions <a class="header-anchor" href="#adr-0261-plugin-appearance-extensions" aria-label="Permalink to &quot;ADR 0261: Plugin Appearance Extensions&quot;">​</a></h1><h2 id="status" tabindex="-1">Status <a class="header-anchor" href="#status" aria-label="Permalink to &quot;Status&quot;">​</a></h2><p>Accepted for implementation.</p><h2 id="context" tabindex="-1">Context <a class="header-anchor" href="#context" aria-label="Permalink to &quot;Context&quot;">​</a></h2><p>Plugins can contribute static sanitized themes, but cannot safely vary a declared theme at runtime or offer a dedicated configuration surface. Letting plugin code inject CSS, renderer DOM, or arbitrary Settings routes would widen its authority and break host ownership of navigation and native window chrome.</p><h2 id="decision" tabindex="-1">Decision <a class="header-anchor" href="#decision" aria-label="Permalink to &quot;Decision&quot;">​</a></h2><ol><li><code>ui.settings</code> is an independent permission. A loaded plugin holding it and <code>ui.theme</code> may contribute one validated data-only scenic destination.</li><li>The host renders contributed items only in the <strong>Extensions</strong> group after all core Settings groups. Core ordering, search shell, titlebar and fallback navigation remain host-owned.</li><li>The host renders every scenic Settings DOM node in its normal React tree. Plugins cannot contribute an entry document, DOM, styles, scripts, or actions.</li><li><code>pi.themes.setVariables(themeId, values)</code> requires <code>ui.theme</code>. It accepts values only for the caller&#39;s declared theme variables. The manifest declares one of <code>length</code> (<code>px</code>), finite <code>number</code>, strict hex <code>color</code>, or a fixed <code>select</code> value. The host rejects host-reserved names, undeclared keys, unsafe CSS fragments and cross-plugin ids.</li><li>The host persists accepted values in plugin-private settings and serializes a separate host-generated variable rule after static sanitized theme CSS. Static <code>plugin-asset://</code> references remain valid; no runtime stylesheet, image, font, layout, filesystem or network authority is granted.</li><li>Disable, uninstall, crash and reload remove every owned destination. If an active destination disappears, the renderer returns to General.</li></ol><h2 id="consequences" tabindex="-1">Consequences <a class="header-anchor" href="#consequences" aria-label="Permalink to &quot;Consequences&quot;">​</a></h2><p>Theme packs can provide bounded controls such as a backdrop blur number without re-injecting stylesheet text. Settings extensions retain the existing plugin sandbox and lifecycle boundaries.</p></div>`);
+}
+const _sfc_setup = _sfc_main.setup;
+_sfc_main.setup = (props, ctx) => {
+  const ssrContext = useSSRContext();
+  (ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("adr/0261-plugin-appearance-extensions.md");
+  return _sfc_setup ? _sfc_setup(props, ctx) : void 0;
+};
+const _0261PluginAppearanceExtensions = /* @__PURE__ */ _export_sfc(_sfc_main, [["ssrRender", _sfc_ssrRender]]);
+export {
+  __pageData,
+  _0261PluginAppearanceExtensions as default
+};

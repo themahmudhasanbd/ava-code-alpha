@@ -1,0 +1,19 @@
+import { ssrRenderAttrs } from "vue/server-renderer";
+import { useSSRContext } from "vue";
+import { _ as _export_sfc } from "./plugin-vue_export-helper.1tPrXgE0.js";
+const __pageData = JSON.parse('{"title":"ADR 0281: Host speech capability","description":"","frontmatter":{},"headers":[],"relativePath":"adr/0281-host-speech-capability.md","filePath":"adr/0281-host-speech-capability.md","lastUpdated":1789760880000}');
+const _sfc_main = { name: "adr/0281-host-speech-capability.md" };
+function _sfc_ssrRender(_ctx, _push, _parent, _attrs, $props, $setup, $data, $options) {
+  _push(`<div${ssrRenderAttrs(_attrs)}><h1 id="adr-0281-host-speech-capability" tabindex="-1">ADR 0281: Host speech capability <a class="header-anchor" href="#adr-0281-host-speech-capability" aria-label="Permalink to &quot;ADR 0281: Host speech capability&quot;">​</a></h1><ul><li>Status: Accepted for implementation (amended by <a href="./0291-remove-speech-settings-ui">ADR 0291</a>)</li><li>Date: 2026-09-17</li><li>Deciders: PI-Desktop core</li><li>Related: <a href="./0257-plugin-real-time-capabilities">ADR 0257</a> · <a href="./../spec/03-runtime/20-speech">03-runtime/20-speech</a></li></ul><h2 id="context" tabindex="-1">Context <a class="header-anchor" href="#context" aria-label="Permalink to &quot;Context&quot;">​</a></h2><p>Chat models, image generation, transcription, and speech synthesis are different jobs. <code>@earendil-works/pi-ai</code> has no TTS/ASR surface, and Whisper / MIMO TTS must not appear in the chat model picker. Local OpenAI-Audio-compatible servers (Speaches, whisper.cpp, LocalAI) should work through an existing <code>openai_compatible</code> provider.</p><h2 id="decision" tabindex="-1">Decision <a class="header-anchor" href="#decision" aria-label="Permalink to &quot;Decision&quot;">​</a></h2><ol><li>The host owns a speech capability independent of chat: <code>transcribe(audio) → text</code> and <code>synthesize(text) → audio</code>.</li><li>Bindings live on optional <code>AppSettings.speech</code> (no schema bump). Each role names an existing provider, a model id, and an open protocol id.</li><li>Built-in protocols: <code>openai_audio</code> (REST <code>/audio/transcriptions</code> and <code>/audio/speech</code>) and <code>openai_chat_audio</code> (chat completions <code>audio</code> field; MIMO <code>mimo-v2.5-tts</code>). New vendors add an adapter, not a new IPC channel.</li><li>Plugins may register a protocol with <code>pi.speech.registerAdapter</code> under high-risk <code>speech.adapter.register</code>. Handles stay in the guest; HTTP plans are executed by the host with the bound provider&#39;s key and must stay on that origin. Built-in protocol ids are reserved.</li><li>v1 product entry is the host API only: the <code>speech/*</code> IPC and plugin adapters. No Settings card and no Composer transcription / draft-speech control exists (ADR 0291 withdrew both). Audio bytes never enter the renderer (path in, scratch out).</li><li>Out of scope: microphone / <code>pi.audio</code> device backend, Realtime, agent <code>transcribe</code>/<code>speak</code> tools, audio as LLM content blocks, changing pi-ai.</li></ol><h2 id="consequences" tabindex="-1">Consequences <a class="header-anchor" href="#consequences" aria-label="Permalink to &quot;Consequences&quot;">​</a></h2><p>An unconfigured role fails <code>SPEECH_NOT_CONFIGURED</code>. Provider deletion makes the binding fail <code>NOT_FOUND</code>. Plugin unload drops its protocols.</p></div>`);
+}
+const _sfc_setup = _sfc_main.setup;
+_sfc_main.setup = (props, ctx) => {
+  const ssrContext = useSSRContext();
+  (ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("adr/0281-host-speech-capability.md");
+  return _sfc_setup ? _sfc_setup(props, ctx) : void 0;
+};
+const _0281HostSpeechCapability = /* @__PURE__ */ _export_sfc(_sfc_main, [["ssrRender", _sfc_ssrRender]]);
+export {
+  __pageData,
+  _0281HostSpeechCapability as default
+};

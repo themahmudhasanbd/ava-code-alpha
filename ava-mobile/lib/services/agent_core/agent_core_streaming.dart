@@ -118,10 +118,11 @@ mixin AgentCoreStreamingMixin on AgentCoreBase {
       try {
         await ensureSseConnected();
 
-        String activeThreadId = (sessionId != null && sessionId.isNotEmpty) ? sessionId : "";
+        String activeThreadId = (sessionId != null && sessionId.isNotEmpty) ? sessionId.trim() : "";
+        final bool isValidUuid = RegExp(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$").hasMatch(activeThreadId);
 
-        // If no active thread ID, start a new thread via thread/start
-        if (activeThreadId.isEmpty) {
+        // If no active thread ID or invalid UUID format, start a new thread via thread/start
+        if (activeThreadId.isEmpty || !isValidUuid) {
           final startParams = <String, dynamic>{
             "cwd": workspacePath.isNotEmpty ? workspacePath : "/",
           };
@@ -456,10 +457,16 @@ mixin AgentCoreStreamingMixin on AgentCoreBase {
               final itemId = itemMap["id"]?.toString();
               if (itemId != null && livePartsMap.containsKey(itemId)) {
                 final existing = livePartsMap[itemId]!;
-                final outVal = itemMap["aggregatedOutput"] ?? itemMap["output"] ?? itemMap["result"] ?? itemMap["text"];
+                final outVal = itemMap["aggregatedOutput"] ?? itemMap["output"] ?? itemMap["result"];
                 final outStr = outVal != null ? outVal.toString() : existing.output;
+                final textVal = itemMap["text"]?.toString();
                 final durMs = itemMap["durationMs"] is num ? (itemMap["durationMs"] as num).toInt() : existing.durationMs;
-                livePartsMap[itemId] = existing.copyWith(status: "completed", output: outStr, durationMs: durMs);
+                livePartsMap[itemId] = existing.copyWith(
+                  status: "completed",
+                  output: (existing.type == "tool") ? (outStr ?? existing.output) : existing.output,
+                  text: (existing.type == "text" && textVal != null && textVal.isNotEmpty) ? textVal : existing.text,
+                  durationMs: durMs,
+                );
                 emitLivePartsUpdate();
               }
             }
@@ -484,6 +491,26 @@ mixin AgentCoreStreamingMixin on AgentCoreBase {
           }
           // 9. turn/completed
           else if (method == "turn/completed") {
+            final rawTurn = params["turn"];
+            if (rawTurn is Map) {
+              final items = rawTurn["items"];
+              if (items is List) {
+                for (final it in items) {
+                  if (it is Map && it["type"] == "agentMessage" && it["text"] != null) {
+                    final itText = it["text"].toString();
+                    if (itText.trim().isNotEmpty) {
+                      final itId = it["id"]?.toString() ?? "msg_final";
+                      if (livePartsMap.containsKey(itId)) {
+                        livePartsMap[itId] = livePartsMap[itId]!.copyWith(text: itText, status: "completed");
+                      } else {
+                        livePartsMap[itId] = MessagePartModel(id: itId, type: "text", text: itText, status: "completed");
+                        if (!partOrder.contains(itId)) partOrder.add(itId);
+                      }
+                    }
+                  }
+                }
+              }
+            }
             finishTurn();
           }
         });
@@ -509,17 +536,43 @@ mixin AgentCoreStreamingMixin on AgentCoreBase {
         final turnParams = <String, dynamic>{
           "threadId": activeThreadId,
           "input": turnInput,
-          "cwd": workspacePath.isNotEmpty ? workspacePath : "/",
-          "effort": reasoningEffort.isNotEmpty ? reasoningEffort.toLowerCase() : "max",
-          "summary": "auto",
         };
 
         if (modelId.isNotEmpty) {
           turnParams["model"] = AgentCoreBase.normalizeModelId(modelId);
         }
+        if (reasoningEffort.isNotEmpty) {
+          turnParams["effort"] = reasoningEffort.toLowerCase();
+        }
 
-        await sendRpc("turn/start", turnParams);
-        AgentCoreBase.addDebugLog("Dispatched turn/start for thread $activeThreadId");
+        try {
+          await sendRpc("turn/start", turnParams);
+          AgentCoreBase.addDebugLog("Dispatched turn/start for thread $activeThreadId");
+        } catch (turnErr) {
+          final errStr = turnErr.toString();
+          if (errStr.contains("invalid thread") || errStr.contains("not found") || errStr.contains("-32600") || errStr.contains("UUID")) {
+            AgentCoreBase.addDebugLog("Stale thread $activeThreadId, auto-creating new thread...");
+            final startParams = <String, dynamic>{
+              "cwd": workspacePath.isNotEmpty ? workspacePath : "/",
+              if (modelId.isNotEmpty) "model": AgentCoreBase.normalizeModelId(modelId),
+              if (reasoningEffort.isNotEmpty) "effort": reasoningEffort.toLowerCase(),
+            };
+            final newRes = await sendRpc("thread/start", startParams);
+            if (newRes is Map && newRes["thread"] is Map) {
+              activeThreadId = newRes["thread"]["id"]?.toString() ?? "";
+              lastActiveSessionId = activeThreadId;
+              activeRunningSessionId = activeThreadId;
+              controller.add({"type": "session_id", "sessionId": activeThreadId});
+              turnParams["threadId"] = activeThreadId;
+              await sendRpc("turn/start", turnParams);
+              AgentCoreBase.addDebugLog("Dispatched turn/start for new thread $activeThreadId");
+            } else {
+              rethrow;
+            }
+          } else {
+            rethrow;
+          }
+        }
       } catch (err) {
         final errText = AgentCoreBase.extractCoreErrorMessage(err);
         AgentCoreBase.addDebugLog("sendPromptStream error: $errText");

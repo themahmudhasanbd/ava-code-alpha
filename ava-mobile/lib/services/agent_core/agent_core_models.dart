@@ -5,6 +5,14 @@ import "agent_core_base.dart";
 mixin AgentCoreModelsMixin on AgentCoreBase {
   static final List<AvaModelItem> defaultModelList = const [
     AvaModelItem(
+      id: "ultra-working-combo",
+      name: "Ultra Working Combo",
+      provider: "omniroute",
+      reasoning: true,
+      supportsImages: true,
+      contextLimit: 1048576,
+    ),
+    AvaModelItem(
       id: "powerful-coding-combo",
       name: "Powerful Coding Combo",
       provider: "omniroute",
@@ -15,14 +23,6 @@ mixin AgentCoreModelsMixin on AgentCoreBase {
     AvaModelItem(
       id: "omni-codex-combo",
       name: "Omni Codex Combo",
-      provider: "omniroute",
-      reasoning: true,
-      supportsImages: true,
-      contextLimit: 1048576,
-    ),
-    AvaModelItem(
-      id: "ultra-working-combo",
-      name: "Ultra Working Combo",
       provider: "omniroute",
       reasoning: true,
       supportsImages: true,
@@ -149,11 +149,11 @@ mixin AgentCoreModelsMixin on AgentCoreBase {
       } catch (_) {}
 
       // 4. Ensure configured default model is present and prioritized
-      final String effectiveDefaultId = configDefaultModel ?? "powerful-coding-combo";
+      final String effectiveDefaultId = configDefaultModel ?? "ultra-working-combo";
       if (!mergedMap.containsKey(effectiveDefaultId)) {
         mergedMap[effectiveDefaultId] = AvaModelItem(
           id: effectiveDefaultId,
-          name: effectiveDefaultId == "powerful-coding-combo" ? "Powerful Coding Combo" : effectiveDefaultId,
+          name: effectiveDefaultId == "ultra-working-combo" ? "Ultra Working Combo" : (effectiveDefaultId == "powerful-coding-combo" ? "Powerful Coding Combo" : effectiveDefaultId),
           provider: "omniroute",
           providerKey: "omniroute",
           modelKey: effectiveDefaultId,

@@ -486,8 +486,8 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
         : (AvaAgentCoreService.defaultModelList.isNotEmpty
             ? AvaAgentCoreService.defaultModelList.first
             : const AvaModelItem(
-                id: "powerful-coding-combo",
-                name: "Powerful Coding Combo",
+                id: "ultra-working-combo",
+                name: "Ultra Working Combo",
                 provider: "omniroute",
               ));
   }
@@ -517,10 +517,12 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
       if (m != null) return m;
     }
 
-    return _findModelByIdOrName('powerful-coding-combo', models: list) ??
-           _findModelByIdOrName('omni-codex-combo', models: list) ??
-           _findModelByIdOrName('auto/best-coding', models: list) ??
-           _findModelByIdOrName('gpt-6-astra', models: list) ??
+    return _findModelByIdOrName("ultra-working-combo", models: list) ??
+           _findModelByIdOrName("ultra-coding-combo", models: list) ??
+           _findModelByIdOrName("powerful-coding-combo", models: list) ??
+           _findModelByIdOrName("omni-codex-combo", models: list) ??
+           _findModelByIdOrName("auto/best-coding", models: list) ??
+           _findModelByIdOrName("gpt-6-astra", models: list) ??
            list.first;
   }
 
@@ -1911,6 +1913,12 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
             final returnedSessId = event['sessionId']?.toString();
             if (returnedSessId != null && returnedSessId.isNotEmpty) {
               _setActiveSessionId(returnedSessId);
+              if (_selectedModelItem != null) {
+                unawaited(SharedPreferences.getInstance().then((p) {
+                  p.setString('ava_session_model_' + returnedSessId, _selectedModelItem!.id);
+                  p.setString('ava_last_selected_model_id', _selectedModelItem!.id);
+                }));
+              }
               // ── Start live ongoing turn banner & system notification ──
               unawaited(PushNotificationService.instance.startOngoingTurnNotification(
                 sessionId: returnedSessId,

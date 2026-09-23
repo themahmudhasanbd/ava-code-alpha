@@ -41,29 +41,8 @@ extension FmvUserBubbleExt on _FormattedMessageViewState {
     final double maxBubbleWidth = isMobile ? screenWidth * 0.72 : 600.0;
 
     final msgId = widget.message.id;
-
-    final bool hasAudioAttachment = hasAttachments && attachments.any((f) {
-      final l = f.toLowerCase();
-      return l.endsWith('.webm') ||
-          l.endsWith('.wav') ||
-          l.endsWith('.mp3') ||
-          l.endsWith('.m4a') ||
-          l.endsWith('.ogg') ||
-          l.endsWith('.aac') ||
-          l.endsWith('.opus') ||
-          l.contains('voice_note_');
-    });
-
-    final String trimmedText = text.trim();
-    final bool isSystemAttachmentFallback = trimmedText.startsWith('Please inspect and process the following attached file(s):') ||
-        trimmedText.startsWith('[Attached Files:') ||
-        trimmedText.startsWith('[User sent a voice message:') ||
-        trimmedText.startsWith('[User sent a voice note:') ||
-        trimmedText.startsWith('[Voice Note');
-
-    final bool shouldHideText = isSystemAttachmentFallback && hasAudioAttachment;
-
-    final isLongText = text.length > 160 || text.split('\n').length > 4;
+    final String cleanDisplayText = sanitizeUserDisplayText(text);
+    final isLongText = cleanDisplayText.length > 160 || cleanDisplayText.split('\n').length > 4;
     final isExpanded = _expandedState['user_prompt_$msgId'] ?? false;
     final formattedTime = TimeFormatter.formatTimeString(timestamp, context: context);
 
@@ -98,14 +77,14 @@ extension FmvUserBubbleExt on _FormattedMessageViewState {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  if (text.isNotEmpty && !shouldHideText) ...[
+                  if (cleanDisplayText.isNotEmpty) ...[
                     if (isLongText && !isExpanded)
                       Stack(
                         children: [
                           ConstrainedBox(
                             constraints: const BoxConstraints(maxHeight: 110),
                             child: ClipRect(
-                              child: _buildMarkdown(text, isUser: true),
+                              child: _buildMarkdown(cleanDisplayText, isUser: true),
                             ),
                           ),
                           Positioned(
@@ -126,7 +105,7 @@ extension FmvUserBubbleExt on _FormattedMessageViewState {
                         ],
                       )
                     else
-                      _buildMarkdown(text, isUser: true),
+                      _buildMarkdown(cleanDisplayText, isUser: true),
 
                     if (isLongText)
                       InkWell(
@@ -163,7 +142,7 @@ extension FmvUserBubbleExt on _FormattedMessageViewState {
                       ),
                   ],
                   if (hasAttachments) ...[
-                    if (text.isNotEmpty && !shouldHideText) const SizedBox(height: 8),
+                    if (cleanDisplayText.isNotEmpty) const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,

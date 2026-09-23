@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../services/agent_core_service.dart';
@@ -38,6 +40,54 @@ class _MediaPreviewViewState extends State<MediaPreviewView> {
   final TransformationController _transformController = TransformationController();
   double _zoomScale = 1.0;
   bool _isUnarchiving = false;
+  Uint8List? _loadedImageBytes;
+  bool _isLoadingImage = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadImageIfLocal();
+  }
+
+  @override
+  void didUpdateWidget(MediaPreviewView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.fullPath != widget.fullPath) {
+      _loadedImageBytes = null;
+      _loadImageIfLocal();
+    }
+  }
+
+  Future<void> _loadImageIfLocal() async {
+    if (!_isImage) return;
+    final path = widget.fullPath.trim();
+    if (path.startsWith('data:image/')) {
+      try {
+        final commaIdx = path.indexOf(',');
+        final base64Str = commaIdx != -1 ? path.substring(commaIdx + 1) : path;
+        setState(() {
+          _loadedImageBytes = base64Decode(base64Str.replaceAll(RegExp(r'\s+'), ''));
+        });
+      } catch (_) {}
+      return;
+    }
+    if (path.startsWith('http://') || path.startsWith('https://')) return;
+
+    setState(() => _isLoadingImage = true);
+    try {
+      final bytes = await widget.agentCoreService.fetchFileBytes(path);
+      if (mounted && bytes != null && bytes.isNotEmpty) {
+        setState(() {
+          _loadedImageBytes = bytes;
+          _isLoadingImage = false;
+        });
+        return;
+      }
+    } catch (_) {}
+    if (mounted) {
+      setState(() => _isLoadingImage = false);
+    }
+  }
 
   String get _ext {
     final name = widget.fileName.toLowerCase();
@@ -209,6 +259,31 @@ class _MediaPreviewViewState extends State<MediaPreviewView> {
   }
 
   Widget _buildImageViewer(String rawUrl) {
+    Widget imageWidget;
+    if (_loadedImageBytes != null) {
+      imageWidget = Image.memory(
+        _loadedImageBytes!,
+        fit: BoxFit.contain,
+        errorBuilder: (ctx, err, stack) => _buildImageError(),
+      );
+    } else if (_isLoadingImage) {
+      imageWidget = const Center(
+        child: CircularProgressIndicator(color: Color(0xFF6366F1), strokeWidth: 2),
+      );
+    } else {
+      imageWidget = Image.network(
+        rawUrl,
+        fit: BoxFit.contain,
+        loadingBuilder: (ctx, child, progress) {
+          if (progress == null) return child;
+          return const Center(
+            child: CircularProgressIndicator(color: Color(0xFF6366F1), strokeWidth: 2),
+          );
+        },
+        errorBuilder: (ctx, err, stack) => _buildImageError(),
+      );
+    }
+
     return Container(
       width: double.infinity,
       height: double.infinity,
@@ -219,29 +294,19 @@ class _MediaPreviewViewState extends State<MediaPreviewView> {
         transformationController: _transformController,
         minScale: 0.2,
         maxScale: 6.0,
-        child: Center(
-          child: Image.network(
-            rawUrl,
-            fit: BoxFit.contain,
-            loadingBuilder: (ctx, child, progress) {
-              if (progress == null) return child;
-              return const Center(
-                child: CircularProgressIndicator(color: Color(0xFF6366F1), strokeWidth: 2),
-              );
-            },
-            errorBuilder: (ctx, err, stack) {
-              return Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(LucideIcons.imageOff, size: 40, color: Colors.redAccent),
-                  const SizedBox(height: 8),
-                  Text('Failed to render image', style: TextStyle(color: widget.textSecondary, fontSize: 12)),
-                ],
-              );
-            },
-          ),
-        ),
+        child: Center(child: imageWidget),
       ),
+    );
+  }
+
+  Widget _buildImageError() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Icon(LucideIcons.imageOff, size: 40, color: Colors.redAccent),
+        const SizedBox(height: 8),
+        Text('Failed to render image', style: TextStyle(color: widget.textSecondary, fontSize: 12)),
+      ],
     );
   }
 

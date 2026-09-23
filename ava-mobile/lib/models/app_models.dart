@@ -9,6 +9,33 @@ enum CoreConnectionStatus {
   disconnected,
 }
 
+
+/// Strips synthetic system prompts, instructions, and raw attachment blocks from user bubble text.
+String sanitizeUserDisplayText(String rawText) {
+  if (rawText.isEmpty) return '';
+  String clean = rawText;
+
+  // 1. Remove XML/HTML system wrappers
+  clean = clean.replaceAll(RegExp(r'<system_prompt>[\s\S]*?<\/system_prompt>', caseSensitive: false), '');
+  clean = clean.replaceAll(RegExp(r'<instructions>[\s\S]*?<\/instructions>', caseSensitive: false), '');
+  clean = clean.replaceAll(RegExp(r'<context>[\s\S]*?<\/context>', caseSensitive: false), '');
+  clean = clean.replaceAll(RegExp(r'<environment_context>[\s\S]*?<\/environment_context>', caseSensitive: false), '');
+
+  // 2. Remove [Attached Files: ...] or [Other Attached Files: ...]
+  clean = clean.replaceAll(RegExp(r'\[(?:Other\s+)?Attached Files:[\s\S]*?\]', caseSensitive: false), '');
+
+  // 3. Remove [Git Context: ...]
+  clean = clean.replaceAll(RegExp(r'\[Git Context:[\s\S]*?\]', caseSensitive: false), '');
+
+  // 4. Remove synthetic fallback instructions
+  clean = clean.replaceAll(RegExp(r'Please inspect and process the following attached file\(s\):[\s\S]*?(?=(\n\n|$))', caseSensitive: false), '');
+  clean = clean.replaceAll(RegExp(r'Please listen to the attached voice note audio input directly and assist the user with their request\.?', caseSensitive: false), '');
+  clean = clean.replaceAll(RegExp(r'\[User sent a voice (?:message|note):[\s\S]*?\]', caseSensitive: false), '');
+  clean = clean.replaceAll(RegExp(r'\[Voice Note[\s\S]*?\]', caseSensitive: false), '');
+
+  return clean.trim();
+}
+
 // ─── Individual Message Part Model (Sequential Chronological Node) ──────────
 class MessagePartModel {
   final String id;

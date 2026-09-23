@@ -101,7 +101,7 @@ void main() {
       );
 
       final rawUrl = agentCoreService.getRawFileUrl('/var/www/ava-code/test.png');
-      expect(rawUrl, equals('/var/www/ava-code/test.png'));
+      expect(rawUrl, equals('http://127.0.0.1:4096/api/workspace/raw?path=%2Fvar%2Fwww%2Fava-code%2Ftest.png'));
 
       agentCoreService.dispose();
     });

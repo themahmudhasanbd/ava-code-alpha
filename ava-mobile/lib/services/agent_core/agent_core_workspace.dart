@@ -218,8 +218,39 @@ mixin AgentCoreWorkspaceMixin on AgentCoreBase {
     return false;
   }
 
+  /// Reads text or binary file content as raw Uint8List bytes via native `fs/readFile` RPC.
+  Future<Uint8List?> fetchFileBytes(String filePath, [String? directory]) async {
+    try {
+      final targetPath = filePath.startsWith('/')
+          ? filePath
+          : ((directory ?? workspacePath).endsWith('/')
+              ? '${directory ?? workspacePath}$filePath'
+              : '${directory ?? workspacePath}/$filePath');
+
+      final res = await sendRpc('fs/readFile', {'path': targetPath});
+      if (res is Map && res['dataBase64'] != null) {
+        final base64Str = res['dataBase64'].toString();
+        return base64Decode(base64Str.replaceAll(RegExp(r'\s+'), ''));
+      }
+    } catch (err) {
+      AgentCoreBase.addDebugLog('fetchFileBytes error: $err');
+    }
+    return null;
+  }
+
   String getRawFileUrl(String fullPath) {
-    return fullPath;
+    if (fullPath.isEmpty) return '';
+    if (fullPath.startsWith('http://') || fullPath.startsWith('https://') || fullPath.startsWith('data:')) {
+      return fullPath;
+    }
+    final base = (baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl).trim();
+    if (fullPath.startsWith('/api/workspace/raw') || fullPath.startsWith('api/workspace/raw')) {
+      final pathSuffix = fullPath.startsWith('/') ? fullPath : '/$fullPath';
+      return base.isNotEmpty ? '$base$pathSuffix' : pathSuffix;
+    }
+    return base.isNotEmpty
+        ? '$base/api/workspace/raw?path=${Uri.encodeComponent(fullPath)}'
+        : '/api/workspace/raw?path=${Uri.encodeComponent(fullPath)}';
   }
 
   /// Archive multiple files/directories into a tar.gz via native `command/exec`

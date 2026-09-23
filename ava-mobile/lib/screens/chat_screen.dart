@@ -558,8 +558,8 @@ class _ChatScreenState extends State<ChatScreen> {
     String? userDisplay;
     if (text.isNotEmpty) {
       userDisplay = text;
-    } else if (hasAudioVoiceNote) {
-      userDisplay = ''; // Clean empty text so the UI bubble shows the Voice Note Player without raw system prompt
+    } else if (attachedToProcess.isNotEmpty) {
+      userDisplay = ''; // Empty string so UI bubble renders only attachment cards/voice notes with zero leaked system prompt
     } else {
       userDisplay = null;
     }
@@ -649,8 +649,8 @@ class _ChatScreenState extends State<ChatScreen> {
     String? userDisplay;
     if (item.promptText.isNotEmpty) {
       userDisplay = item.promptText;
-    } else if (hasAudioVoiceNote) {
-      userDisplay = '';
+    } else if (item.attachments.isNotEmpty) {
+      userDisplay = ''; // Empty string so UI bubble renders only attachment cards/voice notes with zero leaked system prompt
     } else {
       userDisplay = null;
     }

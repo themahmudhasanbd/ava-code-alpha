@@ -96,14 +96,42 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
   Timer? _heartbeatTimer;
   static const Duration _heartbeatInterval = Duration(milliseconds: 250);
 
+  int _heartbeatTicksWithoutSubscription = 0;
+
   void _startHeartbeat() {
     _heartbeatTimer?.cancel();
+    _heartbeatTicksWithoutSubscription = 0;
     _heartbeatTimer = Timer.periodic(_heartbeatInterval, (_) {
       if (!mounted || !_isTurnRunning) {
         _heartbeatTimer?.cancel();
         _heartbeatTimer = null;
         return;
       }
+
+      // If turn is flagged running but no stream subscription is active for over 10 seconds, auto-finalize to prevent frozen UI
+      if (_activePromptStreamSubscription == null && _activeSessionStreamSubscription == null) {
+        _heartbeatTicksWithoutSubscription++;
+        if (_heartbeatTicksWithoutSubscription > 40) { // 40 * 250ms = 10s
+          _heartbeatTicksWithoutSubscription = 0;
+          for (int i = 0; i < _chatMessages.length; i++) {
+            if (_chatMessages[i].isPending) {
+              final msg = _chatMessages[i];
+              final finalizedParts = msg.parts.map((p) => p.status == 'running' ? p.copyWith(status: 'completed') : p).toList();
+              final text = msg.text.trim().isNotEmpty ? msg.text : 'Response completed.';
+              _chatMessages[i] = msg.copyWith(
+                isPending: false,
+                text: text,
+                parts: finalizedParts,
+              );
+            }
+          }
+          setState(() {});
+          return;
+        }
+      } else {
+        _heartbeatTicksWithoutSubscription = 0;
+      }
+
       setState(() {});
     });
   }
@@ -320,6 +348,22 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
           if (!mounted || _activeSessionId != currentSessId) return;
           if (isRunning && _activeSessionStreamSubscription == null && _activePromptStreamSubscription == null) {
             _attachToActiveSessionExecution(currentSessId);
+          } else if (!isRunning && _chatMessages.any((m) => m.isPending)) {
+            setState(() {
+              for (int i = 0; i < _chatMessages.length; i++) {
+                if (_chatMessages[i].isPending) {
+                  final msg = _chatMessages[i];
+                  final finalizedParts = msg.parts.map((p) => p.status == 'running' ? p.copyWith(status: 'completed') : p).toList();
+                  final text = msg.text.trim().isNotEmpty ? msg.text : 'Response completed.';
+                  _chatMessages[i] = msg.copyWith(
+                    isPending: false,
+                    text: text,
+                    parts: finalizedParts,
+                  );
+                }
+              }
+            });
+            unawaited(_agentCoreService.saveSessionMessagesToCache(currentSessId, _chatMessages));
           }
         }).catchError((_) {});
       }
@@ -1844,7 +1888,7 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
     final userMsg = ChatMessageModel(
       id: userMsgId,
       sender: 'user',
-      text: userDisplayText ?? promptText,
+      text: sanitizeUserDisplayText(userDisplayText ?? promptText),
       timestamp: timeStr,
       deliveryStatus: 'sending',
       attachments: attachments != null ? List<String>.from(attachments) : [],

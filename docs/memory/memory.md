@@ -15,3 +15,10 @@
   3. Syncs web build bundle to `/var/www/ava.mahmudhasan.pro/`.
   4. Fixes folder permissions (755) and reloads Nginx.
   5. Performs live domain health check (`https://ava.mahmudhasan.pro/`).
+
+## [2026-09-23] UI Refactoring: Header Session Title, Workspace Modal, Column Layout & Model Reasoning Modal
+- **Non-Overlapping App Layout**: Replaced floating `Stack` with `Column(children: [HeaderBar, NetworkStatusBar, Expanded(child: _buildActiveTabContent)])` in `main.dart`, eliminating header clipping/overlap across all sub-screens (MCP, Models, Tasks, Terminal, Files, Settings, System).
+- **Top Header Bar**: Removed model dropdown from the top app bar; replaced with Active Session Title + chevron trigger that opens `WorkspacePreferenceScreen` inside a bottom sheet modal.
+- **Model & Reasoning Modal**: Enhanced `ModelReasoningModal` with dynamic search, provider accent colors (Anthropic, OpenAI, OmniRoute, Google, DeepSeek), and full reasoning level presets (`none`, `low`, `medium`, `high`, `xhigh`).
+- **Smooth Scroll-to-Bottom**: Implemented `Curves.easeOutCubic` animation with distance-scaled duration for floating jump-to-latest button and seamless initial positioning on session open.
+- **Verification**: 62 unit/widget tests passing (100%), Web build compiled and deployed to `https://ava.mahmudhasan.pro/`.

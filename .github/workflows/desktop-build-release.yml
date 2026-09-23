@@ -58,10 +58,10 @@ jobs:
           cd ava-desktop
           pnpm install --no-frozen-lockfile
 
-      - name: Build Shared Packages
+      - name: Build All Workspace Packages
         run: |
           cd ava-desktop
-          pnpm --filter '@pi-desktop/desktop^...' build || true
+          pnpm build:js
 
       - name: Build Rust host-core (release)
         run: |

@@ -367,9 +367,14 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
 
       if (_activeSessionId != null && _activeSessionId!.isNotEmpty) {
         final currentSessId = _activeSessionId!;
-        // 2. Fetch latest session state immediately in background to eliminate sync lag
+        // 1. Do NOT disrupt or overwrite active in-flight prompt stream!
+        final bool isActivelyStreaming = _currentlyStreamingPendingId != null && _activePromptStreamSubscription != null;
+        if (isActivelyStreaming) return;
+
+        // 2. Fetch latest session state in background only when idle
         _agentCoreService.fetchSessionMessages(currentSessId).then((historyResult) {
           if (!mounted || _activeSessionId != currentSessId) return;
+          if (_currentlyStreamingPendingId != null && _activePromptStreamSubscription != null) return;
           final historyMsgs = (historyResult['messages'] as List<ChatMessageModel>?) ?? [];
           if (historyMsgs.isNotEmpty) {
             setState(() {
@@ -386,22 +391,6 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
           if (!mounted || _activeSessionId != currentSessId) return;
           if (isRunning && _activeSessionStreamSubscription == null && _activePromptStreamSubscription == null) {
             _attachToActiveSessionExecution(currentSessId);
-          } else if (!isRunning && _chatMessages.any((m) => m.isPending)) {
-            setState(() {
-              for (int i = 0; i < _chatMessages.length; i++) {
-                if (_chatMessages[i].isPending) {
-                  final msg = _chatMessages[i];
-                  final finalizedParts = msg.parts.map((p) => p.status == 'running' ? p.copyWith(status: 'completed') : p).toList();
-                  final text = msg.text.trim().isNotEmpty ? msg.text : 'Response completed.';
-                  _chatMessages[i] = msg.copyWith(
-                    isPending: false,
-                    text: text,
-                    parts: finalizedParts,
-                  );
-                }
-              }
-            });
-            unawaited(_agentCoreService.saveSessionMessagesToCache(currentSessId, _chatMessages));
           }
         }).catchError((_) {});
       }

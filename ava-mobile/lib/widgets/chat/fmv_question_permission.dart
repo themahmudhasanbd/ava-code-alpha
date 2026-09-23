@@ -46,27 +46,7 @@ extension FmvQuestionPermissionExt on _FormattedMessageViewState {
 
     if (!isAlreadyAnswered) {
       if (!widget.message.isPending) {
-        return Container(
-          margin: const EdgeInsets.symmetric(vertical: 4),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: _cInset,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: _cBorder, width: 0.8),
-          ),
-          child: Row(
-            children: [
-              Icon(LucideIcons.circleSlash, size: 13, color: _cSecondary),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  "Question closed: Agent stopped / turn ended",
-                  style: TextStyle(fontSize: 11.5, fontFamily: "Inter", fontWeight: FontWeight.w500, color: _cSecondary),
-                ),
-              ),
-            ],
-          ),
-        );
+        return const SizedBox.shrink();
       }
 
       return Container(
@@ -355,27 +335,7 @@ extension FmvQuestionPermissionExt on _FormattedMessageViewState {
     }
 
     if (!widget.message.isPending) {
-      return Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: _cInset,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: _cBorder, width: 0.8),
-        ),
-        child: Row(
-          children: [
-            Icon(LucideIcons.shieldOff, size: 13, color: _cSecondary),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                "Permission request expired: Agent stopped",
-                style: TextStyle(fontSize: 11.5, fontFamily: "Inter", fontWeight: FontWeight.w500, color: _cSecondary),
-              ),
-            ),
-          ],
-        ),
-      );
+      return const SizedBox.shrink();
     }
 
     return Container(

@@ -288,18 +288,20 @@ class _ChatScreenState extends State<ChatScreen> {
       final currentPixels = _scrollController.position.pixels;
 
       if (maxScroll > 0 && currentPixels < maxScroll) {
-        if (animate && (maxScroll - currentPixels).abs() < 500) {
+        if (animate) {
+          final distance = (maxScroll - currentPixels).abs();
+          final durationMs = (distance * 0.35).clamp(200, 450).toInt();
           _scrollController.animateTo(
             maxScroll,
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOutQuad,
+            duration: Duration(milliseconds: durationMs),
+            curve: Curves.easeOutCubic,
           );
         } else {
           _scrollController.jumpTo(maxScroll);
         }
       }
       if (retries > 0 && mounted && (!_userScrolledUp || _isSending)) {
-        Future.delayed(const Duration(milliseconds: 50), () {
+        Future.delayed(const Duration(milliseconds: 40), () {
           if (mounted && (!_userScrolledUp || _isSending)) {
             _scrollToBottom(animate: animate, retries: retries - 1);
           }
@@ -1285,49 +1287,58 @@ class _ChatScreenState extends State<ChatScreen> {
             right: 16,
             child: TweenAnimationBuilder<double>(
               tween: Tween<double>(begin: 0.0, end: 1.0),
-              duration: const Duration(milliseconds: 200),
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOutCubic,
               builder: (context, val, child) => Opacity(
                 opacity: val,
                 child: Transform.translate(
-                  offset: Offset(0, (1 - val) * 6),
+                  offset: Offset(0, (1 - val) * 8),
                   child: child,
                 ),
               ),
-              child: InkWell(
-                onTap: () {
-                  setState(() => _userScrolledUp = false);
-                  _scrollToBottom(animate: true);
-                },
-                borderRadius: BorderRadius.circular(20),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: widget.cardBg,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: widget.borderColor, width: 0.8),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: widget.isDark ? 0.3 : 0.08),
-                        blurRadius: 8,
-                        offset: const Offset(0, 3),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    setState(() => _userScrolledUp = false);
+                    _scrollToBottom(animate: true, retries: 2);
+                  },
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: widget.isDark ? const Color(0xFF1E1E2E) : Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: widget.isDark
+                            ? const Color(0xFF6366F1).withValues(alpha: 0.40)
+                            : const Color(0xFF6366F1).withValues(alpha: 0.25),
+                        width: 1.0,
                       ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(LucideIcons.arrowDown, size: 14, color: widget.textPrimary),
-                      const SizedBox(width: 4),
-                      Text(
-                        "Latest",
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontFamily: "Inter",
-                          fontWeight: FontWeight.w700,
-                          color: widget.textPrimary,
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF6366F1).withValues(alpha: widget.isDark ? 0.25 : 0.12),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(LucideIcons.arrowDown, size: 14, color: Color(0xFF6366F1)),
+                        const SizedBox(width: 5),
+                        Text(
+                          'Latest',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            fontFamily: 'PlusJakartaSans',
+                            color: widget.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -1434,7 +1445,7 @@ class _ChatScreenState extends State<ChatScreen> {
       child: ListView.builder(
         controller: _scrollController,
         physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-        padding: const EdgeInsets.fromLTRB(14, 72, 14, 150),
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 145),
         itemCount: messages.length + (_isLoadingMoreHistory ? 1 : 0),
         itemBuilder: (ctx, idx) => _buildMessageItem(ctx, idx, messages),
       ),

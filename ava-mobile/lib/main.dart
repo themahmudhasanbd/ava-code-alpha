@@ -11,6 +11,7 @@ import 'widgets/drawer_navigation.dart';
 import 'widgets/main_splash_view.dart';
 import 'widgets/main_tab_router.dart';
 import 'screens/auth_screen.dart';
+import 'screens/workspace_preference_screen.dart';
 import 'services/push_notification_service.dart';
 import 'services/native_agent_service.dart';
 import 'widgets/permissions/permission_setup_sheet.dart';
@@ -71,6 +72,7 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
   AvaModelItem? _selectedModelItem;
 
   String? _activeSessionId;
+  String? _currentSessionTitle;
   String? _pendingOpenFile;
   String? _pendingChatAttachment;
 
@@ -949,13 +951,21 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
     });
   }
 
-  void _setActiveSessionId(String? sessId) {
+  void _setActiveSessionId(String? sessId, {String? title}) {
     final cleanId = (sessId != null && sessId.isNotEmpty) ? sessId : null;
     _activeSessionId = cleanId;
+    if (title != null && title.isNotEmpty) {
+      _currentSessionTitle = title;
+    } else if (cleanId == null) {
+      _currentSessionTitle = 'New Session';
+    }
     _agentCoreService.setLastActiveSessionId(cleanId);
     SharedPreferences.getInstance().then((prefs) {
       if (cleanId != null) {
         prefs.setString('ava_last_active_session_id', cleanId);
+        if (_currentSessionTitle != null) {
+          prefs.setString('ava_session_title_' + cleanId, _currentSessionTitle!);
+        }
       } else {
         prefs.remove('ava_last_active_session_id');
       }
@@ -968,7 +978,8 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
       if (_activeSessionId == null || _activeSessionId!.isEmpty) {
         final savedSessId = prefs.getString('ava_last_active_session_id');
         if (savedSessId != null && savedSessId.isNotEmpty) {
-          _setActiveSessionId(savedSessId);
+          final savedTitle = prefs.getString('ava_session_title_' + savedSessId);
+          _setActiveSessionId(savedSessId, title: savedTitle);
         }
       }
 
@@ -1141,7 +1152,8 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
     if (_activeSessionId != null && _activeSessionId!.isNotEmpty) {
       unawaited(_agentCoreService.interruptSession(_activeSessionId!));
     }
-    _setActiveSessionId(null);
+    _currentSessionTitle = title ?? 'New Session';
+    _setActiveSessionId(null, title: _currentSessionTitle);
 
     // Only resolve default model for new session if no model is currently selected
     if (_selectedModelItem == null) {
@@ -1195,6 +1207,7 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
   Future<void> _handleSelectSession(Map<String, dynamic> session) async {
     final sessId = session['id']?.toString() ?? '';
     final sessTitle = session['name']?.toString() ?? session['title']?.toString() ?? 'Active Session';
+    _currentSessionTitle = sessTitle;
     var targetWorkspace = session['workspacePath']?.toString() ?? session['directory']?.toString() ?? '';
     final targetMode = session['mode']?.toString() ?? session['agent']?.toString() ?? 'build';
 
@@ -2917,6 +2930,69 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
     }
   }
 
+  void _showWorkspacePreferenceModal() {
+    final isDark = AppTheme.isDark;
+    final cardBg = AppTheme.cardBg;
+    final borderColor = AppTheme.borderColor;
+    final textPrimary = AppTheme.textPrimary;
+    final textSecondary = AppTheme.textSecondary;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        height: MediaQuery.of(context).size.height * 0.90,
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF0C0C12) : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          border: Border.all(
+            color: isDark ? Colors.white.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.08),
+          ),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: WorkspacePreferenceScreen(
+          isDark: isDark,
+          cardBg: cardBg,
+          borderColor: borderColor,
+          textPrimary: textPrimary,
+          textSecondary: textSecondary,
+          vpsWorkspacePath: _vpsWorkspacePath,
+          onUpdateWorkspacePath: (path) => _updateCoreService(newPath: path),
+          agentCoreService: _agentCoreService,
+          availableModels: _availableModels,
+          selectedModel: _selectedModelItem,
+          onSelectModel: _handleSelectModel,
+          selectedMode: _selectedMode,
+          onSelectMode: _handleSelectMode,
+          onBackToChat: () => Navigator.of(ctx).pop(),
+          onNewSession: ({workspacePath, mode}) {
+            Navigator.of(ctx).pop();
+            _handleCreateNewSession(mode: mode ?? _selectedMode, workspacePath: workspacePath ?? _vpsWorkspacePath);
+          },
+          onSelectFileForChat: (filePath) {
+            Navigator.of(ctx).pop();
+            setState(() => _pendingChatAttachment = filePath);
+            _switchTab(0);
+          },
+          initialOpenFile: _pendingOpenFile,
+          serverUrl: _serverUrl,
+          activeSessionId: _activeSessionId,
+          chatMessages: _chatMessages,
+          onNavigateTab: (tab) {
+            Navigator.of(ctx).pop();
+            _switchTab(tab);
+          },
+          onSelectSession: (sess) {
+            Navigator.of(ctx).pop();
+            _handleSelectSession(sess);
+          },
+        ),
+      ),
+    );
+  }
+
   void _showTerminalModal() {
     _switchTab(7);
   }
@@ -3043,66 +3119,54 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
             FocusManager.instance.primaryFocus?.unfocus();
           },
           behavior: HitTestBehavior.translucent,
-          child: Stack(
+          child: Column(
             children: [
-              // Active Tab Content View (scrolls underneath floating HeaderBar)
-              Positioned.fill(
-                child: _buildActiveTabContent(isDark, cardBg, borderColor, textPrimary, textSecondary),
+              HeaderBar(
+                isDark: isDark,
+                cardBg: cardBg,
+                borderColor: borderColor,
+                textPrimary: textPrimary,
+                textSecondary: textSecondary,
+                selectedModel: _selectedModelItem,
+                availableModels: _availableModels,
+                onSelectModel: _handleSelectModel,
+                onRefreshModels: _initializeAgentCoreConnection,
+                onNewSession: () => _handleCreateNewSession(mode: _selectedMode, workspacePath: _vpsWorkspacePath),
+                isCoreConnected: _isCoreConnected,
+                isReconnecting: _isReconnectingCore,
+                statusNotifier: _agentCoreService.connectionStatusNotifier,
+                onReconnectCore: _handleReconnectCore,
+                chatMessages: _chatMessages,
+                activeSessionId: _activeSessionId,
+                activeSessionTitle: _currentSessionTitle,
+                serverUrl: _agentCoreService.baseUrl,
+                onCompactSession: (_activeSessionId != null && _activeSessionId!.isNotEmpty)
+                    ? () async {
+                        final ok = await _agentCoreService.compactSession(
+                          _activeSessionId!,
+                          providerId: _selectedModelItem?.effectiveProviderKey,
+                          modelId: _selectedModelItem?.effectiveModelKey,
+                        );
+                        if (ok) {
+                          await _handleSelectSession({'id': _activeSessionId});
+                        }
+                      }
+                    : null,
+                onOpenDrawer: () {
+                  FocusScope.of(context).unfocus();
+                  _scaffoldKey.currentState?.openDrawer();
+                },
+                onOpenWorkspacePreferences: _showWorkspacePreferenceModal,
+                onOpenTerminal: _showTerminalModal,
+                onOpenSystemHealth: () => _switchTab(5),
               ),
-
-              // Floating Glossy Transparent Header Bar & Animated Status Bar
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    HeaderBar(
-                      isDark: isDark,
-                      cardBg: cardBg,
-                      borderColor: borderColor,
-                      textPrimary: textPrimary,
-                      textSecondary: textSecondary,
-                      selectedModel: _selectedModelItem,
-                      availableModels: _availableModels,
-                      onSelectModel: _handleSelectModel,
-                      onRefreshModels: _initializeAgentCoreConnection,
-                      onNewSession: () => _handleCreateNewSession(mode: _selectedMode, workspacePath: _vpsWorkspacePath),
-                      isCoreConnected: _isCoreConnected,
-                      isReconnecting: _isReconnectingCore,
-                      statusNotifier: _agentCoreService.connectionStatusNotifier,
-                      onReconnectCore: _handleReconnectCore,
-                      chatMessages: _chatMessages,
-                      activeSessionId: _activeSessionId,
-                      serverUrl: _agentCoreService.baseUrl,
-                      onCompactSession: (_activeSessionId != null && _activeSessionId!.isNotEmpty)
-                          ? () async {
-                              final ok = await _agentCoreService.compactSession(
-                                _activeSessionId!,
-                                providerId: _selectedModelItem?.effectiveProviderKey,
-                                modelId: _selectedModelItem?.effectiveModelKey,
-                              );
-                              if (ok) {
-                                await _handleSelectSession({'id': _activeSessionId});
-                              }
-                            }
-                          : null,
-                      onOpenDrawer: () {
-                        FocusScope.of(context).unfocus();
-                        _scaffoldKey.currentState?.openDrawer();
-                      },
-                      onOpenWorkspacePreferences: () => _switchTab(13),
-                      onOpenTerminal: _showTerminalModal,
-                      onOpenSystemHealth: () => _switchTab(5),
-                    ),
-                    NetworkStatusBar(
-                      statusNotifier: _agentCoreService.connectionStatusNotifier,
-                      onRetry: _handleReconnectCore,
-                      isDark: isDark,
-                    ),
-                  ],
-                ),
+              NetworkStatusBar(
+                statusNotifier: _agentCoreService.connectionStatusNotifier,
+                onRetry: _handleReconnectCore,
+                isDark: isDark,
+              ),
+              Expanded(
+                child: _buildActiveTabContent(isDark, cardBg, borderColor, textPrimary, textSecondary),
               ),
             ],
           ),

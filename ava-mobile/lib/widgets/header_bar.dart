@@ -2,7 +2,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../models/app_models.dart';
-import 'model_selector_modal.dart';
 import 'context_window_modal.dart';
 
 class HeaderBar extends StatelessWidget implements PreferredSizeWidget {
@@ -13,7 +12,7 @@ class HeaderBar extends StatelessWidget implements PreferredSizeWidget {
   final Color textSecondary;
   final AvaModelItem? selectedModel;
   final List<AvaModelItem> availableModels;
-  final ValueChanged<AvaModelItem> onSelectModel;
+  final ValueChanged<AvaModelItem>? onSelectModel;
   final Future<void> Function()? onRefreshModels;
   final bool isCoreConnected;
   final bool isReconnecting;
@@ -37,9 +36,9 @@ class HeaderBar extends StatelessWidget implements PreferredSizeWidget {
     required this.borderColor,
     required this.textPrimary,
     required this.textSecondary,
-    required this.selectedModel,
-    required this.availableModels,
-    required this.onSelectModel,
+    this.selectedModel,
+    this.availableModels = const [],
+    this.onSelectModel,
     this.onRefreshModels,
     required this.isCoreConnected,
     this.isReconnecting = false,
@@ -58,33 +57,39 @@ class HeaderBar extends StatelessWidget implements PreferredSizeWidget {
   });
 
   @override
-  Size get preferredSize => const Size.fromHeight(62);
+  Size get preferredSize => const Size.fromHeight(60);
 
   @override
   Widget build(BuildContext context) {
+    final String sessionDisplayTitle = (activeSessionTitle != null && activeSessionTitle!.trim().isNotEmpty)
+        ? activeSessionTitle!.trim()
+        : ((activeSessionId != null && activeSessionId!.isNotEmpty)
+            ? 'Session ${activeSessionId!.length > 8 ? activeSessionId!.substring(0, 8) : activeSessionId}'
+            : 'New Session');
+
     return ClipRect(
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
         child: Container(
-          height: 62,
-          padding: const EdgeInsets.symmetric(horizontal: 14),
+          height: 60,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
             color: isDark
-                ? const Color(0xFF0C0C10).withValues(alpha: 0.55)
-                : Colors.white.withValues(alpha: 0.65),
+                ? const Color(0xFF0C0C10).withValues(alpha: 0.75)
+                : Colors.white.withValues(alpha: 0.85),
             border: Border(
               bottom: BorderSide(
                 color: isDark
-                    ? Colors.white.withValues(alpha: 0.12)
+                    ? Colors.white.withValues(alpha: 0.10)
                     : Colors.black.withValues(alpha: 0.08),
                 width: 1.0,
               ),
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
+                color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.03),
+                blurRadius: 12,
+                offset: const Offset(0, 3),
               ),
             ],
           ),
@@ -125,115 +130,75 @@ class HeaderBar extends StatelessWidget implements PreferredSizeWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 8),
 
-              // Dynamic Model Selector Dropdown Pill Button
+              // Active Session Name / Title Pill (Taps to open Workspace Preference & Hub Modal)
               Expanded(
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: GestureDetector(
-                    onTap: () {
-                      showModelSelectorModal(
-                        context: context,
-                        isDark: isDark,
-                        cardBg: cardBg,
-                        borderColor: borderColor,
-                        textPrimary: textPrimary,
-                        textSecondary: textSecondary,
-                        availableModels: availableModels,
-                        selectedModel: selectedModel,
-                        onSelectModel: onSelectModel,
-                      );
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6.5),
-                      decoration: BoxDecoration(
+                child: GestureDetector(
+                  onTap: onOpenWorkspacePreferences,
+                  child: Container(
+                    height: 38,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? const Color(0xFF161622).withValues(alpha: 0.85)
+                          : const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
                         color: isDark
-                            ? const Color(0xFF181822).withValues(alpha: 0.8)
-                            : Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: isDark
-                              ? const Color(0xFF6366F1).withValues(alpha: 0.35)
-                              : const Color(0xFF6366F1).withValues(alpha: 0.25),
-                          width: 1.1,
+                            ? const Color(0xFF6366F1).withValues(alpha: 0.30)
+                            : const Color(0xFF6366F1).withValues(alpha: 0.20),
+                        width: 1.0,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF6366F1).withValues(alpha: isDark ? 0.10 : 0.04),
+                          blurRadius: 6,
+                          offset: const Offset(0, 1),
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF6366F1).withValues(alpha: isDark ? 0.15 : 0.06),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 22,
+                          height: 22,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF6366F1).withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(6),
                           ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 7,
-                            height: 7,
-                            margin: const EdgeInsets.only(right: 7),
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF6366F1),
-                              shape: BoxShape.circle,
+                          child: const Icon(
+                            LucideIcons.briefcase,
+                            size: 12,
+                            color: Color(0xFF818CF8),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            sessionDisplayTitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              fontFamily: 'PlusJakartaSans',
+                              color: textPrimary,
                             ),
                           ),
-                          Flexible(
-                            child: Text(
-                              selectedModel?.name ?? 'Select Model',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w700,
-                                color: textPrimary,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 5),
-                          Icon(
-                            LucideIcons.chevronDown,
-                            size: 13,
-                            color: textSecondary,
-                          ),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(
+                          LucideIcons.chevronDown,
+                          size: 14,
+                          color: textSecondary,
+                        ),
+                      ],
                     ),
                   ),
                 ),
               ),
-              const SizedBox(width: 6),
-
-              // Workspace Preferences / Hub Button
-              if (onOpenWorkspacePreferences != null) ...[
-                Tooltip(
-                  message: 'Workspace Hub & Preferences',
-                  child: InkWell(
-                    onTap: onOpenWorkspacePreferences,
-                    borderRadius: BorderRadius.circular(16),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? Colors.white.withValues(alpha: 0.06)
-                            : Colors.black.withValues(alpha: 0.04),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: isDark
-                              ? Colors.white.withValues(alpha: 0.10)
-                              : Colors.black.withValues(alpha: 0.07),
-                        ),
-                      ),
-                      child: const Icon(
-                        LucideIcons.briefcase,
-                        size: 14,
-                        color: Color(0xFF6366F1),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 6),
-              ],
+              const SizedBox(width: 8),
 
               // Core Engine Connection Status Indicator & Context Window Pill
               ValueListenableBuilder<CoreConnectionStatus>(
@@ -294,22 +259,25 @@ class HeaderBar extends StatelessWidget implements PreferredSizeWidget {
                           );
                         }
                       },
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(14),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
-                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+                        height: 38,
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
                         decoration: BoxDecoration(
                           color: pillBg,
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(14),
                           border: Border.all(color: pillBorder, width: 1.0),
                         ),
                         child: isSyncingOrConnecting
-                            ? SizedBox(
-                                width: 13,
-                                height: 13,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 1.8,
-                                  color: pillFg,
+                            ? Center(
+                                child: SizedBox(
+                                  width: 14,
+                                  height: 14,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 1.8,
+                                    color: pillFg,
+                                  ),
                                 ),
                               )
                             : Row(
@@ -317,7 +285,7 @@ class HeaderBar extends StatelessWidget implements PreferredSizeWidget {
                                 children: [
                                   Icon(
                                     isLiveOnline ? LucideIcons.zap : LucideIcons.refreshCw,
-                                    size: 13,
+                                    size: 14,
                                     color: pillFg,
                                   ),
                                   if (isLiveOnline) ...[

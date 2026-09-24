@@ -129,8 +129,8 @@ class HeaderBar extends StatelessWidget implements PreferredSizeWidget {
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                (isDark ? const Color(0xFF09090B) : Colors.white).withValues(alpha: isDark ? 0.85 : 0.88),
-                (isDark ? const Color(0xFF09090B) : Colors.white).withValues(alpha: isDark ? 0.40 : 0.45),
+                (isDark ? const Color(0xFF09090B) : Colors.white).withValues(alpha: (isDark ? 0.85 : 0.88)),
+                (isDark ? const Color(0xFF09090B) : Colors.white).withValues(alpha: (isDark ? 0.40 : 0.45)),
                 (isDark ? const Color(0xFF09090B) : Colors.white).withValues(alpha: 0.0),
               ],
               stops: const [0.0, 0.65, 1.0],

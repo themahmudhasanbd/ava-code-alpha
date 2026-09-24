@@ -835,7 +835,65 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
       }
       if (connected) {
         PushNotificationService.instance.syncTokenWithService(_agentCoreService);
+
+        // Post-reconnect active turn recovery:
+        // If we had an active turn when the connection dropped, the server may have
+        // already completed it while we were disconnected. Poll the session to sync.
+        if (_currentlyStreamingPendingId != null && _activeSessionId != null && _activeSessionId!.isNotEmpty) {
+          _recoverActiveTurnAfterReconnect(_activeSessionId!);
+        }
       }
+    }
+  }
+
+  /// After WebSocket reconnection, check if the active turn completed server-side
+  /// while we were disconnected. If so, sync the final state to the UI.
+  Future<void> _recoverActiveTurnAfterReconnect(String sessId) async {
+    try {
+      // Give the server a moment to send any queued events on the new connection
+      await Future.delayed(const Duration(milliseconds: 800));
+      if (!mounted || _activeSessionId != sessId) return;
+
+      // If the stream is still flowing (we received events after reconnect), no recovery needed
+      if (_firstEventReceived) return;
+
+      // Fetch latest session messages from server
+      final res = await _agentCoreService.fetchSessionMessages(sessId, limit: 100);
+      if (!mounted || _activeSessionId != sessId) return;
+
+      final serverMsgs = (res['messages'] as List<ChatMessageModel>?) ?? [];
+      if (serverMsgs.isEmpty) return;
+
+      // Check if the last server message indicates the turn completed
+      final lastServerMsg = serverMsgs.last;
+      final pendingIdx = _chatMessages.indexWhere((m) => m.id == _currentlyStreamingPendingId);
+
+      // If the server has a newer agent message (not pending), the turn completed while we were disconnected
+      if (!lastServerMsg.isPending && lastServerMsg.sender == 'agent' && pendingIdx != -1) {
+        final currentPending = _chatMessages[pendingIdx];
+        // Only finalize if our local message is still pending
+        if (currentPending.isPending) {
+          final merged = _mergeMessagesPreservingLocal(_chatMessages, serverMsgs);
+          setState(() {
+            _chatMessages.clear();
+            _chatMessages.addAll(merged);
+          });
+          _currentlyStreamingPendingId = null;
+          _activePromptStreamSubscription?.cancel();
+          _activePromptStreamSubscription = null;
+          _stopHeartbeat();
+          _firstEventReceived = false;
+
+          unawaited(_agentCoreService.saveSessionMessagesToCache(sessId, _chatMessages));
+          unawaited(PushNotificationService.instance.finishOngoingTurnNotification(
+            sessionId: sessId,
+            isSuccess: !lastServerMsg.isError,
+            completionMessage: lastServerMsg.text.isNotEmpty ? lastServerMsg.text : 'Agent turn completed.',
+          ));
+        }
+      }
+    } catch (e) {
+      AgentCoreBase.addDebugLog('Active turn recovery after reconnect failed: $e');
     }
   }
 
@@ -1701,23 +1759,32 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
               final msgs = (res['messages'] as List<ChatMessageModel>?) ?? [];
               if (msgs.isNotEmpty) {
                 setState(() {
+                  final merged = _mergeMessagesPreservingLocal(_chatMessages, msgs);
                   _chatMessages.clear();
-                  _chatMessages.addAll(msgs);
+                  _chatMessages.addAll(merged);
                 });
-                unawaited(_agentCoreService.saveSessionMessagesToCache(sessId, msgs));
+                unawaited(_agentCoreService.saveSessionMessagesToCache(sessId, _chatMessages));
               }
             });
           }));
         }
       },
-      onError: (_) {
+      onError: (err) {
         if (!mounted) return;
         _activeSessionStreamSubscription?.cancel();
         _activeSessionStreamSubscription = null;
+        final errStr = err.toString();
         setState(() {
           for (int i = 0; i < _chatMessages.length; i++) {
             if (_chatMessages[i].isPending) {
-              _chatMessages[i] = _chatMessages[i].copyWith(isPending: false);
+              final msg = _chatMessages[i];
+              final finalizedParts = msg.parts.map((p) => p.status == 'running' ? p.copyWith(status: 'failed') : p).toList();
+              _chatMessages[i] = msg.copyWith(
+                isPending: false,
+                isError: true,
+                errorMessage: 'Session connection error: $errStr',
+                parts: finalizedParts,
+              );
             }
           }
         });
@@ -1727,10 +1794,18 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
         if (!mounted) return;
         _activeSessionStreamSubscription?.cancel();
         _activeSessionStreamSubscription = null;
+        // Stream closed without a proper 'done' event — mark as error
         setState(() {
           for (int i = 0; i < _chatMessages.length; i++) {
             if (_chatMessages[i].isPending) {
-              _chatMessages[i] = _chatMessages[i].copyWith(isPending: false);
+              final msg = _chatMessages[i];
+              final finalizedParts = msg.parts.map((p) => p.status == 'running' ? p.copyWith(status: 'failed') : p).toList();
+              _chatMessages[i] = msg.copyWith(
+                isPending: false,
+                isError: true,
+                errorMessage: 'Session stream closed unexpectedly.',
+                parts: finalizedParts,
+              );
             }
           }
         });
@@ -1997,6 +2072,7 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
     final List<AgentTimelineEvent> accumulatedTimeline = [];
     Map<String, dynamic>? currentQuestion;
     Map<String, dynamic>? currentPermission;
+    bool turnCompletedSuccessfully = false;
     final completer = Completer<void>();
     _activePromptStreamSubscription?.cancel();
     _activePromptStreamSubscription = null;
@@ -2388,6 +2464,7 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
             final status = event['status']?.toString() ?? 'success';
             final isSuccess = status != 'error' && status != 'failed';
             final isInterrupted = status == 'interrupted';
+            if (isSuccess) turnCompletedSuccessfully = true;
             final finalReply = event['reply']?.toString() ?? '';
             final finalReasoning = event['reasoning']?.toString();
             // ── Finish ongoing turn notification on completion ──
@@ -2745,11 +2822,17 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
             final idx = _chatMessages.indexWhere((m) => m.id == pendingId);
             if (idx != -1 && _chatMessages[idx].isPending) {
               final currentMsg = _chatMessages[idx];
-              final finalText = accumulatedText.trim().isNotEmpty ? accumulatedText.trim() : (currentMsg.text.isNotEmpty ? currentMsg.text : 'Response completed.');
-              final finalizedParts = currentMsg.parts.map((p) => p.status == 'running' ? p.copyWith(status: 'completed') : p).toList();
+              // If the turn didn't complete successfully (stream closed abnormally),
+              // treat it as an error — the server may have crashed or the connection dropped.
+              final bool incompleteTurn = !turnCompletedSuccessfully;
+              final finalText = accumulatedText.trim().isNotEmpty
+                  ? accumulatedText.trim()
+                  : (currentMsg.text.isNotEmpty ? currentMsg.text : (incompleteTurn ? 'Response incomplete — connection may have dropped.' : 'Response completed.'));
+              final finalizedParts = currentMsg.parts.map((p) => p.status == 'running' ? p.copyWith(status: incompleteTurn ? 'failed' : 'completed') : p).toList();
               _replacePendingMessageImmediate(pendingId, currentMsg.copyWith(
                 isPending: false,
-                isError: false,
+                isError: incompleteTurn,
+                errorMessage: incompleteTurn ? 'Turn ended without completion signal — possible connection drop or server error.' : null,
                 text: finalText,
                 parts: finalizedParts,
                 timelineEvents: List.from(accumulatedTimeline),
@@ -3312,6 +3395,11 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
         _activePromptStreamSubscription = null;
         _activeSessionStreamSubscription?.cancel();
         _activeSessionStreamSubscription = null;
+        _currentlyStreamingPendingId = null;
+        _stopHeartbeat();
+        _firstEventReceived = false;
+        _rebuildThrottleTimer?.cancel();
+        _rebuildScheduled = false;
 
         if (sessId != null && sessId.isNotEmpty) {
           unawaited(PushNotificationService.instance.finishOngoingTurnNotification(

@@ -612,7 +612,9 @@ class ChatMessageModel {
       return true;
     }
     // If one of the steps is intermediate (no final text, or only tool calls/reasoning), they belong to the same multi-step turn
-    if (a.text.trim().isEmpty || b.text.trim().isEmpty) return true;
+    // But only merge if the empty-text message is still pending (streaming), not a finalized error.
+    // A finalized error with empty text should NOT be absorbed into the previous successful message.
+    if ((a.text.trim().isEmpty && a.isPending && !a.isError) || (b.text.trim().isEmpty && b.isPending && !b.isError)) return true;
 
     // If one text is a progressive expansion or duplicate of the other
     final aTxt = a.text.trim();

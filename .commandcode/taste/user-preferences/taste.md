@@ -5,3 +5,5 @@
 - When presented with a prioritized list of fixes, wants all implemented in one batch — brief "yes please" confirmation means go ahead with everything, no need for per-fix review. Confidence: 0.75
 - Works on AvA mobile — a Flutter/Dart mobile app with SSE/WebSocket streaming architecture (ava-mobile/). Confidence: 0.95
 - Familiar with streaming state management concepts (agent turns, timeline, pending messages, heartbeat, reconnect) — communicates at a senior developer level despite informal typing. Confidence: 0.8
+- Prefers single-command automated deploy via `deploy.sh` (git → build → deploy → health check) — expects the agent to find and run the deploy script, not do steps manually. Confidence: 0.85
+- Uses conventional commit format (`fix(mobile):`, `feat:`, etc.) with descriptive bodies; deploy script auto-generates commit messages from the summary the user approves. Confidence: 0.7

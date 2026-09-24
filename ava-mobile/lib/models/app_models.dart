@@ -589,8 +589,31 @@ class ChatMessageModel {
       turnBoundary = false;
     }
 
+    // Deduplicate by ID — prevent same message appearing twice after coalescing
+    final Map<String, int> seenIds = {};
+    final List<ChatMessageModel> deduped = [];
+    for (final msg in result) {
+      if (msg.id.isEmpty || msg.id.startsWith('loading')) {
+        deduped.add(msg);
+        continue;
+      }
+      final existingIdx = seenIds[msg.id];
+      if (existingIdx == null) {
+        seenIds[msg.id] = deduped.length;
+        deduped.add(msg);
+      } else {
+        // Keep the version with more content
+        final existing = deduped[existingIdx];
+        final existingScore = existing.text.length + existing.parts.length * 100 + (existing.isError ? 10000 : 0);
+        final newScore = msg.text.length + msg.parts.length * 100 + (msg.isError ? 10000 : 0);
+        if (newScore > existingScore) {
+          deduped[existingIdx] = msg;
+        }
+      }
+    }
+
    // Final pass: clean any trailing empty messages that have no visible contents
-   return result.where((m) {
+   return deduped.where((m) {
      if (m.sender == 'agent') {
        if (m.isPending || m.isError || m.questionData != null || m.permissionData != null || m.isCompactionMessage) {
          return true;
@@ -604,7 +627,17 @@ class ChatMessageModel {
   static bool _isSameAgentTurn(ChatMessageModel a, ChatMessageModel b) {
     if (a.id.isNotEmpty && b.id.isNotEmpty && a.id == b.id) return true;
     if (a.parentId != null && b.parentId != null && a.parentId!.isNotEmpty && a.parentId == b.parentId) return true;
-    if (a.isPending || b.isPending) return true;
+    // Only merge pending messages with the previous agent message if they share the same parent
+    // (i.e., they belong to the same user prompt). Don't blindly merge all pending messages.
+    if (a.isPending || b.isPending) {
+      // If both have parentId set and they differ, these are different turns
+      if (a.parentId != null && b.parentId != null &&
+          a.parentId!.isNotEmpty && b.parentId!.isNotEmpty &&
+          a.parentId != b.parentId) {
+        return false;
+      }
+      return true;
+    }
     if (a.isSynthetic || b.isSynthetic) return true;
     final aTurnIds = a.parts.map((p) => p.turnId).where((t) => t != null && t.isNotEmpty).toSet();
     final bTurnIds = b.parts.map((p) => p.turnId).where((t) => t != null && t.isNotEmpty).toSet();

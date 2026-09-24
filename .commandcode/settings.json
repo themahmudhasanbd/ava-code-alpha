@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Shell(flutter:*)",
-      "Shell(bash deploy.sh fix(mobile): deep audit streaming fixes — reconnect recovery, incomplete turn detection, timeline merge, interrupt cleanup)"
+      "Shell(bash deploy.sh fix(mobile): deep audit streaming fixes — reconnect recovery, incomplete turn detection, timeline merge, interrupt cleanup)",
+      "Shell(bash deploy.sh fix(mobile): eliminate message duplication — UUID-based IDs, parentId linking, precise merge matching, ID deduplication)"
     ],
     "deny": [],
     "defaultMode": "default"

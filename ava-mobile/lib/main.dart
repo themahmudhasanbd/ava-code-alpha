@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'models/app_models.dart';
@@ -67,6 +68,19 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
   late AvaAgentCoreService _agentCoreService;
   bool _isCoreConnected = false;
   bool _isReconnectingCore = false;
+
+  // ─── Unique ID Generation (collision-proof prompt & turn IDs) ────────────
+  static final Random _secureRandom = Random.secure();
+  int _promptSequence = 0;
+
+  /// Generates a collision-proof unique ID combining timestamp, sequence counter,
+  /// and random hex suffix. Format: "msg_{timestamp}_{seq}_{hex8}"
+  String _generateUniqueId() {
+    _promptSequence++;
+    final ts = DateTime.now().microsecondsSinceEpoch;
+    final rand = _secureRandom.nextInt(0xFFFFFFFF).toRadixString(16).padLeft(8, '0');
+    return 'msg_${ts}_${_promptSequence}_$rand';
+  }
 
   List<AvaModelItem> _availableModels = [];
   AvaModelItem? _selectedModelItem;
@@ -253,11 +267,13 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
     }).toList();
 
     bool matches(ChatMessageModel local, ChatMessageModel inc) {
+      // 1. Exact ID match is always authoritative
       if (local.id.isNotEmpty && inc.id.isNotEmpty && local.id == inc.id) {
         return true;
       }
       if (local.sender != inc.sender) return false;
 
+      // 2. Detect temporary/legacy timestamp-based IDs (pre-fix format)
       final bool localIsTemp = local.id.startsWith('pending') ||
           local.id.startsWith('active') ||
           local.id.startsWith('user_') ||
@@ -267,22 +283,37 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
           inc.id.startsWith('user_') ||
           RegExp(r'^\d{10,}$').hasMatch(inc.id);
 
+      // 3. If both have real (non-temp) IDs and they differ, they are DIFFERENT messages
       if (local.id.isNotEmpty && inc.id.isNotEmpty && !localIsTemp && !incIsTemp && local.id != inc.id) {
         return false;
       }
 
+      // 4. For user messages: match ONLY by exact text content (same prompt = same message)
+      //    But do NOT merge if both have real IDs that differ (handled above)
       if (local.sender == 'user') {
         final localSanitized = sanitizeUserDisplayText(local.text).trim();
         final incSanitized = sanitizeUserDisplayText(inc.text).trim();
         if (localSanitized.isNotEmpty && incSanitized.isNotEmpty && localSanitized == incSanitized) return true;
         if (local.text.trim().isNotEmpty && inc.text.trim().isNotEmpty && local.text.trim() == inc.text.trim()) return true;
-      } else if (local.sender == 'agent') {
-        if (local.parentId != null && inc.parentId != null && local.parentId!.isNotEmpty && local.parentId == inc.parentId) return true;
-        final localTxt = local.text.trim();
-        final incTxt = inc.text.trim();
-        if (localTxt.isNotEmpty && incTxt.isNotEmpty && (localTxt == incTxt || (localIsTemp && (localTxt.contains(incTxt) || incTxt.contains(localTxt))))) {
+        // Different text = different messages (never merge)
+        return false;
+      }
+
+      // 5. For agent messages: match by parentId first (links agent turn to its user prompt)
+      if (local.sender == 'agent') {
+        if (local.parentId != null && inc.parentId != null &&
+            local.parentId!.isNotEmpty && local.parentId == inc.parentId) {
           return true;
         }
+        // Fallback: text containment only for temp IDs
+        final localTxt = local.text.trim();
+        final incTxt = inc.text.trim();
+        if (localIsTemp && localTxt.isNotEmpty && incTxt.isNotEmpty &&
+            (localTxt == incTxt || localTxt.contains(incTxt) || incTxt.contains(localTxt))) {
+          return true;
+        }
+        // Both have real IDs and different parentId — they are different turns
+        if (!localIsTemp && !incIsTemp) return false;
       }
       return false;
     }
@@ -352,7 +383,28 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
       incomingCursor++;
     }
 
-    return ChatMessageModel.coalesceList(result);
+    // Deduplicate by ID — if two messages share the same ID, keep the one with more content
+    final Map<String, ChatMessageModel> dedupedById = {};
+    for (final msg in result) {
+      if (msg.id.isEmpty) {
+        dedupedById['_${dedupedById.length}'] = msg;
+        continue;
+      }
+      final existing = dedupedById[msg.id];
+      if (existing == null) {
+        dedupedById[msg.id] = msg;
+      } else {
+        // Keep the one with more content or the one that's not pending
+        final existingLen = existing.text.length + existing.parts.length;
+        final newLen = msg.text.length + msg.parts.length;
+        if (newLen > existingLen || (msg.isError && !existing.isError)) {
+          dedupedById[msg.id] = msg;
+        }
+      }
+    }
+    final deduped = dedupedById.values.toList();
+
+    return ChatMessageModel.coalesceList(deduped);
   }
 
   @override
@@ -1508,7 +1560,15 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
       final lastIdx = _chatMessages.length - 1;
       _chatMessages[lastIdx] = _chatMessages[lastIdx].copyWith(isPending: true);
     } else {
-      pendingId = 'active-${DateTime.now().millisecondsSinceEpoch}';
+      pendingId = _generateUniqueId();
+      // Find the last user message to link parentId
+      String? lastUserMsgId;
+      for (int i = _chatMessages.length - 1; i >= 0; i--) {
+        if (_chatMessages[i].sender == 'user') {
+          lastUserMsgId = _chatMessages[i].id;
+          break;
+        }
+      }
       setState(() {
         _chatMessages.add(ChatMessageModel(
           id: pendingId,
@@ -1517,6 +1577,7 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
           timestamp: TimeOfDay.now().format(context),
           isPending: true,
           modelName: selectedModelName,
+          parentId: lastUserMsgId,
         ));
       });
     }
@@ -1994,7 +2055,7 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
     // Reset first event flag for new turn - ensures immediate UI feedback
     _firstEventReceived = false;
 
-    final userMsgId = now.millisecondsSinceEpoch.toString();
+    final userMsgId = _generateUniqueId();
     final userMsg = ChatMessageModel(
       id: userMsgId,
       sender: 'user',
@@ -2004,7 +2065,7 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
       attachments: attachments != null ? List<String>.from(attachments) : [],
     );
 
-    final pendingId = (now.millisecondsSinceEpoch + 1).toString();
+    final pendingId = _generateUniqueId();
     final pendingAgentMsg = ChatMessageModel(
       id: pendingId,
       sender: 'agent',
@@ -2013,6 +2074,7 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
       isPending: true,
       modelName: selectedModelName,
       reasoningText: '',
+      parentId: userMsgId,
     );
 
     setState(() {

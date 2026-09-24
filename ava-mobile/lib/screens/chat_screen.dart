@@ -213,9 +213,9 @@ class _ChatScreenState extends State<ChatScreen> {
 
       if (hasNewUserMsg) {
         _userScrolledUp = false;
-        _scrollToBottom(animate: true, retries: 6);
+        _scrollToBottom(animate: true, retries: 1);
       } else if (!_userScrolledUp && (widget.messages.last.isPending || _isSending)) {
-        _scrollToBottom(animate: false, retries: 2);
+        _scrollToBottom(animate: false, retries: 0);
       }
 
       // Check if active turn completed - reset _isSending and process queued prompts

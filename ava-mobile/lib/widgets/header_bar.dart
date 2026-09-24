@@ -137,6 +137,7 @@ class HeaderBar extends StatelessWidget implements PreferredSizeWidget {
             ),
           ),
           child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // ── Left Circle Action Button (Close / Drawer) ─────────────────
@@ -164,12 +165,12 @@ class HeaderBar extends StatelessWidget implements PreferredSizeWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
 
-              // ── Center Pill Button (Title + Chevron Down) ──────────────────
-              Expanded(
+              // ── Center Pill Button (Title + Chevron Down - Compact Pill) ───
+              Flexible(
                 child: Container(
                   height: 44,
+                  constraints: const BoxConstraints(maxWidth: 230),
                   decoration: BoxDecoration(
                     color: buttonBg,
                     borderRadius: BorderRadius.circular(26),
@@ -184,6 +185,7 @@ class HeaderBar extends StatelessWidget implements PreferredSizeWidget {
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 18),
                         child: Row(
+                          mainAxisSize: MainAxisSize.min,
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Flexible(
@@ -214,7 +216,6 @@ class HeaderBar extends StatelessWidget implements PreferredSizeWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
 
               // ── Right Circle Action Button (Forward / Next / Context Modal) ──
               ValueListenableBuilder<CoreConnectionStatus>(

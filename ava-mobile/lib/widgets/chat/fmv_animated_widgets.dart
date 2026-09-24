@@ -64,7 +64,7 @@ class _AnimatedTypewriterTextState extends State<AnimatedTypewriterText> {
     }
     if (_ticker != null && _ticker!.isActive) return;
 
-    _ticker = Timer.periodic(const Duration(milliseconds: 16), (t) {
+    _ticker = Timer.periodic(const Duration(milliseconds: 32), (t) {
       if (!mounted) {
         t.cancel();
         return;
@@ -78,14 +78,14 @@ class _AnimatedTypewriterTextState extends State<AnimatedTypewriterText> {
           return;
         }
 
-        // Adaptive catch-up: never lags behind the AI stream
-        int step = 2;
-        if (remaining <= 4) {
+        // Adaptive catch-up: never lags behind the AI stream, smooth 30fps markdown parsing
+        int step = 3;
+        if (remaining <= 6) {
           step = remaining;
-        } else if (remaining <= 20) {
-          step = (remaining / 2).ceil().clamp(3, 10);
+        } else if (remaining <= 25) {
+          step = (remaining / 2).ceil().clamp(4, 12);
         } else {
-          step = (remaining / 3).ceil().clamp(8, 50);
+          step = (remaining / 3).ceil().clamp(10, 60);
         }
 
         _visibleChars += step;

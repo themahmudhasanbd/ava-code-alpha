@@ -23,25 +23,13 @@ extension FmvThinkingExt on _FormattedMessageViewState {
     final wasStreamingKey = '${partId}_wasStreaming';
     final wasStreaming = _expandedState[wasStreamingKey] == true;
     if (showLiveSpinner && !wasStreaming) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _expandedState[wasStreamingKey] = true;
-      });
+      _expandedState[wasStreamingKey] = true;
     } else if (!showLiveSpinner && wasStreaming) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _expandedState[wasStreamingKey] = false;
-          if (startedAt != null) {
-            final diff = DateTime.now().difference(startedAt).inMilliseconds.abs();
-            _frozenThinkingDuration[partId] = (diff / 1000.0).clamp(0.5, 300.0);
-          }
-          // Collapse by default when streaming finishes, unless user manually opened it
-          if (_expandedState[partId] == null) {
-            setState(() {
-              _expandedState[partId] = false;
-            });
-          }
-        }
-      });
+      _expandedState[wasStreamingKey] = false;
+      if (startedAt != null) {
+        final diff = DateTime.now().difference(startedAt).inMilliseconds.abs();
+        _frozenThinkingDuration[partId] = (diff / 1000.0).clamp(0.5, 300.0);
+      }
     }
 
     final isExplicitlyExpanded = _expandedState[partId];

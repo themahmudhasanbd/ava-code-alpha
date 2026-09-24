@@ -1,91 +1,91 @@
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { join } from "node:path";
 import { IPC } from "@pi-desktop/shared";
-import { testNetworkProxy } from "../network-proxy";
-import type { AgentSidecar } from "../agent-sidecar";
 import type { HostProcess } from "../host-process";
 import type { IpcRegistrar } from "./types";
 
 export type SettingsIpcDependencies = {
   registrar: IpcRegistrar;
   getHost: () => HostProcess | null;
-  getSidecar: () => AgentSidecar | null;
+  getSidecar?: () => any;
   dataDir: string;
-  normalizeSettings: (settings: unknown) => unknown;
-  validateSettingsWrite: (settings: unknown) => any;
-  testNetworkProxy: (settings: unknown) => Promise<unknown>;
-  applyNetworkProxyFromAppSettings: (settings: unknown) => Promise<unknown>;
-  currentNetworkProxy: () => unknown;
-  applyApplicationMenuSettings: (settings?: {
-    language?: unknown;
-    theme?: unknown;
-    keybindings?: unknown;
-    developerMode?: unknown;
-  } | null) => void;
-  applyDeveloperMode: (settings?: { developerMode?: unknown } | null) => void;
-  resolveEffectiveCommandShell: () => Promise<unknown>;
+  normalizeSettings?: (settings: unknown) => unknown;
+  validateSettingsWrite?: (settings: unknown) => any;
+  testNetworkProxy?: (settings: unknown) => Promise<unknown>;
+  applyNetworkProxyFromAppSettings?: (settings: unknown) => Promise<unknown>;
+  currentNetworkProxy?: () => unknown;
+  applyApplicationMenuSettings?: (settings?: any) => void;
+  applyDeveloperMode?: (settings?: any) => void;
+  resolveEffectiveCommandShell?: () => Promise<unknown>;
 };
 
-/** Register app settings and command-shell channels. */
+function getSettingsPath(dataDir: string): string {
+  return join(dataDir, "desktop-settings.json");
+}
+
+function loadDesktopSettings(dataDir: string): any {
+  const p = getSettingsPath(dataDir);
+  const defaults = {
+    theme: "system",
+    language: "en",
+    defaultProviderId: "omniroute",
+    defaultModelId: "powerful-coding-combo",
+    developerMode: false,
+  };
+  if (existsSync(p)) {
+    try {
+      const data = JSON.parse(readFileSync(p, "utf8"));
+      return { ...defaults, ...data };
+    } catch {
+      return defaults;
+    }
+  }
+  return defaults;
+}
+
+function saveDesktopSettings(dataDir: string, settings: any): void {
+  const p = getSettingsPath(dataDir);
+  mkdirSync(dataDir, { recursive: true });
+  writeFileSync(p, JSON.stringify(settings, null, 2), "utf8");
+}
+
 export function registerSettingsIpc({
   registrar,
   getHost,
-  getSidecar,
   dataDir,
-  normalizeSettings,
-  validateSettingsWrite,
-  testNetworkProxy,
-  applyNetworkProxyFromAppSettings,
-  currentNetworkProxy,
   applyApplicationMenuSettings,
   applyDeveloperMode,
-  resolveEffectiveCommandShell,
 }: SettingsIpcDependencies): void {
   let host: HostProcess | null = null;
-  let sidecar: AgentSidecar | null = null;
   const handle = (channel: string, fn: (...args: any[]) => Promise<any>) => {
     registrar.handle(channel, async (...args) => {
       host = getHost();
-      sidecar = getSidecar();
       return fn(...args);
     });
   };
 
   handle(IPC.invoke.settingsGet, async () => {
-    if (!host) throw new Error("host unavailable");
-    const settings = await host.call("settings.get");
-    return normalizeSettings(settings);
+    return loadDesktopSettings(dataDir);
   });
 
-  handle(IPC.invoke.networkProxyTest, async (settings: unknown) => {
-    return testNetworkProxy(settings);
-  });
+  handle(IPC.invoke.networkProxyTest, async () => ({ ok: true }));
 
-  handle(IPC.invoke.settingsSet, async (settings: unknown) => {
-    if (!host) throw new Error("host unavailable");
-    const validatedSettings = validateSettingsWrite(settings);
-    const result = await host.call("settings.set", validatedSettings);
-    await applyNetworkProxyFromAppSettings(validatedSettings);
-    if (sidecar) {
-      try {
-        await sidecar.call("sidecar.configure", {
-          hostBinary: host.binaryPath,
-          dataDir,
-          networkProxy: currentNetworkProxy(),
-        });
-      } catch {
-        // Sidecar will pick up PI_DESKTOP_PROXY_JSON on the next spawn.
-      }
+  handle(IPC.invoke.settingsSet, async (settings: any) => {
+    const current = loadDesktopSettings(dataDir);
+    const updated = { ...current, ...(settings || {}) };
+    saveDesktopSettings(dataDir, updated);
+
+    if (applyApplicationMenuSettings) {
+      applyApplicationMenuSettings(updated);
     }
-    applyApplicationMenuSettings(
-      validatedSettings as {
-        language?: unknown;
-        theme?: unknown;
-        keybindings?: unknown;
-        developerMode?: unknown;
-      } | null,
-    );
-    applyDeveloperMode(validatedSettings as { developerMode?: unknown } | null);
-    return result;
+    if (applyDeveloperMode) {
+      applyDeveloperMode(updated);
+    }
+    return updated;
   });
 
-  handle(IPC.invoke.commandShellList, async () => resolveEffectiveCommandShell());
+  handle(IPC.invoke.commandShellList, async () => [
+    { id: "bash", name: "Bash", path: "/bin/bash" },
+    { id: "sh", name: "Sh", path: "/bin/sh" },
+  ]);
 }

@@ -12,7 +12,17 @@ import "./styles/globals.css";
 
 const rendererSurface = new URLSearchParams(window.location.search).get("surface");
 if (rendererSurface) document.documentElement.dataset.surface = rendererSurface;
-document.documentElement.dataset.theme = "dark";
+
+const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+document.documentElement.dataset.theme = prefersDark ? "dark" : "light";
+
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => {
+  const currentTheme = document.documentElement.dataset.themeSetting;
+  if (!currentTheme || currentTheme === "system") {
+    document.documentElement.dataset.theme = e.matches ? "dark" : "light";
+  }
+});
+
 // Window-chrome layout differs per OS (traffic lights left on macOS,
 // controls overlay right on Windows/Linux); set before first paint.
 document.documentElement.dataset.platform =

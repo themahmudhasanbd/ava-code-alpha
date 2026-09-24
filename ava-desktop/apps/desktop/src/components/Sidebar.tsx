@@ -706,8 +706,9 @@ export function Sidebar({
     for (const session of filtered) {
       const sessionPath = normalizeProjectPath(session.projectPath);
       if (!sessionPath) continue;
-      // A closed project remains discoverable in Projects, but its historical
-      // sessions must not recreate a sidebar tab that the user just closed.
+      if (!byPath.has(sessionPath)) {
+        add(session.projectPath, undefined, undefined, false);
+      }
       const entry = byPath.get(sessionPath);
       if (entry) entry.sessions.push(session);
     }

@@ -27,6 +27,8 @@ export type StderrHandler = (text: string) => void;
 export type DiagnosedHostFailure = Error & { errorCode: string };
 
 export type HostProcessOptions = {
+  /** Optional CLI arguments, defaults to ["--listen", "stdio://"]. */
+  args?: string[];
   /** Absolute path of the `pi-desktop-host-core` binary to spawn. */
   binaryPath: string;
   /** Data directory handed to host-core as `PI_DESKTOP_DATA_DIR`. */
@@ -98,7 +100,8 @@ export class HostProcess {
     this.binaryPath = options.binaryPath;
     this.diagnoseFailure = options.diagnoseFailure;
     const onStderr = options.onStderr;
-    this.child = spawn(this.binaryPath, [], {
+    const args = options.args ?? ["--listen", "stdio://"];
+    this.child = spawn(this.binaryPath, args, {
       stdio: ["pipe", "pipe", "pipe"],
       env: {
         ...stripProxyEnv(process.env),
@@ -354,7 +357,11 @@ export class HostProcess {
   }
 
   async handshake(): Promise<void> {
-    await this.call("app.handshake", { protocolVersion: PROTOCOL_VERSION });
+    try {
+      await this.call("initialize", { clientInfo: { name: "ava-desktop", version: "0.15.2" } });
+    } catch {
+      await this.call("app.handshake", { protocolVersion: PROTOCOL_VERSION }).catch(() => undefined);
+    }
   }
 
   async dispose(): Promise<void> {

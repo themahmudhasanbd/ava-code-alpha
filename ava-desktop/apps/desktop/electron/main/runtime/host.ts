@@ -79,6 +79,208 @@ export function createHostRuntime({
     // An install reports itself, so the dialog that shows it can follow the
     // phases, the mirror being tried and the bytes that have arrived. Nothing
     // here decides anything: the request's own answer is still the outcome.
+    if (method === "turn/started") {
+      const p = params as any;
+      emitAgentEvent({
+        sessionId: p.threadId,
+        turnId: p.turn?.id,
+        ts: Date.now(),
+        event: { type: "turn_start" },
+      });
+      return;
+    }
+    if (method === "turn/completed") {
+      const p = params as any;
+      emitAgentEvent({
+        sessionId: p.threadId,
+        turnId: p.turn?.id,
+        ts: Date.now(),
+        event: { type: "turn_end" },
+      });
+      emitAgentEvent({
+        sessionId: p.threadId,
+        turnId: p.turn?.id,
+        ts: Date.now(),
+        event: { type: "agent_end", messageIds: [] },
+      });
+      sendToRenderer(IPC.event.sessionsChanged, { sessionId: p.threadId });
+      return;
+    }
+    if (method === "item/started") {
+      const p = params as any;
+      const item = p.item || {};
+      if (item.type === "userMessage") {
+        const text = Array.isArray(item.content)
+          ? item.content.map((c: any) => c.text || "").join("\n")
+          : (item.content || "");
+        emitAgentEvent({
+          sessionId: p.threadId,
+          turnId: p.turnId,
+          ts: Date.now(),
+          event: {
+            type: "user_message_persisted",
+            optimisticMessageId: item.id,
+            message: {
+              id: item.id,
+              role: "user",
+              content: text,
+              status: "complete",
+              createdAt: new Date().toISOString(),
+            },
+          },
+        });
+      } else if (item.type === "agentMessage") {
+        emitAgentEvent({
+          sessionId: p.threadId,
+          turnId: p.turnId,
+          ts: Date.now(),
+          event: {
+            type: "message_start",
+            message: {
+              id: item.id,
+              role: "assistant",
+              content: "",
+              status: "streaming",
+              createdAt: new Date().toISOString(),
+            },
+          },
+        });
+      } else if (item.type === "commandExecution") {
+        emitAgentEvent({
+          sessionId: p.threadId,
+          turnId: p.turnId,
+          ts: Date.now(),
+          event: {
+            type: "tool_start",
+            toolCallId: item.id,
+            toolName: "exec_command",
+            args: { cmd: item.command, cwd: item.cwd },
+          },
+        });
+      } else if (item.type === "fileChange") {
+        emitAgentEvent({
+          sessionId: p.threadId,
+          turnId: p.turnId,
+          ts: Date.now(),
+          event: {
+            type: "tool_start",
+            toolCallId: item.id,
+            toolName: "apply_patch",
+            args: { path: item.path, diff: item.diff },
+          },
+        });
+      } else if (item.type === "mcpToolCall" || item.type === "customToolCall" || item.type === "functionCall") {
+        emitAgentEvent({
+          sessionId: p.threadId,
+          turnId: p.turnId,
+          ts: Date.now(),
+          event: {
+            type: "tool_start",
+            toolCallId: item.id,
+            toolName: item.name || item.type,
+            args: item.arguments,
+          },
+        });
+      }
+      return;
+    }
+    if (method === "item/agentMessage/delta") {
+      const p = params as any;
+      emitAgentEvent({
+        sessionId: p.threadId,
+        turnId: p.turnId,
+        ts: Date.now(),
+        event: {
+          type: "message_update",
+          message: {
+            id: p.itemId,
+            role: "assistant",
+            content: "",
+          },
+          deltaText: p.delta,
+          stream: "delta",
+        },
+      });
+      return;
+    }
+    if (method === "item/reasoning/textDelta" || method === "item/reasoning/summaryTextDelta") {
+      const p = params as any;
+      emitAgentEvent({
+        sessionId: p.threadId,
+        turnId: p.turnId,
+        ts: Date.now(),
+        event: {
+          type: "message_update",
+          message: {
+            id: p.itemId,
+            role: "assistant",
+            content: "",
+            thinking: "",
+          },
+          deltaThinking: p.delta,
+          stream: "delta",
+        },
+      });
+      return;
+    }
+    if (method === "item/completed") {
+      const p = params as any;
+      const item = p.item || {};
+      if (item.type === "agentMessage") {
+        emitAgentEvent({
+          sessionId: p.threadId,
+          turnId: p.turnId,
+          ts: Date.now(),
+          event: {
+            type: "message_end",
+            message: {
+              id: item.id,
+              role: "assistant",
+              content: item.text || "",
+              status: "complete",
+              createdAt: new Date().toISOString(),
+            },
+          },
+        });
+      } else if (item.type === "commandExecution") {
+        emitAgentEvent({
+          sessionId: p.threadId,
+          turnId: p.turnId,
+          ts: Date.now(),
+          event: {
+            type: "tool_end",
+            toolCallId: item.id,
+            result: item.output,
+            isError: item.status === "failed",
+          },
+        });
+      } else if (item.type === "fileChange") {
+        emitAgentEvent({
+          sessionId: p.threadId,
+          turnId: p.turnId,
+          ts: Date.now(),
+          event: {
+            type: "tool_end",
+            toolCallId: item.id,
+            result: item.output || item.diff,
+            isError: item.status === "failed",
+          },
+        });
+      } else if (item.type === "mcpToolCall" || item.type === "customToolCall" || item.type === "functionCall") {
+        emitAgentEvent({
+          sessionId: p.threadId,
+          turnId: p.turnId,
+          ts: Date.now(),
+          event: {
+            type: "tool_end",
+            toolCallId: item.id,
+            result: item.output,
+            isError: item.status === "failed",
+          },
+        });
+      }
+      return;
+    }
     if (method === "plugin.installProgress") {
       sendToRenderer(IPC.event.pluginInstallProgress, params);
       return;

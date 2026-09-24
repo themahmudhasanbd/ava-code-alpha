@@ -12,8 +12,8 @@ import type {
 } from "./types";
 import { importedSessionId, toIso, truncateTitle } from "./types";
 
+const AVA_CODE_SESSIONS_DIR = path.join(os.homedir(), ".ava-code", "sessions");
 const SESSIONS_DIR = path.join(os.homedir(), ".ava", "sessions");
-const CODEX_SESSIONS_DIR = path.join(os.homedir(), ".codex", "sessions");
 
 function readLfJsonl(
   stream: Readable,
@@ -75,14 +75,6 @@ function itemText(item: CodexItem): string {
     .trim();
 }
 
-// Codex prepends synthetic user messages carrying repo instructions, IDE
-// context, and tooling state, so the first real user message (the scan title)
-// must skip them. The list is evidence-driven from real archives (#265):
-// newer Codex builds inject an IDE-context family alongside the original
-// AGENTS.md block. Real user messages can legitimately start with "# "
-// (pasted markdown such as "# Role: …"), so matching stays on the exact
-// evidenced prefixes instead of a blanket "#" rule — extend the list when a
-// new injection shows up, one archive sample at a time.
 const SYNTHETIC_USER_PREFIXES = [
   "<",
   "# AGENTS.md",
@@ -94,6 +86,7 @@ const SYNTHETIC_USER_PREFIXES = [
   "# Selected text:",
   "# Review findings:",
   "You are Codex",
+  "You are AvA",
 ];
 
 function isSyntheticUserText(text: string): boolean {
@@ -123,7 +116,6 @@ async function parseFile(filePath: string): Promise<ParsedCodexFile | null> {
     } catch {
       continue;
     }
-    // Newer format wraps everything in {timestamp, type, payload}.
     if (obj.type === "session_meta" && obj.payload) {
       parsed.externalId = obj.payload.id ?? parsed.externalId;
       parsed.cwd = obj.payload.cwd ?? parsed.cwd;
@@ -135,7 +127,6 @@ async function parseFile(filePath: string): Promise<ParsedCodexFile | null> {
       if (obj.timestamp) parsed.lastAt = obj.timestamp;
       continue;
     }
-    // Older format: first line is a bare session header, items are bare lines.
     if (!parsed.externalId && obj.id && obj.timestamp && !obj.type) {
       parsed.externalId = obj.id;
       parsed.startedAt = obj.timestamp;
@@ -158,15 +149,12 @@ async function parseFile(filePath: string): Promise<ParsedCodexFile | null> {
 }
 
 export const CODEX_SCAN_FULL_PARSE_MAX_BYTES = 5 * 1024 * 1024;
-// Newest-first walk of ~/.codex/sessions/YYYY/MM/DD. Reverse path sort is a
-// creation-date proxy, not mtime or the session's updatedAt — a January
-// session still being appended to can fall outside this cap.
 export const CODEX_SCAN_MAX_FILES = 250;
 const CODEX_SCAN_HEAD_BYTES = 1024 * 1024;
 const CODEX_SCAN_TAIL_BYTES = 256 * 1024;
 
 async function listSessionFiles(
-  dir: string = SESSIONS_DIR,
+  dir: string = AVA_CODE_SESSIONS_DIR,
   maxFiles: number = CODEX_SCAN_MAX_FILES,
 ): Promise<{ files: string[]; truncated: boolean }> {
   const out: string[] = [];
@@ -193,39 +181,19 @@ async function listSessionFiles(
     }
   };
   await walk(dir, 0);
-  if (dir === SESSIONS_DIR && out.length < maxFiles) {
-    await walk(CODEX_SESSIONS_DIR, 0);
+  if (dir === AVA_CODE_SESSIONS_DIR && out.length < maxFiles) {
+    await walk(SESSIONS_DIR, 0);
   }
   return { files: out, truncated };
 }
-
-// ---------- Scan (#264): sampled metadata extraction for large archives ----------
-//
-// A real Codex archive accumulates gigabytes of `.jsonl`, and the scan only
-// needs the session title (first real user message), timestamps, cwd, and a
-// count. Fully reading and JSON-parsing every file blocked the main process
-// for ~8s at 865 files / 2.6GB. Files at or below the threshold keep the
-// exact full parse; larger files are sampled:
-//
-// - head chunk: parsed line by line for session_meta/header fields and the
-//   first real user message (if the head runs out first, streaming continues
-//   until the message is found, so sampled scans never drop a session);
-// - tail chunk: the last `"timestamp"` value, falling back to startedAt like
-//   the full parse does;
-// - messageCount: null (the UI shows "—" — counting items exactly would
-//   require reading the whole file, which sampling exists to avoid).
-
 
 interface CodexScanMeta {
   externalId: string;
   cwd: string | null;
   startedAt: string | null;
   lastAt: string | null;
-  /** File mtime, the honest fallback when stored timestamps are corrupt (#265). */
   mtimeMs: number | null;
-  /** Exact item count, or null when the file was too large to scan fully. */
   itemCount: number | null;
-  /** Whether any item line was seen (mirrors `parsed.items.length > 0`). */
   sawItem: boolean;
   firstUserText: string | null;
 }
@@ -243,7 +211,6 @@ function newScanMeta(): CodexScanMeta {
   };
 }
 
-/** Mirrors parseFile's per-line semantics for the fields scan() reads. */
 function applyCodexLine(line: string, meta: CodexScanMeta): void {
   const trimmed = line.trim();
   if (!trimmed) return;
@@ -253,7 +220,6 @@ function applyCodexLine(line: string, meta: CodexScanMeta): void {
   } catch {
     return;
   }
-  // Newer format wraps everything in {timestamp, type, payload}.
   if (obj.type === "session_meta" && obj.payload) {
     meta.externalId = obj.payload.id ?? meta.externalId;
     meta.cwd = obj.payload.cwd ?? meta.cwd;
@@ -273,7 +239,6 @@ function applyCodexLine(line: string, meta: CodexScanMeta): void {
     }
     return;
   }
-  // Older format: first line is a bare session header, items are bare lines.
   if (!meta.externalId && obj.id && obj.timestamp && !obj.type) {
     meta.externalId = obj.id;
     meta.startedAt = obj.timestamp;
@@ -295,7 +260,6 @@ function applyCodexLine(line: string, meta: CodexScanMeta): void {
   }
 }
 
-/** Last top-level timestamp in the final tail bytes, or null. */
 async function readTailTimestamp(
   handle: fs.FileHandle,
   size: number,
@@ -304,7 +268,6 @@ async function readTailTimestamp(
   const length = size - start;
   const buf = Buffer.alloc(length);
   const read = await handle.read(buf, 0, length, start);
-  // Drop the (possibly partial) first line unless the tail starts at BOF.
   let from = 0;
   if (start > 0) {
     const firstNewline = buf.indexOf(0x0a);
@@ -316,22 +279,14 @@ async function readTailTimestamp(
   for (const line of text.split("\n")) {
     try {
       const obj = JSON.parse(line) as Record<string, unknown>;
-      // Match parseFile's `obj.timestamp` behavior. A nested payload
-      // timestamp is not the record timestamp and must not move updatedAt.
       if (typeof obj.timestamp === "string" && obj.timestamp) {
         last = obj.timestamp;
       }
-    } catch {
-      // The first or last line can be partial at the sample boundary.
-    }
+    } catch {}
   }
   return last;
 }
 
-/**
- * Sampled scan for files above the full-parse threshold. Returns null when the
- * file holds no items at all (mirroring the full parse), so callers can skip it.
- */
 async function scanLargeFile(
   filePath: string,
   size: number,
@@ -340,7 +295,6 @@ async function scanLargeFile(
   const meta = newScanMeta();
   meta.itemCount = null;
 
-  // Head: parse the leading complete lines for meta fields and the title.
   const headLength = Math.min(CODEX_SCAN_HEAD_BYTES, size);
   const headBuf = Buffer.alloc(headLength);
   const head = await handle.read(headBuf, 0, headLength, 0);
@@ -351,10 +305,6 @@ async function scanLargeFile(
   }
 
   if (meta.firstUserText === null) {
-    // The title lives deeper than the head chunk (large synthetic preamble):
-    // stream on from the last complete line, parsing until it is found. If
-    // the head contains no newline, restart at byte zero so an oversized first
-    // JSON line is not parsed from its middle and silently discarded.
     const stream = createReadStream(filePath, {
       start: headLastNewline === -1 ? 0 : headBytes,
       encoding: "utf8",
@@ -419,7 +369,7 @@ export interface CodexScanResult {
 }
 
 export async function scanCodexSessionsResult(
-  dir: string = SESSIONS_DIR,
+  dir: string = AVA_CODE_SESSIONS_DIR,
   maxFiles: number = CODEX_SCAN_MAX_FILES,
 ): Promise<CodexScanResult> {
   const { files, truncated } = await listSessionFiles(dir, maxFiles);
@@ -427,9 +377,6 @@ export async function scanCodexSessionsResult(
   for (const filePath of files) {
     const meta = await scanFile(filePath);
     if (!meta || meta.firstUserText === null) continue;
-    // A corrupt or out-of-range stored timestamp must not rewrite the
-    // session's history to the import moment (#265): the file's own mtime is
-    // the honest fallback for both ends.
     const fileTime = toIso(meta.mtimeMs);
     sessions.push({
       source: "codex",
@@ -447,12 +394,11 @@ export async function scanCodexSessionsResult(
 }
 
 export async function scanCodexSessions(
-  dir: string = SESSIONS_DIR,
+  dir: string = AVA_CODE_SESSIONS_DIR,
   maxFiles: number = CODEX_SCAN_MAX_FILES,
 ): Promise<ExternalSessionSummary[]> {
   return (await scanCodexSessionsResult(dir, maxFiles)).sessions;
 }
-
 
 export const codexImporter: SessionImporter = {
   source: "codex",
@@ -482,9 +428,7 @@ export const codexImporter: SessionImporter = {
         let args: unknown = item.arguments;
         try {
           args = JSON.parse(item.arguments ?? "");
-        } catch {
-          // keep raw string
-        }
+        } catch {}
         pendingCalls.set(item.call_id, { name: item.name ?? "tool", args });
       } else if (item.type === "function_call_output" && item.call_id) {
         const pending = pendingCalls.get(item.call_id);

@@ -20,34 +20,35 @@ export type {
 } from "@pi-desktop/host-runtime";
 
 function resolveHostBinary(): string {
+  if (process.env.CODEX_APP_SERVER_BIN && existsSync(process.env.CODEX_APP_SERVER_BIN)) {
+    return process.env.CODEX_APP_SERVER_BIN;
+  }
   if (process.env.PI_DESKTOP_HOST_BIN && existsSync(process.env.PI_DESKTOP_HOST_BIN)) {
     return process.env.PI_DESKTOP_HOST_BIN;
   }
   const exe = process.platform === "win32" ? ".exe" : "";
   const candidates = [
     // packaged resources
+    join(process.resourcesPath || "", `bin/codex-app-server${exe}`),
     join(process.resourcesPath || "", `bin/pi-desktop-host-core${exe}`),
-    // monorepo dev/build
-    join(__dirname, `../../../target/debug/pi-desktop-host-core${exe}`),
-    join(__dirname, `../../../target/release/pi-desktop-host-core${exe}`),
-    join(__dirname, `../../../../target/debug/pi-desktop-host-core${exe}`),
-    join(__dirname, `../../../../target/release/pi-desktop-host-core${exe}`),
+    // ava-rs builds
+    join(__dirname, `../../../../ava-rs/target/debug/codex-app-server${exe}`),
+    join(__dirname, `../../../../ava-rs/target/release/codex-app-server${exe}`),
+    join(__dirname, `../../../../../ava-rs/target/debug/codex-app-server${exe}`),
+    join(__dirname, `../../../../../ava-rs/target/release/codex-app-server${exe}`),
+    "/var/www/ava-code/ava-rs/target/debug/codex-app-server",
+    "/var/www/ava-code/ava-rs/target/release/codex-app-server",
+    "/root/.cargo/bin/codex-app-server",
+    "/usr/local/bin/codex-app-server",
   ];
   for (const c of candidates) {
     if (c && existsSync(c)) return c;
   }
   throw new Error(
-    "host-core binary not found. Run `cargo build -p host-core` first.",
+    "codex-app-server binary not found. Please ensure ava-rs target/debug/codex-app-server exists.",
   );
 }
 
-/**
- * Directory holding the plugins this build ships, or null when it ships none.
- *
- * Mirrors `resolveBuiltinSkillPath`: electron-builder copies
- * `resources/plugins` to `<resources>/plugins`, and a source checkout reaches
- * the same tree relatively.
- */
 function resolveBuiltinPluginsDir(): string | null {
   const candidates = [
     join(process.resourcesPath || "", "plugins"),
@@ -60,12 +61,6 @@ function resolveBuiltinPluginsDir(): string | null {
   return null;
 }
 
-/**
- * Name the two boot refusals the desktop phrases for the user (D380): a data
- * directory newer than this build, and a glibc below the packaged floor. The
- * schema refusal is checked first because its stderr line is the more specific
- * one; anything else stays the generic `HOST_UNAVAILABLE` transport error.
- */
 export function diagnoseHostFailure({
   lastStderr,
   message,
@@ -101,22 +96,19 @@ function fallbackStderrLogger(text: string): void {
   );
 }
 
-/**
- * The desktop's host-core child: the shared stdio transport from
- * `@pi-desktop/host-runtime` plus the two things only Electron knows — where
- * this build keeps the binary and its bundled plugins, and how to name the
- * boot refusals the renderer phrases.
- */
 export class HostProcess extends RuntimeHostProcess {
   constructor(dataDir: string, onStderr?: StderrHandler) {
     const builtinPlugins = resolveBuiltinPluginsDir();
     super({
       binaryPath: resolveHostBinary(),
       dataDir,
-      // Only Electron knows whether this build runs from `resources/` or a
-      // source checkout, so it resolves the bundled-plugin directory and
-      // host-core simply reconciles its registry against it (ADR 0105).
-      env: builtinPlugins ? { PI_DESKTOP_BUILTIN_PLUGINS_DIR: builtinPlugins } : {},
+      args: ["--listen", "stdio://"],
+      env: {
+        AVA_CODE_HOME: dataDir,
+        AVA_HOME: dataDir,
+        PI_DESKTOP_DATA_DIR: dataDir,
+        ...(builtinPlugins ? { PI_DESKTOP_BUILTIN_PLUGINS_DIR: builtinPlugins } : {}),
+      },
       onStderr: onStderr ?? fallbackStderrLogger,
       diagnoseFailure: diagnoseHostFailure,
     });

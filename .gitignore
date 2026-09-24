@@ -107,3 +107,5 @@ ava-cli/bin/
 
 *.apk
 
+.vitepress/.temp/
+.vitepress/dist/

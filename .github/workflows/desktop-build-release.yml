@@ -31,7 +31,7 @@ jobs:
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: ava-desktop -> ava-desktop/target
+          workspaces: ava-rs -> ava-rs/target
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -62,10 +62,10 @@ jobs:
           cd ava-desktop
           pnpm build:js
 
-      - name: Build Rust host-core (release)
+      - name: Build Native AvA Core (codex-app-server release)
         run: |
-          cd ava-desktop
-          cargo build --release -p host-core
+          cd ava-rs
+          cargo build --release -p codex-app-server
 
       - name: Bundle Agent Runtime Sidecar
         run: |
@@ -117,7 +117,7 @@ jobs:
           body: |
             ## 🚀 AvA Code Alpha — Linux DEB Release
 
-            Standalone desktop app with embedded native Rust Core (`host-core`).
+            Standalone desktop app with embedded native Rust Core (`codex-app-server`).
             No Node.js, Rust or CLI installation required.
 
             ### Install on Debian/Ubuntu

@@ -38,7 +38,14 @@ Stream<String>? connectPlatformSse(String url, {String? authToken}) {
     final controller = StreamController<String>.broadcast();
     _activeWebSseController = controller;
 
-    final eventSource = html.EventSource(url);
+    final uri = Uri.parse(url);
+    final params = Map<String, String>.from(uri.queryParameters);
+    if (!params.containsKey("client")) {
+      params["client"] = "mobile";
+    }
+    final effectiveUrl = uri.replace(queryParameters: params).toString();
+
+    final eventSource = html.EventSource(effectiveUrl);
     _activeWebEventSource = eventSource;
 
     // Stored so closePlatformSse() can cancel it. Previously the subscription

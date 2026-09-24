@@ -92,6 +92,8 @@ abstract class AgentCoreBase {
 
   Map<String, String> get authHeaders {
     final headers = <String, String>{
+      "client": "mobile",
+      "x-client": "mobile",
       "x-ava-client": "mobile",
       "x-avacode-client": "mobile",
     };
@@ -147,14 +149,21 @@ abstract class AgentCoreBase {
     if (base.endsWith("/api")) base = base.substring(0, base.length - 4);
     if (base.endsWith("/")) base = base.substring(0, base.length - 1);
 
+    String wsUrl;
     if (base.startsWith("https://")) {
-      return "wss://${base.substring('https://'.length)}/ws";
+      wsUrl = "wss://${base.substring('https://'.length)}/ws";
     } else if (base.startsWith("http://")) {
-      return "ws://${base.substring('http://'.length)}/ws";
+      wsUrl = "ws://${base.substring('http://'.length)}/ws";
     } else if (base.startsWith("wss://") || base.startsWith("ws://")) {
-      return base.endsWith("/ws") ? base : "$base/ws";
+      wsUrl = base.endsWith("/ws") ? base : "$base/ws";
+    } else {
+      wsUrl = "wss://$base/ws";
     }
-    return "wss://$base/ws";
+
+    final uri = Uri.parse(wsUrl);
+    final params = Map<String, String>.from(uri.queryParameters);
+    params["client"] = "mobile";
+    return uri.replace(queryParameters: params).toString();
   }
 
   Future<void> _connectWebSocket() async {
@@ -193,7 +202,7 @@ abstract class AgentCoreBase {
 
       // Perform initialize RPC handshake
       final initRes = await sendRpc("initialize", {
-        "clientInfo": {"name": "ava-mobile", "version": "1.0.0"},
+        "clientInfo": {"name": "ava-mobile", "version": "1.0.0", "client": "mobile"},
         "capabilities": {},
       }).timeout(const Duration(seconds: 8));
 

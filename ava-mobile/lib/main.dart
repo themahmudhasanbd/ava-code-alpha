@@ -193,6 +193,7 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
 
   /// For full replacement of a pending message (e.g. on `done` or error),
   /// cancels throttler and triggers immediate setState.
+  /// Automatically preserves `parentId` from the existing message if the replacement doesn't set one.
   void _replacePendingMessageImmediate(String messageId, ChatMessageModel replacement) {
     if (!mounted) return;
     final idx = _chatMessages.indexWhere((m) => m.id == messageId);
@@ -201,8 +202,13 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
     _rebuildScheduled = false;
     _stopHeartbeat();
     _firstEventReceived = false;
+    // Preserve parentId link to the originating user prompt
+    final existing = _chatMessages[idx];
+    final effective = (replacement.parentId == null && existing.parentId != null)
+        ? replacement.copyWith(parentId: existing.parentId)
+        : replacement;
     setState(() {
-      _chatMessages[idx] = replacement;
+      _chatMessages[idx] = effective;
     });
   }
 
@@ -305,15 +311,13 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
             local.parentId!.isNotEmpty && local.parentId == inc.parentId) {
           return true;
         }
-        // Fallback: text containment only for temp IDs
+        // Fallback: text containment for messages from the same turn
         final localTxt = local.text.trim();
         final incTxt = inc.text.trim();
-        if (localIsTemp && localTxt.isNotEmpty && incTxt.isNotEmpty &&
+        if (localTxt.isNotEmpty && incTxt.isNotEmpty &&
             (localTxt == incTxt || localTxt.contains(incTxt) || incTxt.contains(localTxt))) {
           return true;
         }
-        // Both have real IDs and different parentId — they are different turns
-        if (!localIsTemp && !incIsTemp) return false;
       }
       return false;
     }
@@ -1338,11 +1342,11 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
     _activeSessionStreamSubscription?.cancel();
     _activeSessionStreamSubscription = null;
 
-    if (_activeSessionId != null && _activeSessionId!.isNotEmpty) {
-      unawaited(_agentCoreService.interruptSession(_activeSessionId!));
+    final oldSessionId = _activeSessionId;
+    if (oldSessionId != null && oldSessionId.isNotEmpty) {
+      unawaited(_agentCoreService.interruptSession(oldSessionId));
     }
     _currentSessionTitle = title ?? 'New Session';
-    _setActiveSessionId(null, title: _currentSessionTitle);
 
     // Only resolve default model for new session if no model is currently selected
     if (_selectedModelItem == null) {
@@ -1361,7 +1365,9 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
       provider: _selectedModelItem?.effectiveProviderKey ?? _selectedModelItem?.provider,
       title: title,
     );
-    _setActiveSessionId(newId);
+    // Only clear the old session AFTER the new one is created — prevents race condition
+    // where a prompt sent during the async gap would create a stray new session.
+    _setActiveSessionId(newId, title: _currentSessionTitle);
     _agentCoreService.setWorkspacePath(targetWorkspace);
 
     if (newId != null && _selectedModelItem != null) {
@@ -2047,10 +2053,6 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
     // (not based on chatMessages.isEmpty, which is briefly true while history loads)
     final bool isFreshSession = (_activeSessionId == null || _activeSessionId!.isEmpty);
     final String? sessionToSend = isFreshSession ? null : _activeSessionId;
-
-    if (isFreshSession) {
-      _setActiveSessionId(null);
-    }
 
     // Reset first event flag for new turn - ensures immediate UI feedback
     _firstEventReceived = false;

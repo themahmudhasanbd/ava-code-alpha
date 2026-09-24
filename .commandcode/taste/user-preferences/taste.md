@@ -7,3 +7,9 @@
 - Familiar with streaming state management concepts (agent turns, timeline, pending messages, heartbeat, reconnect) — communicates at a senior developer level despite informal typing. Confidence: 0.8
 - Prefers single-command automated deploy via `deploy.sh` (git → build → deploy → health check) — expects the agent to find and run the deploy script, not do steps manually. Confidence: 0.85
 - Uses conventional commit format (`fix(mobile):`, `feat:`, etc.) with descriptive bodies; deploy script auto-generates commit messages from the summary the user approves. Confidence: 0.7
+- Strongly prefers collision-proof, unique IDs on all entities (messages, prompts, agent turns) — timestamp-based IDs are unacceptable; expects compound IDs (timestamp + sequence + random). Confidence: 0.9
+- Demands explicit parent-child linking between related entities (e.g. user prompt → agent response via parentId) — relationships must be structurally encoded, not inferred by text matching. Confidence: 0.85
+- Prioritizes data integrity over performance — expects multi-layer deduplication (by ID at merge, at coalesce, and at final output). Confidence: 0.8
+- Communicates requirements in informal/broken English but provides precise, actionable technical specs — parse the intent, not the grammar. Confidence: 0.85
+- Reports immediately when a fix doesn't work and expects the agent to re-trace root causes more deeply rather than patch over symptoms again. Confidence: 0.8
+- Expects static analysis (`flutter analyze`) to be run and pass before any deploy — won't accept "it should compile" without proof. Confidence: 0.8

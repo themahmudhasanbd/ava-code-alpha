@@ -57,7 +57,7 @@ class HeaderBar extends StatelessWidget implements PreferredSizeWidget {
   });
 
   @override
-  Size get preferredSize => const Size.fromHeight(60);
+  Size get preferredSize => const Size.fromHeight(64);
 
   void _handleRightAction(BuildContext context, bool isLiveOnline, bool isSyncingOrConnecting) {
     if (!isLiveOnline && !isSyncingOrConnecting) {
@@ -105,39 +105,44 @@ class HeaderBar extends StatelessWidget implements PreferredSizeWidget {
 
     final List<BoxShadow> buttonShadows = [
       BoxShadow(
-        color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.06),
-        blurRadius: 10,
+        color: Colors.black.withValues(alpha: isDark ? 0.40 : 0.08),
+        blurRadius: 14,
         spreadRadius: 0,
-        offset: const Offset(0, 2),
+        offset: const Offset(0, 3),
+      ),
+      BoxShadow(
+        color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.03),
+        blurRadius: 4,
+        spreadRadius: 0,
+        offset: const Offset(0, 1),
       ),
     ];
 
     return ClipRect(
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
         child: Container(
-          height: 60,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          height: 64,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
-            color: isDark
-                ? const Color(0xFF09090B).withValues(alpha: 0.80)
-                : Colors.white.withValues(alpha: 0.88),
-            border: Border(
-              bottom: BorderSide(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.08)
-                    : Colors.black.withValues(alpha: 0.06),
-                width: 1.0,
-              ),
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                (isDark ? const Color(0xFF09090B) : Colors.white).withValues(alpha: isDark ? 0.85 : 0.88),
+                (isDark ? const Color(0xFF09090B) : Colors.white).withValues(alpha: 0.40 : 0.45),
+                (isDark ? const Color(0xFF09090B) : Colors.white).withValues(alpha: 0.0),
+              ],
+              stops: const [0.0, 0.65, 1.0],
             ),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // ── Left Circle Action Button (Close / Menu) ───────────────────
+              // ── Left Circle Action Button (Close / Drawer) ─────────────────
               Container(
-                width: 42,
-                height: 42,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
                   color: buttonBg,
                   shape: BoxShape.circle,
@@ -164,10 +169,10 @@ class HeaderBar extends StatelessWidget implements PreferredSizeWidget {
               // ── Center Pill Button (Title + Chevron Down) ──────────────────
               Expanded(
                 child: Container(
-                  height: 42,
+                  height: 44,
                   decoration: BoxDecoration(
                     color: buttonBg,
-                    borderRadius: BorderRadius.circular(24),
+                    borderRadius: BorderRadius.circular(26),
                     border: Border.all(color: buttonBorder, width: 1.0),
                     boxShadow: buttonShadows,
                   ),
@@ -175,9 +180,9 @@ class HeaderBar extends StatelessWidget implements PreferredSizeWidget {
                     color: Colors.transparent,
                     child: InkWell(
                       onTap: onOpenWorkspacePreferences,
-                      borderRadius: BorderRadius.circular(24),
+                      borderRadius: BorderRadius.circular(26),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: const EdgeInsets.symmetric(horizontal: 18),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -228,8 +233,8 @@ class HeaderBar extends StatelessWidget implements PreferredSizeWidget {
                           isReconnecting;
 
                   return Container(
-                    width: 42,
-                    height: 42,
+                    width: 44,
+                    height: 44,
                     decoration: BoxDecoration(
                       color: buttonBg,
                       shape: BoxShape.circle,
@@ -261,8 +266,8 @@ class HeaderBar extends StatelessWidget implements PreferredSizeWidget {
                               ),
                             if (!isLiveOnline && !isSyncingOrConnecting)
                               Positioned(
-                                top: 7,
-                                right: 7,
+                                top: 8,
+                                right: 8,
                                 child: Container(
                                   width: 7,
                                   height: 7,

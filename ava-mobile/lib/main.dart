@@ -237,17 +237,17 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
   List<ChatMessageModel> _mergeMessagesPreservingLocal(List<ChatMessageModel> existing, List<ChatMessageModel> incoming) {
     if (incoming.isEmpty) return existing;
     if (existing.isEmpty) {
-      return incoming.map((m) => m.sender == 'user' ? m.copyWith(deliveryStatus: 'sent', isPending: false) : m).toList();
+      return incoming.map((m) => m.sender == 'user' ? m.copyWith(deliveryStatus: m.deliveryStatus ?? 'sent', isPending: false) : m).toList();
     }
 
     final cleanExisting = existing.where((m) => m.id != 'loading-hist').toList();
     if (cleanExisting.isEmpty) {
-      return incoming.map((m) => m.sender == 'user' ? m.copyWith(deliveryStatus: 'sent', isPending: false) : m).toList();
+      return incoming.map((m) => m.sender == 'user' ? m.copyWith(deliveryStatus: m.deliveryStatus ?? 'sent', isPending: false) : m).toList();
     }
 
     final List<ChatMessageModel> incomingMerged = incoming.map((m) {
       if (m.sender == 'user') {
-        return m.copyWith(deliveryStatus: 'sent', isPending: false);
+        return m.copyWith(deliveryStatus: m.deliveryStatus ?? 'sent', isPending: false);
       }
       return m;
     }).toList();
@@ -299,7 +299,7 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
           permissionData: inc.permissionData ?? local.permissionData,
           reasoningText: (inc.reasoningText != null && inc.reasoningText!.isNotEmpty) ? inc.reasoningText : local.reasoningText,
           attachments: inc.attachments.isNotEmpty ? inc.attachments : local.attachments,
-          deliveryStatus: inc.sender == 'user' ? 'sent' : inc.deliveryStatus,
+          deliveryStatus: local.deliveryStatus ?? inc.deliveryStatus ?? 'sent',
         );
       }
     }
@@ -325,13 +325,21 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
         // Keep local message in its exact chronological position (failed prompts, active streams, un-synced user messages)
         if (local.sender == 'user') {
           final isActivelyStreaming = _currentlyStreamingPendingId != null && _activePromptStreamSubscription != null;
-          if (!isActivelyStreaming) {
-            result.add(local.copyWith(deliveryStatus: 'sent', isPending: false));
-          } else {
+          if (isActivelyStreaming) {
             result.add(local);
+          } else {
+            final status = local.deliveryStatus == 'failed' ? 'failed' : (local.deliveryStatus ?? 'sent');
+            result.add(local.copyWith(deliveryStatus: status, isPending: false));
           }
         } else {
-          result.add(local);
+          if (local.isPending) {
+            final isActivelyStreaming = _currentlyStreamingPendingId == local.id && _activePromptStreamSubscription != null;
+            if (isActivelyStreaming) {
+              result.add(local);
+            }
+          } else if (local.text.trim().isNotEmpty || local.parts.isNotEmpty || local.isError) {
+            result.add(local);
+          }
         }
       }
     }
@@ -3202,60 +3210,74 @@ class _MainHomeScreenState extends State<MainHomeScreen> with WidgetsBindingObse
         onCreateNewSession: _handleCreateNewSession,
       ),
       body: SafeArea(
+        bottom: false,
         child: GestureDetector(
           onTap: () {
             FocusScope.of(context).unfocus();
             FocusManager.instance.primaryFocus?.unfocus();
           },
           behavior: HitTestBehavior.translucent,
-          child: Column(
+          child: Stack(
             children: [
-              HeaderBar(
-                isDark: isDark,
-                cardBg: cardBg,
-                borderColor: borderColor,
-                textPrimary: textPrimary,
-                textSecondary: textSecondary,
-                selectedModel: _selectedModelItem,
-                availableModels: _availableModels,
-                onSelectModel: _handleSelectModel,
-                onRefreshModels: _initializeAgentCoreConnection,
-                onNewSession: () => _handleCreateNewSession(mode: _selectedMode, workspacePath: _vpsWorkspacePath),
-                isCoreConnected: _isCoreConnected,
-                isReconnecting: _isReconnectingCore,
-                statusNotifier: _agentCoreService.connectionStatusNotifier,
-                onReconnectCore: _handleReconnectCore,
-                chatMessages: _chatMessages,
-                activeSessionId: _activeSessionId,
-                activeSessionTitle: _currentSessionTitle,
-                serverUrl: _agentCoreService.baseUrl,
-                onCompactSession: (_activeSessionId != null && _activeSessionId!.isNotEmpty)
-                    ? () async {
-                        final ok = await _agentCoreService.compactSession(
-                          _activeSessionId!,
-                          providerId: _selectedModelItem?.effectiveProviderKey,
-                          modelId: _selectedModelItem?.effectiveModelKey,
-                        );
-                        if (ok) {
-                          await _handleSelectSession({'id': _activeSessionId});
-                        }
-                      }
-                    : null,
-                onOpenDrawer: () {
-                  FocusScope.of(context).unfocus();
-                  _scaffoldKey.currentState?.openDrawer();
-                },
-                onOpenWorkspacePreferences: _showWorkspacePreferenceModal,
-                onOpenTerminal: _showTerminalModal,
-                onOpenSystemHealth: () => _switchTab(5),
-              ),
-              NetworkStatusBar(
-                statusNotifier: _agentCoreService.connectionStatusNotifier,
-                onRetry: _handleReconnectCore,
-                isDark: isDark,
-              ),
-              Expanded(
+              // ── Active Tab Content (Scrolls full height underneath floating glass header) ──
+              Positioned.fill(
                 child: _buildActiveTabContent(isDark, cardBg, borderColor, textPrimary, textSecondary),
+              ),
+
+              // ── Top Floating Glass Header Bar & Network Status ───────────────
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    HeaderBar(
+                      isDark: isDark,
+                      cardBg: cardBg,
+                      borderColor: borderColor,
+                      textPrimary: textPrimary,
+                      textSecondary: textSecondary,
+                      selectedModel: _selectedModelItem,
+                      availableModels: _availableModels,
+                      onSelectModel: _handleSelectModel,
+                      onRefreshModels: _initializeAgentCoreConnection,
+                      onNewSession: () => _handleCreateNewSession(mode: _selectedMode, workspacePath: _vpsWorkspacePath),
+                      isCoreConnected: _isCoreConnected,
+                      isReconnecting: _isReconnectingCore,
+                      statusNotifier: _agentCoreService.connectionStatusNotifier,
+                      onReconnectCore: _handleReconnectCore,
+                      chatMessages: _chatMessages,
+                      activeSessionId: _activeSessionId,
+                      activeSessionTitle: _currentSessionTitle,
+                      serverUrl: _agentCoreService.baseUrl,
+                      onCompactSession: (_activeSessionId != null && _activeSessionId!.isNotEmpty)
+                          ? () async {
+                              final ok = await _agentCoreService.compactSession(
+                                _activeSessionId!,
+                                providerId: _selectedModelItem?.effectiveProviderKey,
+                                modelId: _selectedModelItem?.effectiveModelKey,
+                              );
+                              if (ok) {
+                                await _handleSelectSession({'id': _activeSessionId});
+                              }
+                            }
+                          : null,
+                      onOpenDrawer: () {
+                        FocusScope.of(context).unfocus();
+                        _scaffoldKey.currentState?.openDrawer();
+                      },
+                      onOpenWorkspacePreferences: _showWorkspacePreferenceModal,
+                      onOpenTerminal: _showTerminalModal,
+                      onOpenSystemHealth: () => _switchTab(5),
+                    ),
+                    NetworkStatusBar(
+                      statusNotifier: _agentCoreService.connectionStatusNotifier,
+                      onRetry: _handleReconnectCore,
+                      isDark: isDark,
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

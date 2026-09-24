@@ -561,7 +561,7 @@ abstract class AgentCoreBase {
            return m.copyWith(
              isPending: false,
              isHistory: true,
-              deliveryStatus: m.sender == 'user' ? 'sent' : m.deliveryStatus,
+             deliveryStatus: m.deliveryStatus == 'failed' ? 'failed' : (m.deliveryStatus ?? (m.sender == 'user' ? 'sent' : null)),
              parts: cleanParts,
            );
           }).toList();

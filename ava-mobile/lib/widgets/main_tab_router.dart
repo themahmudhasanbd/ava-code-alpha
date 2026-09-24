@@ -152,6 +152,17 @@ class MainTabRouter extends StatefulWidget {
 class _MainTabRouterState extends State<MainTabRouter> {
   @override
   Widget build(BuildContext context) {
+    final screen = _buildScreen(context);
+    if (widget.selectedNavIndex == 0) {
+      return screen;
+    }
+    return Padding(
+      padding: const EdgeInsets.only(top: 64),
+      child: screen,
+    );
+  }
+
+  Widget _buildScreen(BuildContext context) {
     switch (widget.selectedNavIndex) {
       case 0:
         return ChatScreen(

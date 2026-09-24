@@ -1445,7 +1445,7 @@ class _ChatScreenState extends State<ChatScreen> {
       child: ListView.builder(
         controller: _scrollController,
         physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-        padding: const EdgeInsets.fromLTRB(14, 12, 14, 145),
+        padding: const EdgeInsets.fromLTRB(14, 76, 14, 145),
         itemCount: messages.length + (_isLoadingMoreHistory ? 1 : 0),
         itemBuilder: (ctx, idx) => _buildMessageItem(ctx, idx, messages),
       ),

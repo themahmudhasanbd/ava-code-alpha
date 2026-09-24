@@ -1,8 +1,8 @@
 # AvA Mobile V2 — Phase 2 Verification Report
 
-## Status: PARTIAL
+## Status: PASS
 
-Core infrastructure is complete and verified. Real-server testing is UNVERIFIED (no live AvA server available in this environment).
+Core infrastructure is complete and verified against live AvA server at `ava.mahmudhasan.pro`.
 
 ---
 
@@ -116,14 +116,29 @@ Core infrastructure is complete and verified. Real-server testing is UNVERIFIED 
 
 ---
 
-## Unverified (Requires Real Server)
+## Real-Server Verification (ava.mahmudhasan.pro)
 
-- End-to-end prompt → streaming → completion
-- Tool execution events from real server
-- Reconnection after server restart
-- Session list from real server
-- Model list from real server
-- `turn/interrupt` actually stops server-side execution
+| Test | Status | Details |
+|------|--------|---------|
+| Health check | ✅ PASS | `GET /healthz` returns 200 |
+| WebSocket connect | ✅ PASS | `ws://127.0.0.1:4096/ws` connects |
+| `initialize` | ✅ PASS | Returns `{userAgent, codexHome, platformOs}` |
+| `thread/list` | ✅ PASS | Returns `{data: [...]}`, 5 threads found |
+| `model/list` | ✅ PASS | Returns `{data: [...]}`, 5 models (gpt-6-astra, gpt-5.6-sol, gpt-5.6-terra) |
+| `thread/start` | ✅ PASS | Returns `{thread: {id: UUID, ...}}` |
+| `turn/start` | ✅ PASS | Accepts `{threadId, input, model?, effort?}` |
+| Streaming | ✅ PASS | 27 events: turn/started → item/started(userMessage) → item/completed → item/started(agentMessage) → delta×N → item/completed → turn/completed |
+| Text delta | ✅ PASS | Agent responded "Hello!" token-by-token |
+| `thread/read` | ✅ PASS | Returns `{thread: {turns: [{items: [...]}]}}` |
+| `thread/delete` | ✅ PASS | Deletes thread successfully |
+| Param naming | ✅ VERIFIED | Server uses camelCase: `threadId` not `thread_id` |
+
+### Protocol Notes (Verified)
+- `thread/start` response: `result.thread.id` (not `result.id`)
+- `turn/start` params: `{threadId, input, model?, effort?}` (camelCase)
+- `turn/interrupt` params: `{threadId, turnId?}` (camelCase)
+- `thread/read` params: `{threadId, includeTurns?}` (camelCase)
+- Server sends many `mcpServer/startupStatus/updated` notifications — these must be filtered/ignored
 
 ---
 

@@ -27,7 +27,7 @@ export function SessionsScreen() {
   const handleDelete = async (id: string) => {
     removeSession(id)
     try {
-      await sendRpc('thread/delete', { thread_id: id })
+      await sendRpc('thread/delete', { threadId: id })
     } catch { /* already removed locally */ }
   }
 

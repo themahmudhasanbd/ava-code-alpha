@@ -30,10 +30,18 @@ export function ChatScreen() {
   const loadSessionMessages = useCallback(async (sessId: string) => {
     try {
       clearMessages()
-      const res = await sendRpc('thread/read', { thread_id: sessId, limit: 50 }) as Record<string, unknown>
-      const thread = res?.thread as Record<string, unknown> ?? res
-      const items = (thread?.items ?? []) as Array<Record<string, unknown>>
-      if (!Array.isArray(items)) return
+      const res = await sendRpc('thread/read', { threadId: sessId, includeTurns: true }) as Record<string, unknown>
+      const result = (res?.result ?? res) as Record<string, unknown>
+      const thread = (result?.thread ?? result) as Record<string, unknown>
+      const turns = (thread?.turns ?? []) as Array<Record<string, unknown>>
+      if (!Array.isArray(turns)) return
+
+      // Flatten all items from all turns
+      const items: Array<Record<string, unknown>> = []
+      for (const turn of turns) {
+        const turnItems = turn.items ?? []
+        if (Array.isArray(turnItems)) items.push(...turnItems)
+      }
 
       for (const item of items) {
         const itemType = item.type as string

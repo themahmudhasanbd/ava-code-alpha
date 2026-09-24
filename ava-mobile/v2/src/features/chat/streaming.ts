@@ -213,7 +213,7 @@ export function useStreaming() {
       if (!threadId) throw new Error('Failed to create or find session')
 
       await sendRpc('turn/start', {
-        thread_id: threadId,
+        threadId: threadId,
         input: [{ type: 'text', text: prompt }],
         ...(settings.selectedModel ? { model: settings.selectedModel } : {}),
         ...(settings.reasoningEffort ? { effort: settings.reasoningEffort } : {}),
@@ -255,7 +255,7 @@ export function useStreaming() {
     const turnId = useChatStore.getState().activeTurnId
     if (activeId) {
       try {
-        await sendRpc('turn/interrupt', { thread_id: activeId, ...(turnId ? { turn_id: turnId } : {}) })
+        await sendRpc('turn/interrupt', { threadId: activeId, ...(turnId ? { turnId: turnId } : {}) })
       } catch { /* ignore */ }
     }
     const pendingId = chat.activePendingId

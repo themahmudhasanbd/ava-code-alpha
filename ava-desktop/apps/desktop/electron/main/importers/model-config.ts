@@ -39,14 +39,14 @@ export async function scanModelConfigs(
 ): Promise<ModelConfigImportDraft[]> {
   const home = options.homeDir ?? os.homedir();
   const env = options.env ?? process.env;
-  const [ccSwitch, claude, opencode, codex, pi] = await Promise.all([
+  const [ccSwitch, claude, opencode, ava, pi] = await Promise.all([
     scanCcSwitch(home, env),
     scanClaude(home),
     scanOpenCode(home, env),
-    scanCodex(home, env),
+    scanAva(home, env),
     scanPi(home, env),
   ]);
-  const extra = [...claude, ...opencode, ...codex, ...pi].filter(
+  const extra = [...claude, ...opencode, ...ava, ...pi].filter(
     (draft) => !ccSwitch.some((candidate) => draftMatchesExisting(draft, [candidate])),
   );
   return [...ccSwitch, ...extra];
@@ -72,7 +72,7 @@ async function scanOpenCode(
   return parseOpenCodeModelConfig(config, auth, env);
 }
 
-async function scanCodex(
+async function scanAva(
   home: string,
   env: ModelConfigImportEnv,
 ): Promise<ModelConfigImportDraft[]> {
@@ -81,7 +81,6 @@ async function scanCodex(
     path.join(home, ".ava", "config.toml"),
     path.join(home, ".config", "ava-code", "config.toml"),
     path.join(home, ".config", "ava", "config.toml"),
-    path.join(home, ".codex", "config.toml"),
   ];
   const results: ModelConfigImportDraft[] = [];
 
@@ -97,8 +96,8 @@ async function scanCodex(
     }
   }
 
-  // Also check profile .config.toml files in ~/.ava-code, ~/.ava, and ~/.codex
-  for (const dir of [path.join(home, ".ava-code"), path.join(home, ".ava"), path.join(home, ".codex")]) {
+  // Also check AvA profile variants without inspecting another agent's home.
+  for (const dir of [path.join(home, ".ava-code"), path.join(home, ".ava")]) {
     try {
       const files = await fs.readdir(dir);
       for (const f of files) {

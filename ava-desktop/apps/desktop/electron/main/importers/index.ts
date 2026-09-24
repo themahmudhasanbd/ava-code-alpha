@@ -1,5 +1,4 @@
 import { claudeImporter } from "./claude";
-import { CODEX_SCAN_MAX_FILES, codexImporter, scanCodexSessionsResult } from "./codex";
 import { opencodeImporter } from "./opencode";
 import { piImporter } from "./pi";
 import type {
@@ -15,7 +14,6 @@ export { scanModelConfigs } from "./model-config";
 const importers: SessionImporter[] = [
   claudeImporter,
   opencodeImporter,
-  codexImporter,
   piImporter,
 ];
 
@@ -27,11 +25,6 @@ export async function scanAllSources(): Promise<{
   const results = await Promise.all(
     importers.map(async (imp) => {
       try {
-        if (imp.source === "codex") {
-          const result = await scanCodexSessionsResult();
-          if (result.truncated) truncated.codex = CODEX_SCAN_MAX_FILES;
-          return result.sessions;
-        }
         return await imp.scan();
       } catch {
         return [];
@@ -51,4 +44,3 @@ export async function convertSession(
   if (!importer) throw new Error(`unknown import source: ${summary.source}`);
   return importer.convert(summary);
 }
-

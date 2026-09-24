@@ -136,7 +136,7 @@ import {
   validateSpeechSettings,
 } from "@pi-desktop/shared";
 
-export type ImportSource = "claude-code" | "opencode" | "codex" | "pi";
+export type ImportSource = "claude-code" | "opencode" | "pi";
 // One definition, owned by the shared package (the host and sidecar use the
 // same shape); re-exported so existing renderer imports keep working.
 import type {

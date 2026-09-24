@@ -426,7 +426,6 @@ export function SessionImportPanel() {
   const disclosure = useGroupDisclosure();
   const [scanning, setScanning] = useState(false);
   const [importing, setImporting] = useState(false);
-  const [codexCap, setCodexCap] = useState<number | null>(null);
 
 
   const keyOf = (candidate: ImportCandidate) =>
@@ -437,7 +436,6 @@ export function SessionImportPanel() {
     try {
       const res = await api.scanImportSessions();
       setCandidates(res.sessions);
-      setCodexCap(typeof res.truncated?.codex === "number" ? res.truncated.codex : null);
       setSelected(new Set());
       disclosure.reset();
 
@@ -510,7 +508,6 @@ export function SessionImportPanel() {
           note={importLabels.sources && [
             importLabels.sources["claude-code"],
             importLabels.sources.opencode,
-            importLabels.sources.codex,
             importLabels.sources.pi,
           ].join(" · ")}
           onScan={() => void scan()}
@@ -528,11 +525,6 @@ export function SessionImportPanel() {
             importing={importing}
             onScan={() => void scan()}
             onImport={() => void runImport()}
-            hint={
-              codexCap != null
-                ? t("settings.importCodexCapped", { limit: codexCap })
-                : undefined
-            }
             options={
               <ImportOption
                 label={t("settings.importGroupBy")}
@@ -823,7 +815,6 @@ const MCP_SOURCE_KEY: Record<ExternalMcpSourceKind, string> = {
   "claude-code": "settings.importAgentScanSourceClaudeCode",
   "cursor-global": "settings.importAgentScanSourceCursorGlobal",
   "cursor-project": "settings.importAgentScanSourceCursorProject",
-  codex: "settings.importAgentScanSourceCodex",
   opencode: "settings.importAgentScanSourceOpenCode",
   "chatgpt-desktop": "settings.importAgentScanSourceChatgpt",
 };

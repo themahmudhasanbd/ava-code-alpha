@@ -16,7 +16,6 @@ export type McpSourceKind =
   | "claude-code"
   | "cursor-global"
   | "cursor-project"
-  | "codex"
   | "opencode"
   | "chatgpt-desktop";
 
@@ -386,142 +385,6 @@ function opencodeToCandidate(
   });
 }
 
-/**
- * Minimal TOML parser for codex `[mcp_servers.<id>]` sections. Handles the
- * subset actually used: string, bool, int, string array, inline env table.
- * Anything unrecognized is skipped rather than erroring — a real TOML crate
- * would just be extra risk here.
- */
-export function parseCodexMcpToml(text: string): Record<string, Record<string, unknown>> {
-  const result: Record<string, Record<string, unknown>> = {};
-  const lines = text.split(/\r?\n/);
-  let current: Record<string, unknown> | null = null;
-  for (let raw of lines) {
-    const line = raw.replace(/^\uFEFF/, "").trim();
-    if (!line || line.startsWith("#")) continue;
-    const section = /^\[([^\]]+)\]$/.exec(line);
-    if (section) {
-      const name = section[1].trim();
-      const match = /^mcp_servers\.(.+)$/.exec(name);
-      if (match) {
-        const id = match[1].replace(/^["']|["']$/g, "").trim();
-        current = {};
-        result[id] = current;
-      } else {
-        current = null;
-      }
-      continue;
-    }
-    if (!current) continue;
-    const eq = line.indexOf("=");
-    if (eq === -1) continue;
-    const key = line.slice(0, eq).trim();
-    const value = stripInlineComment(line.slice(eq + 1).trim());
-    current[key] = parseTomlValue(value);
-  }
-  return result;
-}
-
-function stripInlineComment(value: string): string {
-  // Don't strip `#` that lives inside a string; simple state machine is enough.
-  let inSingle = false;
-  let inDouble = false;
-  for (let i = 0; i < value.length; i += 1) {
-    const ch = value[i];
-    if (ch === "'" && !inDouble) inSingle = !inSingle;
-    else if (ch === '"' && !inSingle) inDouble = !inDouble;
-    else if (ch === "#" && !inSingle && !inDouble) return value.slice(0, i).trim();
-  }
-  return value.trim();
-}
-
-function parseTomlValue(text: string): unknown {
-  if (!text.length) return "";
-  const first = text[0];
-  if (first === '"' || first === "'") {
-    const end = text.lastIndexOf(first);
-    if (end > 0) return text.slice(1, end);
-    return text.slice(1);
-  }
-  if (first === "[") {
-    const end = text.lastIndexOf("]");
-    const inner = end > 0 ? text.slice(1, end) : text.slice(1);
-    return splitTopLevel(inner).map((chunk) => parseTomlValue(chunk.trim()));
-  }
-  if (first === "{") {
-    const end = text.lastIndexOf("}");
-    const inner = end > 0 ? text.slice(1, end) : text.slice(1);
-    const obj: Record<string, unknown> = {};
-    for (const part of splitTopLevel(inner)) {
-      const trimmed = part.trim();
-      if (!trimmed) continue;
-      const eq = trimmed.indexOf("=");
-      if (eq === -1) continue;
-      const k = trimmed.slice(0, eq).trim().replace(/^["']|["']$/g, "");
-      obj[k] = parseTomlValue(trimmed.slice(eq + 1).trim());
-    }
-    return obj;
-  }
-  if (text === "true") return true;
-  if (text === "false") return false;
-  if (/^-?\d+$/.test(text)) return Number(text);
-  return text;
-}
-
-function splitTopLevel(text: string): string[] {
-  const out: string[] = [];
-  let depth = 0;
-  let inSingle = false;
-  let inDouble = false;
-  let start = 0;
-  for (let i = 0; i < text.length; i += 1) {
-    const ch = text[i];
-    if (ch === "'" && !inDouble) inSingle = !inSingle;
-    else if (ch === '"' && !inSingle) inDouble = !inDouble;
-    else if (!inSingle && !inDouble) {
-      if (ch === "[" || ch === "{") depth += 1;
-      else if (ch === "]" || ch === "}") depth -= 1;
-      else if (ch === "," && depth === 0) {
-        out.push(text.slice(start, i));
-        start = i + 1;
-      }
-    }
-  }
-  const tail = text.slice(start);
-  if (tail.trim() || out.length) out.push(tail);
-  return out;
-}
-
-async function scanCodex(
-  home: string,
-): Promise<{ report: McpSourceReport; candidates: McpCandidate[] }> {
-  const filePath = path.join(home, ".codex", "config.toml");
-  const report: McpSourceReport = { kind: "codex", path: filePath, exists: false, count: 0 };
-  const { text, error } = await readText(filePath);
-  if (error) {
-    report.error = error;
-    return { report, candidates: [] };
-  }
-  if (text == null) return { report, candidates: [] };
-  report.exists = true;
-  let parsed: Record<string, Record<string, unknown>>;
-  try {
-    parsed = parseCodexMcpToml(text);
-  } catch (err) {
-    report.error = `toml parse failed: ${(err as Error).message}`;
-    return { report, candidates: [] };
-  }
-  const collected: McpCandidate[] = [];
-  let index = 0;
-  for (const [key, raw] of Object.entries(parsed)) {
-    collected.push(toCandidate("codex", filePath, key, index, raw));
-    index += 1;
-  }
-  const deduped = dedupeById(collected);
-  report.count = deduped.length;
-  return { report, candidates: deduped };
-}
-
 async function scanChatgptDesktop(): Promise<{
   report: McpSourceReport;
   candidates: McpCandidate[];
@@ -541,12 +404,11 @@ export async function scanExternalMcp(opts: McpScanOptions = {}): Promise<McpSca
   const platform = opts.platform ?? process.platform;
   const env = opts.env ?? process.env;
 
-  const [claudeDesktop, claudeCode, cursorGlobal, opencode, codex, chatgpt] = await Promise.all([
+  const [claudeDesktop, claudeCode, cursorGlobal, opencode, chatgpt] = await Promise.all([
     scanClaudeDesktop(home, platform, env),
     scanClaudeCode(home),
     scanCursorGlobal(home),
     scanOpencode(home, env),
-    scanCodex(home),
     scanChatgptDesktop(),
   ]);
 
@@ -555,7 +417,6 @@ export async function scanExternalMcp(opts: McpScanOptions = {}): Promise<McpSca
     { reports: claudeCode.reports, candidates: claudeCode.candidates },
     { reports: [cursorGlobal.report], candidates: cursorGlobal.candidates },
     { reports: [opencode.report], candidates: opencode.candidates },
-    { reports: [codex.report], candidates: codex.candidates },
     { reports: [chatgpt.report], candidates: chatgpt.candidates },
   ];
 

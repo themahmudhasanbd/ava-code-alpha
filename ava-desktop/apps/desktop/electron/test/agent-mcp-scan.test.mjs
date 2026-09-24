@@ -8,7 +8,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 register(pathToFileURL(join(here, "..", "..", "test", "helpers", "ts-import-hooks.mjs")));
-const { scanExternalMcp, parseCodexMcpToml } = await import(
+const { scanExternalMcp } = await import(
   "../main/importers/agent-mcp-scan.ts"
 );
 
@@ -125,7 +125,7 @@ test("cursor global and project trees each report their own candidates", async (
   }
 });
 
-test("codex config.toml is parsed with the mini TOML reader", async () => {
+test("the native harness home is never scanned for MCP configuration", async () => {
   const { root, home } = await makeHome();
   try {
     await mkdir(join(home, ".codex"), { recursive: true });
@@ -144,16 +144,8 @@ test("codex config.toml is parsed with the mini TOML reader", async () => {
       ].join("\n"),
     );
     const result = await scanExternalMcp({ homeDir: home, platform: "linux", env: {} });
-    const cands = result.candidates.filter((c) => c.source === "codex");
-    assert.equal(cands.length, 2);
-    const pw = cands.find((c) => c.id === "playwright");
-    assert.equal(pw.transport, "stdio");
-    assert.equal(pw.command, "npx");
-    assert.deepEqual(pw.args, ["-y", "@playwright/mcp"]);
-    assert.deepEqual(pw.env, { HEADLESS: "1" });
-    const remote = cands.find((c) => c.id === "remote");
-    assert.equal(remote.transport, "http");
-    assert.equal(remote.url, "https://mcp.example.com/rpc");
+    assert.equal(result.candidates.some((candidate) => candidate.source === "codex"), false);
+    assert.equal(result.sources.some((source) => source.kind === "codex"), false);
   } finally {
     await rm(root, { recursive: true, force: true });
   }
@@ -213,19 +205,4 @@ test("chatgpt-desktop always reports as not detected until a stable path exists"
   } finally {
     await rm(root, { recursive: true, force: true });
   }
-});
-
-test("parseCodexMcpToml ignores unrelated sections and comments", () => {
-  const parsed = parseCodexMcpToml(
-    [
-      "[other]",
-      'x = "1"',
-      "[mcp_servers.only]",
-      'command = "run" # inline comment',
-      "disabled = true",
-    ].join("\n"),
-  );
-  assert.deepEqual(Object.keys(parsed), ["only"]);
-  assert.equal(parsed.only.command, "run");
-  assert.equal(parsed.only.disabled, true);
 });

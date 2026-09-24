@@ -22,3 +22,9 @@
 - **Model & Reasoning Modal**: Enhanced `ModelReasoningModal` with dynamic search, provider accent colors (Anthropic, OpenAI, OmniRoute, Google, DeepSeek), and full reasoning level presets (`none`, `low`, `medium`, `high`, `xhigh`).
 - **Smooth Scroll-to-Bottom**: Implemented `Curves.easeOutCubic` animation with distance-scaled duration for floating jump-to-latest button and seamless initial positioning on session open.
 - **Verification**: 62 unit/widget tests passing (100%), Web build compiled and deployed to `https://ava.mahmudhasan.pro/`.
+
+## [2026-09-24] AvA Desktop Standalone Native Core Unification & CI Packaging
+- **Native Rust Engine Integration**: AvA Desktop electron host now directly spawns `codex-app-server --listen stdio://` from `/opt/AvA Code Alpha/resources/bin/codex-app-server` (compiled from `/var/www/ava-code/ava-rs`).
+- **Strict Harness Isolation**: Completely decoupled AvA Desktop runtime discovery and importer routines from `~/.codex` (`CODEX_HOME`). Desktop configuration and session state exclusively operate out of `/root/.ava-code`.
+- **Standalone Linux DEB via GitHub Actions**: Release packaging is automated via `.github/workflows/desktop-build-release.yml`, bundling the full Electron app and embedded Rust engine into `ava-code-alpha_0.15.2-alpha_amd64.deb` without heavy local compilation.
+- **System Installation**: Installed and verified `/opt/AvA Code Alpha/ava-code-alpha` on the system with full stdio JSON-RPC capability.

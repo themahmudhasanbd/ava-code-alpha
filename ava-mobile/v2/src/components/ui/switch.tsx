@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   type ViewStyle,
 } from "react-native";
-import * as Haptics from "expo-haptics";
 import { COLORS } from "@/theme/colors";
 
 export interface SwitchProps {
@@ -33,7 +32,7 @@ export function Switch({
 
   const toggle = () => {
     if (disabled) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+
     onCheckedChange(!checked);
   };
 

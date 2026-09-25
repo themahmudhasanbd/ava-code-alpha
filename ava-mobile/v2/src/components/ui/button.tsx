@@ -9,7 +9,6 @@ import {
   type ViewStyle,
   type StyleProp,
 } from "react-native";
-import * as Haptics from "expo-haptics";
 import { COLORS } from "@/theme/colors";
 
 export interface ButtonProps extends TouchableOpacityProps {
@@ -39,7 +38,7 @@ export const Button = React.forwardRef<any, ButtonProps>(
   ) => {
     const handlePress = (e: any) => {
       if (disabled || loading) return;
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+
       onPress?.(e);
     };
 

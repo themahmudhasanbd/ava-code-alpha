@@ -9,7 +9,6 @@ import {
   type ViewStyle,
 } from "react-native";
 import { Check, ChevronDown, ChevronRight, Wrench, X } from "lucide-react-native";
-import * as Haptics from "expo-haptics";
 import { Badge } from "@/components/ui/badge";
 import { Surface } from "@/components/kit";
 import { CodeBlock } from "./code-block";
@@ -41,7 +40,7 @@ export function Tool({
   const [open, setOpen] = useState(false);
 
   const toggle = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+
     setOpen(!open);
   };
 

@@ -25,8 +25,12 @@ import {
   Terminal as TerminalSquare,
   type LucideIcon,
 } from "lucide-react-native";
-import * as Haptics from "expo-haptics";
-import { Sheet, SheetHeader } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Surface } from "@/components/kit";
 import { REASONING_EFFORTS, SANDBOX_MODES } from "@/config/models";
 import { useAva } from "@/state/ava-provider";
@@ -61,19 +65,22 @@ function OptionRow({
   return (
     <TouchableOpacity
       style={[styles.optionRow, active && styles.optionRowActive]}
-      onPress={() => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-        onClick();
-      }}
+      onPress={onClick}
       activeOpacity={0.7}
     >
       {Icon && (
         <View style={styles.optionIconBox}>
-          <Icon size={16} color={active ? COLORS.primary : COLORS.mutedForeground} />
+          <Icon
+            size={16}
+            color={active ? COLORS.primary : COLORS.mutedForeground}
+          />
         </View>
       )}
       <View style={styles.optionContent}>
-        <Text style={[styles.optionTitle, active && styles.optionTitleActive]} numberOfLines={1}>
+        <Text
+          style={[styles.optionTitle, active && styles.optionTitleActive]}
+          numberOfLines={1}
+        >
           {title}
         </Text>
         {subtitle && (
@@ -84,6 +91,33 @@ function OptionRow({
       </View>
       {active && <Check size={16} color={COLORS.primary} />}
     </TouchableOpacity>
+  );
+}
+
+function PanelSheet({
+  open,
+  title,
+  onClose,
+  children,
+}: {
+  open: boolean;
+  title: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent side="bottom" style={styles.panelSheetContent}>
+        <SheetHeader title={title} onClose={onClose} />
+        <ScrollView
+          style={styles.sheetScroll}
+          contentContainerStyle={styles.sheetScrollInner}
+          showsVerticalScrollIndicator={false}
+        >
+          {children}
+        </ScrollView>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -151,6 +185,7 @@ export const Composer = forwardRef<TextInput, Props>(
               <TouchableOpacity
                 style={styles.addBtn}
                 onPress={() => setPanel("actions")}
+                activeOpacity={0.7}
               >
                 <Plus size={16} color={COLORS.foreground} />
               </TouchableOpacity>
@@ -158,6 +193,7 @@ export const Composer = forwardRef<TextInput, Props>(
               <TouchableOpacity
                 style={styles.toolPill}
                 onPress={() => setPanel("actions")}
+                activeOpacity={0.7}
               >
                 <Settings2 size={13} color={COLORS.foreground} />
                 <Text style={styles.toolPillText}>Tools</Text>
@@ -166,6 +202,7 @@ export const Composer = forwardRef<TextInput, Props>(
               <TouchableOpacity
                 style={styles.toolPill}
                 onPress={() => setPanel("sandbox")}
+                activeOpacity={0.7}
               >
                 <ShieldCheck size={13} color={COLORS.foreground} />
                 <Text style={styles.toolPillText}>{sandboxOpt.label}</Text>
@@ -178,6 +215,7 @@ export const Composer = forwardRef<TextInput, Props>(
                 <TouchableOpacity
                   style={styles.stopButton}
                   onPress={onStop}
+                  activeOpacity={0.7}
                 >
                   <Square size={14} color="#FFF" fill="#FFF" />
                 </TouchableOpacity>
@@ -189,6 +227,7 @@ export const Composer = forwardRef<TextInput, Props>(
                   ]}
                   onPress={handleSend}
                   disabled={!value.trim() && !busy}
+                  activeOpacity={0.7}
                 >
                   <ArrowUp size={16} color="#FFF" />
                 </TouchableOpacity>
@@ -197,123 +236,128 @@ export const Composer = forwardRef<TextInput, Props>(
           </View>
         </Surface>
 
-        {/* Action / Tools Bottom Sheet */}
-        <Sheet open={panel === "actions"} onOpenChange={(o) => !o && close()}>
-          <SheetHeader title="Prompt actions & tools" onClose={close} />
-          <ScrollView style={styles.sheetScroll} showsVerticalScrollIndicator={false}>
-            <OptionRow
-              icon={SquarePen}
-              title="New session"
-              subtitle="Start a fresh conversation"
-              onClick={() => {
-                setActiveSessionId(null);
-                close();
-              }}
-            />
-            <OptionRow
-              icon={FolderOpen}
-              title="Workspace files"
-              subtitle="Browse project files"
-              onClick={() => {
-                close();
-                navigation.navigate("Files");
-              }}
-            />
-            <OptionRow
-              icon={TerminalSquare}
-              title="Terminal"
-              subtitle="Run shell commands"
-              onClick={() => {
-                close();
-                navigation.navigate("Terminal");
-              }}
-            />
-            <OptionRow
-              icon={Plug}
-              title="MCP tools"
-              subtitle="Servers, tools and status"
-              onClick={() => {
-                close();
-                navigation.navigate("Mcp");
-              }}
-            />
-            <OptionRow
-              icon={Eraser}
-              title="Clear chat view"
-              subtitle="Hide messages on this screen"
-              onClick={() => {
-                onClear();
-                close();
-              }}
-            />
-          </ScrollView>
-        </Sheet>
+        {/* Actions Bottom Sheet */}
+        <PanelSheet
+          open={panel === "actions"}
+          title="Prompt actions & tools"
+          onClose={close}
+        >
+          <OptionRow
+            icon={SquarePen}
+            title="New session"
+            subtitle="Start a fresh conversation"
+            onClick={() => {
+              setActiveSessionId(null);
+              close();
+            }}
+          />
+          <OptionRow
+            icon={FolderOpen}
+            title="Workspace files"
+            subtitle="Browse project files"
+            onClick={() => {
+              close();
+              navigation.navigate("Files");
+            }}
+          />
+          <OptionRow
+            icon={TerminalSquare}
+            title="Terminal"
+            subtitle="Run shell commands"
+            onClick={() => {
+              close();
+              navigation.navigate("Terminal");
+            }}
+          />
+          <OptionRow
+            icon={Plug}
+            title="MCP tools"
+            subtitle="Servers, tools and status"
+            onClick={() => {
+              close();
+              navigation.navigate("Mcp");
+            }}
+          />
+          <OptionRow
+            icon={Eraser}
+            title="Clear chat view"
+            subtitle="Hide messages on this screen"
+            onClick={() => {
+              onClear();
+              close();
+            }}
+          />
+        </PanelSheet>
 
         {/* Model & Reasoning Bottom Sheet */}
-        <Sheet open={panel === "model"} onOpenChange={(o) => !o && close()}>
-          <SheetHeader title="Model & reasoning" onClose={close} />
-          <ScrollView style={styles.sheetScroll} showsVerticalScrollIndicator={false}>
-            <Text style={styles.sectionHeader}>THINKING DEPTH</Text>
-            <View style={styles.effortRow}>
-              {REASONING_EFFORTS.map((e) => (
-                <TouchableOpacity
-                  key={e}
+        <PanelSheet
+          open={panel === "model"}
+          title="Model & reasoning"
+          onClose={close}
+        >
+          <Text style={styles.sectionHeader}>THINKING DEPTH</Text>
+          <View style={styles.effortRow}>
+            {REASONING_EFFORTS.map((e) => (
+              <TouchableOpacity
+                key={e}
+                style={[
+                  styles.effortBtn,
+                  effort === e && styles.effortBtnActive,
+                ]}
+                onPress={() => setEffort(e)}
+                activeOpacity={0.7}
+              >
+                <Text
                   style={[
-                    styles.effortBtn,
-                    effort === e && styles.effortBtnActive,
+                    styles.effortBtnText,
+                    effort === e && styles.effortBtnTextActive,
                   ]}
-                  onPress={() => setEffort(e)}
                 >
-                  <Text
-                    style={[
-                      styles.effortBtnText,
-                      effort === e && styles.effortBtnTextActive,
-                    ]}
-                  >
-                    {e}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <Text style={styles.sectionHeader}>
-              MODELS ({models.length})
-            </Text>
-            {models.map((m) => (
-              <OptionRow
-                key={m.id}
-                icon={Bot}
-                title={m.name + (m.isDefault ? " (server default)" : "")}
-                subtitle={m.description ?? m.id}
-                active={model?.id === m.id}
-                onClick={() => {
-                  setModelId(m.id);
-                  close();
-                }}
-              />
+                  {e}
+                </Text>
+              </TouchableOpacity>
             ))}
-          </ScrollView>
-        </Sheet>
+          </View>
+
+          <Text style={styles.sectionHeader}>
+            MODELS ({models.length})
+          </Text>
+          {models.map((m) => (
+            <OptionRow
+              key={m.id}
+              icon={Bot}
+              title={m.name + (m.isDefault ? " (server default)" : "")}
+              subtitle={m.description ?? m.id}
+              active={model?.id === m.id}
+              onClick={() => {
+                setModelId(m.id);
+                close();
+              }}
+            />
+          ))}
+        </PanelSheet>
 
         {/* Sandbox Permission Bottom Sheet */}
-        <Sheet open={panel === "sandbox"} onOpenChange={(o) => !o && close()}>
-          <SheetHeader title="Sandbox permission" onClose={close} />
-          <ScrollView style={styles.sheetScroll} showsVerticalScrollIndicator={false}>
-            {SANDBOX_MODES.map((s) => (
-              <OptionRow
-                key={s.id}
-                icon={ShieldCheck}
-                title={s.label}
-                subtitle={s.description}
-                active={sandbox === s.id}
-                onClick={() => {
-                  setSandbox(s.id);
-                  close();
-                }}
-              />
-            ))}
-          </ScrollView>
-        </Sheet>
+        <PanelSheet
+          open={panel === "sandbox"}
+          title="Sandbox permission"
+          onClose={close}
+        >
+          {SANDBOX_MODES.map((s) => (
+            <OptionRow
+              key={s.id}
+              icon={ShieldCheck}
+              title={s.label}
+              subtitle={s.description}
+              active={sandbox === s.id}
+              onClick={() => {
+                setSandbox(s.id);
+                close();
+              }}
+            />
+          ))}
+          <Text style={styles.sandboxHintText}>Applies to new sessions.</Text>
+        </PanelSheet>
       </View>
     );
   }
@@ -422,9 +466,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  panelSheetContent: {
+    maxHeight: "75%",
+  },
   sheetScroll: {
-    paddingHorizontal: 14,
-    paddingTop: 8,
+    maxHeight: 380,
+  },
+  sheetScrollInner: {
+    paddingBottom: 20,
+    gap: 2,
   },
   optionRow: {
     flexDirection: "row",
@@ -436,13 +486,13 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   optionRowActive: {
-    backgroundColor: COLORS.secondary,
+    backgroundColor: "rgba(66, 64, 225, 0.08)",
   },
   optionIconBox: {
     width: 34,
     height: 34,
     borderRadius: 10,
-    backgroundColor: COLORS.secondary,
+    backgroundColor: COLORS.muted,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -485,6 +535,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     borderWidth: 1,
     borderColor: COLORS.border,
+    backgroundColor: "transparent",
   },
   effortBtnActive: {
     backgroundColor: COLORS.primary,
@@ -499,5 +550,11 @@ const styles = StyleSheet.create({
   effortBtnTextActive: {
     color: COLORS.primaryForeground,
     fontWeight: "600",
+  },
+  sandboxHintText: {
+    fontSize: 12,
+    color: COLORS.mutedForeground,
+    paddingHorizontal: 10,
+    marginTop: 8,
   },
 });

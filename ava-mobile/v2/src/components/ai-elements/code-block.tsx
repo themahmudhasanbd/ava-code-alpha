@@ -8,7 +8,6 @@ import {
   View,
 } from "react-native";
 import { Check, Copy } from "lucide-react-native";
-import * as Haptics from "expo-haptics";
 import { COLORS } from "@/theme/colors";
 
 export function CodeBlock({
@@ -21,7 +20,7 @@ export function CodeBlock({
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

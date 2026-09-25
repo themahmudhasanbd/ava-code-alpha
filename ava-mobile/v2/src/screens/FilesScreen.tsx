@@ -24,7 +24,6 @@ import {
   Share2,
   X,
 } from "lucide-react-native";
-import * as Haptics from "expo-haptics";
 import * as Sharing from "expo-sharing";
 import { File, Paths } from "expo-file-system";
 import { AppShell } from "@/components/layout/AppShell";
@@ -78,7 +77,7 @@ function TreeBranch({
           <View key={entry.path}>
             <TouchableOpacity
               onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+
                 if (entry.isDirectory) {
                   setExpanded((items) =>
                     isOpen
@@ -155,7 +154,7 @@ function FileEditor({
   const name = path.split("/").filter(Boolean).pop() ?? path;
 
   const handleCopy = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
@@ -270,7 +269,7 @@ export function FilesScreen() {
                 {root !== "/" ? (
                   <TouchableOpacity
                     onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+
                       setRoot(parentPath(root));
                     }}
                     style={styles.parentBtn}

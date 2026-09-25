@@ -9,7 +9,6 @@ import {
   type StyleProp,
 } from "react-native";
 import type { LucideIcon } from "lucide-react-native";
-import * as Haptics from "expo-haptics";
 import { COLORS } from "@/theme/colors";
 import type { ConnectionStatus } from "@/core/types";
 
@@ -27,6 +26,7 @@ export { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 /**
  * AppGlow - Background container mimicking web `app-glow` radial gradients.
+ * Uses layered soft ambient glow spheres with violet and sky-blue tinting.
  */
 export function AppGlow({
   children,
@@ -37,8 +37,12 @@ export function AppGlow({
 }) {
   return (
     <View style={[styles.glowContainer, style]}>
+      {/* Top Left Violet Radial Ambient Glow */}
       <View style={styles.glowTopLeft} pointerEvents="none" />
+      {/* Mid/Bottom Right Sky Blue Radial Ambient Glow */}
       <View style={styles.glowBottomRight} pointerEvents="none" />
+      {/* Subtle Center Ambient Dispersion */}
+      <View style={styles.glowCenter} pointerEvents="none" />
       {children}
     </View>
   );
@@ -77,16 +81,10 @@ export function GlassIconButton({
   disabled?: boolean;
   label?: string;
 }) {
-  const handlePress = () => {
-    if (disabled) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    onPress?.();
-  };
-
   return (
     <TouchableOpacity
       accessibilityLabel={label}
-      onPress={handlePress}
+      onPress={onPress}
       disabled={disabled}
       activeOpacity={0.7}
       style={[styles.glassIconButton, disabled && { opacity: 0.4 }, style]}
@@ -246,23 +244,30 @@ const styles = StyleSheet.create({
   },
   glowTopLeft: {
     position: "absolute",
-    top: -80,
-    left: -80,
-    width: 320,
-    height: 320,
-    borderRadius: 160,
-    backgroundColor: COLORS.glow1,
-    opacity: 0.85,
+    top: -100,
+    left: -100,
+    width: 380,
+    height: 380,
+    borderRadius: 190,
+    backgroundColor: "rgba(180, 170, 250, 0.45)",
   },
   glowBottomRight: {
     position: "absolute",
-    bottom: -60,
-    right: -60,
-    width: 280,
-    height: 280,
-    borderRadius: 140,
-    backgroundColor: COLORS.glow2,
-    opacity: 0.7,
+    bottom: -80,
+    right: -80,
+    width: 340,
+    height: 340,
+    borderRadius: 170,
+    backgroundColor: "rgba(190, 220, 250, 0.40)",
+  },
+  glowCenter: {
+    position: "absolute",
+    top: "35%",
+    left: "15%",
+    width: 260,
+    height: 260,
+    borderRadius: 130,
+    backgroundColor: "rgba(220, 215, 255, 0.20)",
   },
   surface: {
     backgroundColor: COLORS.glassBg,

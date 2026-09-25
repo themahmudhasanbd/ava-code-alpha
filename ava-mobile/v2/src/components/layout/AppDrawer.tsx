@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import {
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -15,10 +16,8 @@ import {
   Plus,
   Trash2,
   X,
-  type LucideIcon,
 } from "lucide-react-native";
-import * as Haptics from "expo-haptics";
-import { StatusDot, Surface, Button } from "@/components/kit";
+import { StatusDot, GlassIconButton } from "@/components/kit";
 import { APP } from "@/config/app";
 import { NAV_SECTIONS, type AppScreenName } from "@/config/navigation";
 import { useAva } from "@/state/ava-provider";
@@ -51,12 +50,10 @@ export function AppDrawer(props: DrawerContentComponentProps) {
   const currentRouteName = state.routes[state.index]?.name;
 
   const handleNav = (screenName: AppScreenName) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     navigation.navigate(screenName);
   };
 
   const handlePickSession = (id: string | null) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     setActiveSessionId(id);
     navigation.navigate("Chat");
   };
@@ -72,235 +69,252 @@ export function AppDrawer(props: DrawerContentComponentProps) {
   }, [sessions]);
 
   return (
-    <View style={styles.container}>
-      {/* Drawer Header */}
-      <View style={styles.header}>
-        <View style={styles.headerTitleGroup}>
-          <Text style={styles.brandTitle}>{APP.name}</Text>
-          <Text style={styles.brandSubtitle}>
-            {APP.tagline} · v{APP.version}
-          </Text>
-        </View>
-        <TouchableOpacity
-          onPress={() => navigation.closeDrawer()}
-          style={styles.closeBtn}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <X size={18} color={COLORS.mutedForeground} />
-        </TouchableOpacity>
-      </View>
-
-      {/* Tabs List (Menu | Sessions) */}
-      <View style={styles.tabsContainer}>
-        <View style={styles.tabsList}>
-          <TouchableOpacity
-            style={[styles.tabBtn, tab === "menu" && styles.tabBtnActive]}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-              setTab("menu");
-            }}
-          >
-            <Text
-              style={[
-                styles.tabText,
-                tab === "menu" && styles.tabTextActive,
-              ]}
-            >
-              Menu
+    <View style={styles.outerContainer}>
+      <View style={styles.glassModal}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.headerTitleGroup}>
+            <Text style={styles.brandTitle}>{APP.name}</Text>
+            <Text style={styles.brandSubtitle}>
+              {APP.tagline} · v{APP.version}
             </Text>
-          </TouchableOpacity>
+          </View>
           <TouchableOpacity
-            style={[styles.tabBtn, tab === "sessions" && styles.tabBtnActive]}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-              setTab("sessions");
-            }}
+            onPress={() => navigation.closeDrawer()}
+            style={styles.closeBtn}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            <Text
-              style={[
-                styles.tabText,
-                tab === "sessions" && styles.tabTextActive,
-              ]}
-            >
-              Sessions
-            </Text>
+            <X size={18} color={COLORS.mutedForeground} />
           </TouchableOpacity>
         </View>
-      </View>
 
-      {/* Tab Contents */}
-      {tab === "menu" ? (
-        <ScrollView
-          style={styles.scrollArea}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {NAV_SECTIONS.map((section) => (
-            <View key={section.title} style={styles.sectionBlock}>
-              <Text style={styles.sectionHeader}>{section.title}</Text>
-              {section.items.map((item) => {
-                const Icon = item.icon;
-                const isActive = currentRouteName === item.screen;
-                return (
-                  <TouchableOpacity
-                    key={item.label}
-                    style={[
-                      styles.menuItem,
-                      isActive && styles.menuItemActive,
-                    ]}
-                    onPress={() => handleNav(item.screen)}
-                  >
-                    <Icon
-                      size={18}
-                      color={isActive ? COLORS.primary : COLORS.mutedForeground}
-                    />
-                    <Text
+        {/* Segmented Tabs (Menu | Sessions) */}
+        <View style={styles.tabsContainer}>
+          <View style={styles.tabsList}>
+            <TouchableOpacity
+              style={[styles.tabBtn, tab === "menu" && styles.tabBtnActive]}
+              onPress={() => setTab("menu")}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  styles.tabText,
+                  tab === "menu" && styles.tabTextActive,
+                ]}
+              >
+                Menu
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.tabBtn, tab === "sessions" && styles.tabBtnActive]}
+              onPress={() => setTab("sessions")}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  styles.tabText,
+                  tab === "sessions" && styles.tabTextActive,
+                ]}
+              >
+                Sessions
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Tab Contents */}
+        {tab === "menu" ? (
+          <ScrollView
+            style={styles.scrollArea}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {NAV_SECTIONS.map((section) => (
+              <View key={section.title} style={styles.sectionBlock}>
+                <Text style={styles.sectionHeader}>{section.title}</Text>
+                {section.items.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = currentRouteName === item.screen;
+                  return (
+                    <TouchableOpacity
+                      key={item.label}
                       style={[
-                        styles.menuItemText,
-                        isActive && styles.menuItemTextActive,
+                        styles.menuItem,
+                        isActive && styles.menuItemActive,
                       ]}
+                      onPress={() => handleNav(item.screen)}
+                      activeOpacity={0.7}
                     >
-                      {item.label}
-                    </Text>
-                  </TouchableOpacity>
+                      <Icon
+                        size={18}
+                        color={isActive ? COLORS.primary : COLORS.mutedForeground}
+                      />
+                      <Text
+                        style={[
+                          styles.menuItemText,
+                          isActive && styles.menuItemTextActive,
+                        ]}
+                      >
+                        {item.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            ))}
+          </ScrollView>
+        ) : (
+          <ScrollView
+            style={styles.scrollArea}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <TouchableOpacity
+              style={styles.newSessionBtn}
+              onPress={() => handlePickSession(null)}
+              activeOpacity={0.7}
+            >
+              <Plus size={16} color={COLORS.foreground} />
+              <Text style={styles.newSessionText}>New session</Text>
+            </TouchableOpacity>
+
+            {status !== "online" && (
+              <Text style={styles.hintText}>Waiting for server connection…</Text>
+            )}
+            {isLoading && <Text style={styles.hintText}>Loading sessions…</Text>}
+            {!isLoading && sessions.length === 0 && (
+              <Text style={styles.hintText}>No sessions yet.</Text>
+            )}
+
+            <View style={styles.groupsWrapper}>
+              {projectGroups.map(([dir, sList]) => {
+                const isOpen =
+                  expandedDirs.includes(dir) || expandedDirs.length === 0;
+                return (
+                  <View key={dir} style={styles.groupContainer}>
+                    <TouchableOpacity
+                      style={styles.groupHeader}
+                      onPress={() => toggleExpand(dir)}
+                      activeOpacity={0.7}
+                    >
+                      {isOpen ? (
+                        <ChevronDown size={15} color={COLORS.mutedForeground} />
+                      ) : (
+                        <ChevronRight size={15} color={COLORS.mutedForeground} />
+                      )}
+                      <Folder size={15} color={COLORS.primary} />
+                      <Text style={styles.groupTitle} numberOfLines={1}>
+                        {projectName(dir)}
+                      </Text>
+                      <Text style={styles.groupCount}>{sList.length}</Text>
+                    </TouchableOpacity>
+
+                    {isOpen && (
+                      <View style={styles.groupSessionList}>
+                        {sList.map((s) => {
+                          const isSelected = activeSessionId === s.id;
+                          return (
+                            <View key={s.id} style={styles.sessionRow}>
+                              <TouchableOpacity
+                                style={[
+                                  styles.sessionBtn,
+                                  isSelected && styles.sessionBtnActive,
+                                ]}
+                                onPress={() => handlePickSession(s.id)}
+                                activeOpacity={0.7}
+                              >
+                                <Text
+                                  style={[
+                                    styles.sessionBtnText,
+                                    isSelected && styles.sessionBtnTextActive,
+                                  ]}
+                                  numberOfLines={1}
+                                >
+                                  {s.title || "Untitled"}
+                                </Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                style={styles.deleteBtn}
+                                onPress={() => {
+                                  if (activeSessionId === s.id) {
+                                    setActiveSessionId(null);
+                                  }
+                                  deleteSession.mutate(s.id);
+                                }}
+                                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                              >
+                                <Trash2 size={13} color={COLORS.mutedForeground} />
+                              </TouchableOpacity>
+                            </View>
+                          );
+                        })}
+                      </View>
+                    )}
+                  </View>
                 );
               })}
             </View>
-          ))}
-        </ScrollView>
-      ) : (
-        <ScrollView
-          style={styles.scrollArea}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          <TouchableOpacity
-            style={styles.newSessionBtn}
-            onPress={() => handlePickSession(null)}
-          >
-            <Plus size={16} color={COLORS.foreground} />
-            <Text style={styles.newSessionText}>New session</Text>
-          </TouchableOpacity>
+          </ScrollView>
+        )}
 
-          {status !== "online" && (
-            <Text style={styles.hintText}>Waiting for server connection…</Text>
-          )}
-          {isLoading && <Text style={styles.hintText}>Loading sessions…</Text>}
-          {!isLoading && sessions.length === 0 && (
-            <Text style={styles.hintText}>No sessions yet.</Text>
-          )}
-
-          <View style={styles.groupsWrapper}>
-            {projectGroups.map(([dir, sList]) => {
-              const isOpen = expandedDirs.includes(dir) || expandedDirs.length === 0;
-              return (
-                <View key={dir} style={styles.groupContainer}>
-                  <TouchableOpacity
-                    style={styles.groupHeader}
-                    onPress={() => toggleExpand(dir)}
-                  >
-                    {isOpen ? (
-                      <ChevronDown size={16} color={COLORS.mutedForeground} />
-                    ) : (
-                      <ChevronRight size={16} color={COLORS.mutedForeground} />
-                    )}
-                    <Folder size={16} color={COLORS.primary} />
-                    <Text style={styles.groupTitle} numberOfLines={1}>
-                      {projectName(dir)}
-                    </Text>
-                    <Text style={styles.groupCount}>{sList.length}</Text>
-                  </TouchableOpacity>
-
-                  {isOpen && (
-                    <View style={styles.groupSessionList}>
-                      {sList.map((s) => {
-                        const isSelected = activeSessionId === s.id;
-                        return (
-                          <View key={s.id} style={styles.sessionRow}>
-                            <TouchableOpacity
-                              style={[
-                                styles.sessionBtn,
-                                isSelected && styles.sessionBtnActive,
-                              ]}
-                              onPress={() => handlePickSession(s.id)}
-                            >
-                              <Text
-                                style={[
-                                  styles.sessionBtnText,
-                                  isSelected && styles.sessionBtnTextActive,
-                                ]}
-                                numberOfLines={1}
-                              >
-                                {s.title || "Untitled"}
-                              </Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                              style={styles.deleteBtn}
-                              onPress={() => {
-                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-                                if (activeSessionId === s.id) {
-                                  setActiveSessionId(null);
-                                }
-                                deleteSession.mutate(s.id);
-                              }}
-                            >
-                              <Trash2 size={14} color={COLORS.mutedForeground} />
-                            </TouchableOpacity>
-                          </View>
-                        );
-                      })}
-                    </View>
-                  )}
-                </View>
-              );
-            })}
-          </View>
-        </ScrollView>
-      )}
-
-      {/* Drawer Footer */}
-      <View style={styles.footer}>
-        <View style={styles.avatarBox}>
-          <Text style={styles.avatarText}>
-            {(auth?.username || "A").slice(0, 2).toUpperCase()}
-          </Text>
-        </View>
-        <View style={styles.userMetaCol}>
-          <Text style={styles.usernameText} numberOfLines={1}>
-            {auth?.username || "Guest"}
-          </Text>
-          <View style={styles.serverRow}>
-            <StatusDot status={status} size={6} />
-            <Text style={styles.serverHostText} numberOfLines={1}>
-              {auth?.serverUrl.replace(/^https?:\/\//, "") || "offline"}
+        {/* Footer */}
+        <View style={styles.footer}>
+          <View style={styles.avatarBox}>
+            <Text style={styles.avatarText}>
+              {(auth?.username || "A").slice(0, 2).toUpperCase()}
             </Text>
           </View>
+          <View style={styles.userMetaCol}>
+            <Text style={styles.usernameText} numberOfLines={1}>
+              {auth?.username || "Guest"}
+            </Text>
+            <View style={styles.serverRow}>
+              <StatusDot status={status} size={6} />
+              <Text style={styles.serverHostText} numberOfLines={1}>
+                {auth?.serverUrl.replace(/^https?:\/\//, "") || "offline"}
+              </Text>
+            </View>
+          </View>
+          <TouchableOpacity
+            style={styles.logoutBtn}
+            onPress={signOut}
+            activeOpacity={0.7}
+          >
+            <LogOut size={16} color={COLORS.foreground} />
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          style={styles.logoutBtn}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-            signOut();
-          }}
-        >
-          <LogOut size={16} color={COLORS.foreground} />
-        </TouchableOpacity>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  outerContainer: {
     flex: 1,
-    backgroundColor: COLORS.sidebar,
+    backgroundColor: "transparent",
+    paddingVertical: Platform.OS === "android" ? 16 : 12,
+    paddingLeft: 8,
+    paddingRight: 4,
+  },
+  glassModal: {
+    flex: 1,
+    backgroundColor: COLORS.glassBg,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: COLORS.glassBorder,
+    shadowColor: COLORS.glassShadow,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    elevation: 8,
+    overflow: "hidden",
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingTop: 48,
+    paddingTop: 18,
     paddingBottom: 14,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.sidebarBorder,
@@ -310,16 +324,22 @@ const styles = StyleSheet.create({
   },
   brandTitle: {
     fontSize: 15,
-    fontWeight: "600",
-    color: COLORS.sidebarForeground,
+    fontWeight: "700",
+    color: COLORS.foreground,
+    letterSpacing: -0.2,
   },
   brandSubtitle: {
     fontSize: 12,
     color: COLORS.mutedForeground,
-    marginTop: 1,
+    marginTop: 2,
   },
   closeBtn: {
-    padding: 6,
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: COLORS.secondary,
   },
   tabsContainer: {
     paddingHorizontal: 12,
@@ -327,7 +347,7 @@ const styles = StyleSheet.create({
   },
   tabsList: {
     flexDirection: "row",
-    height: 40,
+    height: 38,
     backgroundColor: COLORS.secondary,
     borderRadius: 12,
     padding: 3,
@@ -363,7 +383,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   sectionBlock: {
-    marginBottom: 20,
+    marginBottom: 18,
   },
   sectionHeader: {
     fontSize: 11,
@@ -388,7 +408,7 @@ const styles = StyleSheet.create({
   menuItemText: {
     fontSize: 14,
     fontWeight: "500",
-    color: COLORS.sidebarForeground,
+    color: COLORS.foreground,
   },
   menuItemTextActive: {
     fontWeight: "600",
@@ -482,6 +502,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderTopWidth: 1,
     borderTopColor: COLORS.sidebarBorder,
+    backgroundColor: "rgba(255, 255, 255, 0.4)",
   },
   avatarBox: {
     width: 34,
@@ -521,5 +542,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
+    backgroundColor: COLORS.secondary,
   },
 });

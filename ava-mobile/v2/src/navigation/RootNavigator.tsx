@@ -26,7 +26,13 @@ function MainDrawerNavigator() {
       drawerContent={(props) => <AppDrawer {...props} />}
       screenOptions={{
         headerShown: false,
-        drawerStyle: { width: "86%", maxWidth: 360 },
+        drawerType: "slide",
+        overlayColor: "rgba(0, 0, 0, 0.55)",
+        drawerStyle: {
+          width: "88%",
+          maxWidth: 360,
+          backgroundColor: "transparent",
+        },
       }}
     >
       <Drawer.Screen name="Chat" component={ChatScreen} />

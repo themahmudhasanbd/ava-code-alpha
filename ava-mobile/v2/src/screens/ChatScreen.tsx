@@ -9,7 +9,6 @@ import {
   View,
 } from "react-native";
 import { SquarePen } from "lucide-react-native";
-import * as Haptics from "expo-haptics";
 import { AppShell } from "@/components/layout/AppShell";
 import { AvaMascot, Button, GlassIconButton } from "@/components/kit";
 import { Shimmer } from "@/components/ai-elements/shimmer";
@@ -86,7 +85,7 @@ export function ChatScreen() {
           size={18}
           onPress={() => {
             setActiveSessionId(null);
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+
           }}
         />
       }

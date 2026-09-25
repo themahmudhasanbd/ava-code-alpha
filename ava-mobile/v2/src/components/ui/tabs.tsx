@@ -7,7 +7,6 @@ import {
   type TextStyle,
   type ViewStyle,
 } from "react-native";
-import * as Haptics from "expo-haptics";
 import { COLORS } from "@/theme/colors";
 
 interface TabsContextValue {
@@ -62,7 +61,7 @@ export function TabsTrigger({
   const isActive = ctx.value === value;
 
   const handlePress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+
     ctx.onValueChange(value);
   };
 

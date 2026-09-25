@@ -7,7 +7,6 @@ import {
   View,
 } from "react-native";
 import { Bot, Check } from "lucide-react-native";
-import * as Haptics from "expo-haptics";
 import { AppShell } from "@/components/layout/AppShell";
 import { EmptyState, ListRow, PageIntro, SkeletonRows, Surface, Badge } from "@/components/kit";
 import { useAva } from "@/state/ava-provider";
@@ -20,7 +19,7 @@ export function ModelsScreen() {
   const activeId = modelId || models.find((m) => m.isDefault)?.id;
 
   const handleSelect = (id: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+
     setModelId(id);
   };
 

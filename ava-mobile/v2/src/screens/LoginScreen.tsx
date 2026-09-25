@@ -9,7 +9,6 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import * as Haptics from "expo-haptics";
 import { AppGlow, Button, Input, Label, Surface } from "@/components/kit";
 import { APP } from "@/config/app";
 import { verifyLogin } from "@/core/auth";
@@ -31,14 +30,10 @@ export function LoginScreen() {
     }
     setBusy(true);
     setError(null);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
 
     try {
       const auth = await verifyLogin(server, username, password);
       signIn(auth);
-      Haptics.notificationAsync(
-        Haptics.NotificationFeedbackType.Success
-      ).catch(() => {});
     } catch (err) {
       const msg = (err as Error).message;
       setError(
@@ -46,9 +41,6 @@ export function LoginScreen() {
           ? "Could not reach the server"
           : msg
       );
-      Haptics.notificationAsync(
-        Haptics.NotificationFeedbackType.Error
-      ).catch(() => {});
     } finally {
       setBusy(false);
     }
@@ -59,72 +51,78 @@ export function LoginScreen() {
       <SafeAreaView style={styles.safeArea}>
         <KeyboardAvoidingView
           style={styles.avoidingView}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
         >
           <ScrollView
             contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
           >
-            <Surface style={styles.card}>
-              <Image
-                source={require("../../assets/icon.png")}
-                style={styles.logo}
-                resizeMode="cover"
-              />
-
-              <Text style={styles.title}>Sign in to {APP.name}</Text>
-              <Text style={styles.subtitle}>Use your server login.</Text>
-
-              <View style={styles.form}>
-                <View style={styles.fieldGroup}>
-                  <Label>Server</Label>
-                  <Input
-                    value={server}
-                    onChangeText={setServer}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    placeholder="https://ava.example.com"
+            <View style={styles.contentWrapper}>
+              <Surface style={styles.cardSurface}>
+                {/* Logo & Header */}
+                <View style={styles.headerGroup}>
+                  <Image
+                    source={require("../../assets/icon.png")}
+                    style={styles.logoImage}
+                    resizeMode="cover"
                   />
+                  <Text style={styles.appNameText}>{APP.name}</Text>
+                  <Text style={styles.taglineText}>{APP.tagline}</Text>
                 </View>
 
-                <View style={styles.fieldGroup}>
-                  <Label>Username</Label>
-                  <Input
-                    value={username}
-                    onChangeText={setUsername}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    placeholder="username"
-                  />
+                {/* Form Fields */}
+                <View style={styles.formGroup}>
+                  <View style={styles.fieldItem}>
+                    <Label style={styles.fieldLabel}>Server URL</Label>
+                    <Input
+                      value={server}
+                      onChangeText={setServer}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      placeholder="https://..."
+                    />
+                  </View>
+
+                  <View style={styles.fieldItem}>
+                    <Label style={styles.fieldLabel}>Username</Label>
+                    <Input
+                      value={username}
+                      onChangeText={setUsername}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      placeholder="admin"
+                    />
+                  </View>
+
+                  <View style={styles.fieldItem}>
+                    <Label style={styles.fieldLabel}>Password</Label>
+                    <Input
+                      value={password}
+                      onChangeText={setPassword}
+                      secureTextEntry
+                      placeholder="••••••••"
+                    />
+                  </View>
+
+                  {error ? (
+                    <Text style={styles.errorText}>{error}</Text>
+                  ) : null}
+
+                  <Button
+                    variant="default"
+                    size="lg"
+                    loading={busy}
+                    disabled={busy}
+                    onPress={handleSubmit}
+                    style={styles.submitBtn}
+                  >
+                    Connect
+                  </Button>
                 </View>
 
-                <View style={styles.fieldGroup}>
-                  <Label>Password</Label>
-                  <Input
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    placeholder="••••••••"
-                    onSubmitEditing={handleSubmit}
-                  />
-                </View>
-
-                {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-                <Button
-                  variant="default"
-                  loading={busy}
-                  onPress={handleSubmit}
-                  style={styles.submitBtn}
-                >
-                  Sign in
-                </Button>
-              </View>
-
-              <Text style={styles.versionText}>v{APP.version}</Text>
-            </Surface>
+                <Text style={styles.footerVersionText}>v{APP.version}</Text>
+              </Surface>
+            </View>
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -144,52 +142,69 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    alignItems: "center",
     justifyContent: "center",
-    padding: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 24,
   },
-  card: {
+  contentWrapper: {
     width: "100%",
-    maxWidth: 380,
-    padding: 24,
-    borderRadius: 22,
+    maxWidth: 420,
+    alignSelf: "center",
   },
-  logo: {
+  cardSurface: {
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: 24,
+  },
+  headerGroup: {
+    alignItems: "center",
+    marginBottom: 28,
+  },
+  logoImage: {
     width: 48,
     height: 48,
-    borderRadius: 12,
+    borderRadius: 14,
+    marginBottom: 12,
   },
-  title: {
-    fontSize: 20,
-    fontWeight: "600",
+  appNameText: {
+    fontSize: 22,
+    fontWeight: "700",
     color: COLORS.foreground,
-    marginTop: 16,
+    letterSpacing: -0.4,
   },
-  subtitle: {
-    fontSize: 14,
+  taglineText: {
+    fontSize: 13,
     color: COLORS.mutedForeground,
     marginTop: 4,
+    textAlign: "center",
   },
-  form: {
-    marginTop: 24,
+  formGroup: {
     gap: 16,
   },
-  fieldGroup: {
+  fieldItem: {
     gap: 6,
+  },
+  fieldLabel: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: COLORS.foreground,
   },
   errorText: {
     fontSize: 13,
     color: COLORS.destructive,
-    marginTop: 2,
+    textAlign: "center",
+    marginTop: -4,
   },
   submitBtn: {
+    marginTop: 8,
     height: 42,
-    marginTop: 4,
+    borderRadius: 12,
   },
-  versionText: {
+  footerVersionText: {
     fontSize: 12,
     color: COLORS.mutedForeground,
     textAlign: "center",
     marginTop: 24,
+    opacity: 0.7,
   },
 });

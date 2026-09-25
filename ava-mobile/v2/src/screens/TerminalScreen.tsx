@@ -12,7 +12,6 @@ import {
   View,
 } from "react-native";
 import { CornerDownLeft, Eraser, Loader2, Terminal as TerminalSquare } from "lucide-react-native";
-import * as Haptics from "expo-haptics";
 import { AppShell } from "@/components/layout/AppShell";
 import { GlassIconButton, PageIntro, Surface, Button } from "@/components/kit";
 import { APP } from "@/config/app";
@@ -39,7 +38,7 @@ export function TerminalScreen() {
     const trimmed = cmd.trim();
     if (!trimmed || run.isPending) return;
     setCommand("");
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+
 
     try {
       const res = await run.mutateAsync({ command: trimmed, cwd });

@@ -25,7 +25,6 @@ import {
   Wrench,
   X,
 } from "lucide-react-native";
-import * as Haptics from "expo-haptics";
 import { AvaMascot } from "@/components/ui/ava-mascot";
 import { Tool } from "@/components/ai-elements/tool";
 import { Shimmer } from "@/components/ai-elements/shimmer";
@@ -51,7 +50,7 @@ function ReasoningStep({ part }: { part: MessagePart }) {
       <TouchableOpacity
         style={styles.reasoningHeader}
         onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+
           setOpen(!open);
         }}
         activeOpacity={0.7}

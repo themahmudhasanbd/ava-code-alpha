@@ -1,3 +1,4 @@
+import "react-native-gesture-handler";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
@@ -35,7 +36,7 @@ export default function App() {
       <QueryClientProvider client={queryClient}>
         <AvaProvider>
           <NavigationContainer>
-            <StatusBar style="light" />
+            <StatusBar style="dark" />
             <RootNavigator />
           </NavigationContainer>
         </AvaProvider>

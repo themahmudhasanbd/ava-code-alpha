@@ -1,20 +1,29 @@
-import React, { type ReactNode } from "react";
+import React, { forwardRef, type ReactNode } from "react";
 import {
-  ActivityIndicator,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
-  type TextInputProps,
-  type TouchableOpacityProps,
   type ViewStyle,
   type TextStyle,
+  type StyleProp,
 } from "react-native";
 import type { LucideIcon } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import { COLORS } from "@/theme/colors";
 import type { ConnectionStatus } from "@/core/types";
+
+// Re-export canonical UI primitives
+export { Button, type ButtonProps } from "@/components/ui/button";
+export { Input, type InputProps } from "@/components/ui/input";
+export { Label, type LabelProps } from "@/components/ui/label";
+export { Badge, type BadgeProps } from "@/components/ui/badge";
+export { AvaMascot, type AvaMascotState } from "@/components/ui/ava-mascot";
+export { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
+export { Separator } from "@/components/ui/separator";
+export { Skeleton } from "@/components/ui/skeleton";
+export { Switch, type SwitchProps } from "@/components/ui/switch";
+export { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 /**
  * AppGlow - Background container mimicking web `app-glow` radial gradients.
@@ -24,13 +33,11 @@ export function AppGlow({
   style,
 }: {
   children?: ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }) {
   return (
     <View style={[styles.glowContainer, style]}>
-      {/* Top-left soft purple/indigo glow */}
       <View style={styles.glowTopLeft} pointerEvents="none" />
-      {/* Bottom-right soft sky-blue glow */}
       <View style={styles.glowBottomRight} pointerEvents="none" />
       {children}
     </View>
@@ -45,108 +52,9 @@ export function Surface({
   style,
 }: {
   children?: ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }) {
   return <View style={[styles.surface, style]}>{children}</View>;
-}
-
-/**
- * Label - Web-matched form field label.
- */
-export function Label({
-  children,
-  style,
-}: {
-  children: ReactNode;
-  style?: TextStyle;
-}) {
-  return <Text style={[styles.label, style]}>{children}</Text>;
-}
-
-/**
- * Input - Web-matched text input.
- */
-export function Input({
-  style,
-  placeholderTextColor = COLORS.mutedForeground,
-  ...props
-}: TextInputProps) {
-  return (
-    <TextInput
-      style={[styles.input, style]}
-      placeholderTextColor={placeholderTextColor}
-      {...props}
-    />
-  );
-}
-
-/**
- * Button - Web-matched button supporting variants (default, secondary, outline, ghost, destructive)
- */
-export interface ButtonProps extends TouchableOpacityProps {
-  variant?: "default" | "secondary" | "outline" | "ghost" | "destructive";
-  size?: "default" | "sm" | "lg" | "icon";
-  loading?: boolean;
-  children: ReactNode;
-}
-
-export function Button({
-  variant = "default",
-  size = "default",
-  loading = false,
-  disabled,
-  style,
-  onPress,
-  children,
-  ...props
-}: ButtonProps) {
-  const handlePress = (e: any) => {
-    if (disabled || loading) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    onPress?.(e);
-  };
-
-  const buttonStyle = [
-    styles.btnBase,
-    styles[`btnVariant_${variant}`],
-    styles[`btnSize_${size}`],
-    (disabled || loading) && styles.btnDisabled,
-    style,
-  ];
-
-  const textStyle = [
-    styles.btnTextBase,
-    styles[`btnText_${variant}`],
-    size === "sm" && styles.btnTextSm,
-    size === "lg" && styles.btnTextLg,
-  ];
-
-  return (
-    <TouchableOpacity
-      style={buttonStyle}
-      disabled={disabled || loading}
-      onPress={handlePress}
-      activeOpacity={0.75}
-      {...props}
-    >
-      {loading ? (
-        <ActivityIndicator
-          size="small"
-          color={
-            variant === "default" || variant === "destructive"
-              ? COLORS.primaryForeground
-              : COLORS.primary
-          }
-          style={{ marginRight: 6 }}
-        />
-      ) : null}
-      {typeof children === "string" ? (
-        <Text style={textStyle}>{children}</Text>
-      ) : (
-        children
-      )}
-    </TouchableOpacity>
-  );
 }
 
 /**
@@ -159,13 +67,15 @@ export function GlassIconButton({
   onPress,
   style,
   disabled = false,
+  label,
 }: {
   icon: LucideIcon;
   size?: number;
   color?: string;
   onPress?: () => void;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   disabled?: boolean;
+  label?: string;
 }) {
   const handlePress = () => {
     if (disabled) return;
@@ -175,6 +85,7 @@ export function GlassIconButton({
 
   return (
     <TouchableOpacity
+      accessibilityLabel={label}
       onPress={handlePress}
       disabled={disabled}
       activeOpacity={0.7}
@@ -326,74 +237,6 @@ export function SkeletonRows({ count = 4 }: { count?: number }) {
   );
 }
 
-/**
- * Badge - Web badge chip.
- */
-export function Badge({
-  children,
-  variant = "secondary",
-}: {
-  children: ReactNode;
-  variant?: "default" | "secondary" | "outline";
-}) {
-  return (
-    <View
-      style={[
-        styles.badge,
-        variant === "secondary" && styles.badgeSecondary,
-        variant === "outline" && styles.badgeOutline,
-      ]}
-    >
-      {typeof children === "string" ? (
-        <Text
-          style={[
-            styles.badgeText,
-            variant === "secondary" && styles.badgeTextSecondary,
-          ]}
-        >
-          {children}
-        </Text>
-      ) : (
-        children
-      )}
-    </View>
-  );
-}
-
-/**
- * AvaMascot - The organic breathing mascot blob with animated/styled eyes.
- */
-export function AvaMascot({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
-  const dim = size === "lg" ? 64 : size === "md" ? 44 : 32;
-  return (
-    <View
-      style={[
-        styles.mascotBlob,
-        {
-          width: dim,
-          height: dim,
-          borderRadius: dim * 0.46,
-        },
-      ]}
-    >
-      <View style={styles.mascotFace}>
-        <View
-          style={[
-            styles.mascotEye,
-            { width: dim * 0.08, height: dim * 0.22 },
-          ]}
-        />
-        <View
-          style={[
-            styles.mascotEye,
-            { width: dim * 0.08, height: dim * 0.22 },
-          ]}
-        />
-      </View>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   glowContainer: {
     flex: 1,
@@ -431,92 +274,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.12,
     shadowRadius: 20,
     elevation: 4,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: COLORS.foreground,
-    marginBottom: 6,
-  },
-  input: {
-    height: 42,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.input,
-    backgroundColor: COLORS.inputBg,
-    paddingHorizontal: 14,
-    fontSize: 14,
-    color: COLORS.foreground,
-  },
-  btnBase: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 12,
-  },
-  btnSize_default: {
-    height: 42,
-    paddingHorizontal: 16,
-  },
-  btnSize_sm: {
-    height: 34,
-    paddingHorizontal: 12,
-    borderRadius: 999,
-  },
-  btnSize_lg: {
-    height: 48,
-    paddingHorizontal: 24,
-  },
-  btnSize_icon: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    paddingHorizontal: 0,
-  },
-  btnVariant_default: {
-    backgroundColor: COLORS.primary,
-  },
-  btnVariant_secondary: {
-    backgroundColor: COLORS.secondary,
-  },
-  btnVariant_outline: {
-    backgroundColor: "transparent",
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  btnVariant_ghost: {
-    backgroundColor: "transparent",
-  },
-  btnVariant_destructive: {
-    backgroundColor: COLORS.destructive,
-  },
-  btnDisabled: {
-    opacity: 0.5,
-  },
-  btnTextBase: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  btnText_default: {
-    color: COLORS.primaryForeground,
-  },
-  btnText_secondary: {
-    color: COLORS.secondaryForeground,
-  },
-  btnText_outline: {
-    color: COLORS.foreground,
-  },
-  btnText_ghost: {
-    color: COLORS.foreground,
-  },
-  btnText_destructive: {
-    color: COLORS.destructiveForeground,
-  },
-  btnTextSm: {
-    fontSize: 12,
-  },
-  btnTextLg: {
-    fontSize: 16,
   },
   glassIconButton: {
     width: 38,
@@ -619,47 +376,5 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: COLORS.muted,
     opacity: 0.6,
-  },
-  badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-    backgroundColor: COLORS.primary,
-  },
-  badgeSecondary: {
-    backgroundColor: COLORS.secondary,
-  },
-  badgeOutline: {
-    backgroundColor: "transparent",
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  badgeText: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: COLORS.primaryForeground,
-  },
-  badgeTextSecondary: {
-    color: COLORS.secondaryForeground,
-  },
-  mascotBlob: {
-    backgroundColor: COLORS.mascot,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: COLORS.mascot,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  mascotFace: {
-    flexDirection: "row",
-    gap: 6,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  mascotEye: {
-    backgroundColor: COLORS.mascotForeground,
-    borderRadius: 999,
   },
 });

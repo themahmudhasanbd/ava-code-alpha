@@ -158,7 +158,7 @@ function AssistantTurn({
                 }
                 input={p.input}
                 output={p.output}
-                errorText={p.error}
+                errorText={p.status === "error" ? p.output : undefined}
               />
             );
           }

@@ -7,6 +7,7 @@ import {
   type TextStyle,
   type TouchableOpacityProps,
   type ViewStyle,
+  type StyleProp,
 } from "react-native";
 import * as Haptics from "expo-haptics";
 import { COLORS } from "@/theme/colors";
@@ -16,9 +17,9 @@ export interface ButtonProps extends TouchableOpacityProps {
   size?: "default" | "sm" | "lg" | "icon" | "icon-sm" | "icon-xs";
   loading?: boolean;
   disabled?: boolean;
-  style?: ViewStyle | ViewStyle[];
-  textStyle?: TextStyle | TextStyle[];
-  children: ReactNode;
+  style?: StyleProp<ViewStyle>;
+  textStyle?: StyleProp<TextStyle>;
+  children?: ReactNode;
 }
 
 export const Button = React.forwardRef<any, ButtonProps>(
@@ -42,27 +43,31 @@ export const Button = React.forwardRef<any, ButtonProps>(
       onPress?.(e);
     };
 
-    const containerStyles = [
-      styles.base,
-      styles[`variant_${variant}`],
-      styles[`size_${size}`],
-      (disabled || loading) && styles.disabled,
+    const sizeKey = `size_${size.replace("-", "_")}` as keyof typeof containerStyles;
+    const variantKey = `variant_${variant}` as keyof typeof containerStyles;
+    const textVariantKey = `textVariant_${variant}` as keyof typeof labelStylesMap;
+
+    const computedContainerStyles: StyleProp<ViewStyle> = [
+      containerStyles.base,
+      containerStyles[variantKey],
+      containerStyles[sizeKey],
+      (disabled || loading) && containerStyles.disabled,
       style,
     ];
 
-    const labelStyles = [
-      styles.textBase,
-      styles[`textVariant_${variant}`],
-      size === "sm" && styles.textSm,
-      size === "lg" && styles.textLg,
-      (size === "icon" || size === "icon-sm" || size === "icon-xs") && styles.textIcon,
+    const computedLabelStyles: StyleProp<TextStyle> = [
+      labelStylesMap.textBase,
+      labelStylesMap[textVariantKey],
+      size === "sm" && labelStylesMap.textSm,
+      size === "lg" && labelStylesMap.textLg,
+      (size === "icon" || size === "icon-sm" || size === "icon-xs") && labelStylesMap.textIcon,
       textStyle,
     ];
 
     return (
       <TouchableOpacity
         ref={ref}
-        style={containerStyles}
+        style={computedContainerStyles}
         disabled={disabled || loading}
         onPress={handlePress}
         activeOpacity={0.75}
@@ -80,7 +85,7 @@ export const Button = React.forwardRef<any, ButtonProps>(
           />
         ) : null}
         {typeof children === "string" || typeof children === "number" ? (
-          <Text style={labelStyles}>{children}</Text>
+          <Text style={computedLabelStyles}>{children}</Text>
         ) : (
           children
         )}
@@ -91,36 +96,53 @@ export const Button = React.forwardRef<any, ButtonProps>(
 
 Button.displayName = "Button";
 
-const styles = StyleSheet.create({
+const containerStyles = StyleSheet.create({
   base: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 12,
+    borderRadius: 10,
+    gap: 8,
   },
   variant_default: {
     backgroundColor: COLORS.primary,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 1,
   },
   variant_secondary: {
     backgroundColor: COLORS.secondary,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
   },
   variant_outline: {
     backgroundColor: "transparent",
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: COLORS.input,
   },
   variant_ghost: {
     backgroundColor: "transparent",
   },
   variant_destructive: {
     backgroundColor: COLORS.destructive,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 1,
   },
   variant_link: {
     backgroundColor: "transparent",
   },
   size_default: {
-    height: 40,
+    height: 36,
     paddingHorizontal: 16,
+    paddingVertical: 8,
   },
   size_sm: {
     height: 32,
@@ -128,30 +150,37 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   size_lg: {
-    height: 48,
-    paddingHorizontal: 24,
+    height: 40,
+    paddingHorizontal: 32,
+    borderRadius: 10,
   },
   size_icon: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     paddingHorizontal: 0,
+    paddingVertical: 0,
   },
   size_icon_sm: {
     width: 32,
     height: 32,
     borderRadius: 8,
     paddingHorizontal: 0,
+    paddingVertical: 0,
   },
   size_icon_xs: {
-    width: 26,
-    height: 26,
+    width: 24,
+    height: 24,
     borderRadius: 6,
     paddingHorizontal: 0,
+    paddingVertical: 0,
   },
   disabled: {
     opacity: 0.5,
   },
+});
+
+const labelStylesMap = StyleSheet.create({
   textBase: {
     fontSize: 14,
     fontWeight: "500",
@@ -180,7 +209,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   textLg: {
-    fontSize: 16,
+    fontSize: 15,
   },
   textIcon: {
     fontSize: 14,

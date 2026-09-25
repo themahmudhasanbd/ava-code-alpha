@@ -1,5 +1,5 @@
 import * as React from "react";
-import { StyleSheet, View, type ViewStyle } from "react-native";
+import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
 import { COLORS } from "@/theme/colors";
 
 export function Separator({
@@ -7,7 +7,7 @@ export function Separator({
   style,
 }: {
   orientation?: "horizontal" | "vertical";
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }) {
   return (
     <View

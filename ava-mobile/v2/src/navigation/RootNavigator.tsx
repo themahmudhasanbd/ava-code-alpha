@@ -1,7 +1,7 @@
 import React from "react";
 import { createDrawerNavigator } from "@react-navigation/drawer";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { NativeDrawerContent } from "@/components/layout/NativeDrawerContent";
+import { AppDrawer } from "@/components/layout/AppDrawer";
 import { useAva } from "@/state/ava-provider";
 import { LoginScreen } from "@/screens/LoginScreen";
 import { ChatScreen } from "@/screens/ChatScreen";
@@ -11,13 +11,11 @@ import { BrowserScreen } from "@/screens/BrowserScreen";
 import { DesktopScreen } from "@/screens/DesktopScreen";
 import { ModelsScreen } from "@/screens/ModelsScreen";
 import { SystemScreen } from "@/screens/SystemScreen";
-import {
-  McpScreen,
-  TasksScreen,
-  MediaScreen,
-  SettingsScreen,
-  ProfileScreen,
-} from "@/screens/OtherScreens";
+import { McpScreen } from "@/screens/McpScreen";
+import { TasksScreen } from "@/screens/TasksScreen";
+import { MediaScreen } from "@/screens/MediaScreen";
+import { SettingsScreen } from "@/screens/SettingsScreen";
+import { ProfileScreen } from "@/screens/ProfileScreen";
 
 const Drawer = createDrawerNavigator();
 const Stack = createNativeStackNavigator();
@@ -25,10 +23,10 @@ const Stack = createNativeStackNavigator();
 function MainDrawerNavigator() {
   return (
     <Drawer.Navigator
-      drawerContent={(props) => <NativeDrawerContent {...props} />}
+      drawerContent={(props) => <AppDrawer {...props} />}
       screenOptions={{
         headerShown: false,
-        drawerStyle: { width: "85%", maxWidth: 360 },
+        drawerStyle: { width: "86%", maxWidth: 360 },
       }}
     >
       <Drawer.Screen name="Chat" component={ChatScreen} />

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Minimalist UI"
+  short_description: "Clean editorial-style interfaces and monochrome design"
+  default_prompt: "Use $minimalist-ui to perform Minimalist UI tasks."

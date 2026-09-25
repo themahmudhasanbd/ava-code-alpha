@@ -1533,6 +1533,33 @@ impl Session {
         state.clear_connector_selection();
     }
 
+    pub(crate) async fn set_active_plan(&self, plan: codex_protocol::plan_tool::UpdatePlanArgs) {
+        let mut state = self.state.lock().await;
+        state.active_plan = Some(plan);
+    }
+
+    pub(crate) async fn get_active_plan(
+        &self,
+    ) -> Option<codex_protocol::plan_tool::UpdatePlanArgs> {
+        let state = self.state.lock().await;
+        state.active_plan.clone()
+    }
+
+    pub(crate) async fn set_last_quality_gate(
+        &self,
+        result: crate::quality_gate::types::QualityGateResult,
+    ) {
+        let mut state = self.state.lock().await;
+        state.last_quality_gate = Some(result);
+    }
+
+    pub(crate) async fn get_last_quality_gate(
+        &self,
+    ) -> Option<crate::quality_gate::types::QualityGateResult> {
+        let state = self.state.lock().await;
+        state.last_quality_gate.clone()
+    }
+
     async fn record_initial_history(&self, conversation_history: InitialHistory) {
         let (is_subagent, is_paginated_subagent) = {
             let state = self.state.lock().await;

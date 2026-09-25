@@ -1,0 +1,4 @@
+interface:
+  display_name: "React Best Practices"
+  short_description: "Comprehensive React & Next.js performance guide"
+  default_prompt: "Use $react-best-practices to perform React Best Practices tasks."

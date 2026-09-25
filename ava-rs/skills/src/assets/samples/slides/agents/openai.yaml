@@ -1,0 +1,4 @@
+interface:
+  display_name: "Strategic Slides"
+  short_description: "Create HTML presentations with Chart.js & tokens"
+  default_prompt: "Use $slides to perform Strategic Slides tasks."

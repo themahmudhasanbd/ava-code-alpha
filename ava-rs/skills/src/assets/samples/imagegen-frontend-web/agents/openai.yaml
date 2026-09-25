@@ -1,0 +1,4 @@
+interface:
+  display_name: "Web Image Generation"
+  short_description: "Generate conversion-aware website section visuals"
+  default_prompt: "Use $imagegen-frontend-web to perform Web Image Generation tasks."

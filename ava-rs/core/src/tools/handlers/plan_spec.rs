@@ -56,3 +56,61 @@ At most one step can be in_progress at a time.
         output_schema: None,
     })
 }
+
+pub fn create_todowrite_tool() -> ToolSpec {
+    let todo_item_properties = BTreeMap::from([
+        (
+            "content".to_string(),
+            JsonSchema::string(Some("Brief description of the task step.".to_string())),
+        ),
+        (
+            "status".to_string(),
+            JsonSchema::string_enum(
+                vec![
+                    json!("pending"),
+                    json!("in_progress"),
+                    json!("completed"),
+                    json!("cancelled"),
+                ],
+                Some("Current status: pending, in_progress, completed, cancelled.".to_string()),
+            ),
+        ),
+        (
+            "priority".to_string(),
+            JsonSchema::string_enum(
+                vec![json!("high"), json!("medium"), json!("low")],
+                Some("Optional priority: high, medium, low.".to_string()),
+            ),
+        ),
+    ]);
+
+    let properties = BTreeMap::from([(
+        "todos".to_string(),
+        JsonSchema::array(
+            JsonSchema::object(
+                todo_item_properties,
+                Some(vec!["content".to_string(), "status".to_string()]),
+                Some(false.into()),
+            ),
+            Some("The updated list of tasks/todos.".to_string()),
+        ),
+    )]);
+
+    ToolSpec::Function(ResponsesApiTool {
+        name: "todowrite".to_string(),
+        description: r#"Create and maintain a structured task list for the current session.
+Tracks progress, organizes multi-step work, and surfaces real-time status to the user.
+Use proactively whenever a task involves 3 or more steps.
+Keep exactly one task in_progress at a time.
+"#
+        .to_string(),
+        strict: false,
+        defer_loading: None,
+        parameters: JsonSchema::object(
+            properties,
+            Some(vec!["todos".to_string()]),
+            Some(false.into()),
+        ),
+        output_schema: None,
+    })
+}

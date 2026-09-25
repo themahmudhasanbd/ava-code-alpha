@@ -1,0 +1,4 @@
+interface:
+  display_name: "Next.js App Router"
+  short_description: "Patterns for Next.js 14+ App Router & React RSC"
+  default_prompt: "Use $nextjs-app-router-patterns to perform Next.js App Router tasks."

@@ -14,6 +14,7 @@ use crate::types::AnalyticsConfigToml;
 use crate::types::ApprovalsReviewer;
 use crate::types::AppsConfigToml;
 use crate::types::AuthCredentialsStoreMode;
+use crate::types::BrowserToml;
 use crate::types::FeedbackConfigToml;
 use crate::types::History;
 use crate::types::MarketplaceConfig;
@@ -31,6 +32,7 @@ use crate::types::ToolSuggestConfig;
 use crate::types::Tui;
 use crate::types::UriBasedFileOpener;
 use crate::types::WindowsToml;
+use crate::user_profile_toml::UserProfileToml;
 use codex_features::FeaturesToml;
 use codex_model_provider_info::AMAZON_BEDROCK_PROVIDER_ID;
 use codex_model_provider_info::AMAZON_BEDROCK_RUNTIME_PROVIDER_ID;
@@ -472,6 +474,12 @@ pub struct ConfigToml {
     /// Memories subsystem settings.
     pub memories: Option<MemoriesToml>,
 
+    /// Browser automation subsystem settings.
+    pub browser: Option<BrowserToml>,
+
+    /// Dynamic user profile & AI persona context settings.
+    pub user_profile: Option<UserProfileToml>,
+
     /// User-level skill config entries keyed by SKILL.md path.
     pub skills: Option<SkillsConfig>,
 
@@ -655,7 +663,7 @@ pub struct ExperimentalRequestUserInput {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, JsonSchema)]
 #[schemars(deny_unknown_fields)]
 pub struct UpdatePlanToolConfig {
-    #[serde(default)]
+    #[serde(default = "default_true")]
     pub enabled: bool,
 }
 

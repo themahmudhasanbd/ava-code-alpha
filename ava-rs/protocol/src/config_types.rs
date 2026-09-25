@@ -978,3 +978,6 @@ mod tests {
         assert_eq!(expected, base.merge(&overlay));
     }
 }
+
+pub use crate::user_profile::PersonalityPreset;
+pub use crate::user_profile::UserProfileConfig;

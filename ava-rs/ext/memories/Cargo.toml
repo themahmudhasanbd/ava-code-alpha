@@ -13,6 +13,8 @@ doctest = false
 workspace = true
 
 [dependencies]
+chrono = { workspace = true }
+codex-config = { workspace = true }
 codex-core = { workspace = true }
 codex-extension-api = { workspace = true }
 codex-features = { workspace = true }
@@ -25,8 +27,10 @@ codex-utils-template = { workspace = true }
 schemars = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
+sqlx = { workspace = true }
 thiserror = { workspace = true }
-tokio = { workspace = true, features = ["fs"] }
+tokio = { workspace = true, features = ["fs", "sync"] }
+uuid = { workspace = true, features = ["v4"] }
 
 [dev-dependencies]
 pretty_assertions = { workspace = true }

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Industrial Brutalist UI"
+  short_description: "Swiss typographic print meets military terminal UI"
+  default_prompt: "Use $industrial-brutalist-ui to perform Industrial Brutalist UI tasks."

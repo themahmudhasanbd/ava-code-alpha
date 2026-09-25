@@ -1,0 +1,4 @@
+interface:
+  display_name: "Persistent Memory"
+  short_description: "Store and recall project context with SQLite FTS5"
+  default_prompt: "Use $persistent-memory to perform Persistent Memory tasks."

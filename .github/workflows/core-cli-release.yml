@@ -2,12 +2,10 @@ name: AvA Core & CLI Multiplatform Build
 
 on:
   push:
+    branches:
+      - main
     tags:
       - 'v*'
-    paths:
-      - 'ava-rs/**'
-      - 'ava-cli/**'
-      - '.github/workflows/core-cli-release.yml'
   workflow_dispatch:
     inputs:
       release_tag:
@@ -56,7 +54,7 @@ jobs:
       - name: Build Core Binary
         run: |
           cd ava-rs
-          cargo build --release --target ${{ matrix.target }} --bin ava-cli --bin host-core || cargo build --release --target ${{ matrix.target }}
+          cargo build --release --target ${{ matrix.target }} -p codex-app-server --bin ava-app-server -p codex-cli --bin ava --bin ava-cli || cargo build --release --target ${{ matrix.target }}
 
       - name: Package Binaries
         shell: bash

@@ -19,6 +19,7 @@ impl TrustedSkillRoots {
     pub(crate) fn from_config(config: &Config) -> Self {
         let mut roots = vec![config.codex_home.join("skills").to_path_buf()];
         if let Some(user_home) = home_dir() {
+            roots.push(user_home.join(".ava-code").join("skills"));
             roots.push(user_home.join(".agents").join("skills"));
         }
         Self { roots }

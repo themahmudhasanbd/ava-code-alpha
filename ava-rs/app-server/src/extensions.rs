@@ -94,6 +94,7 @@ pub(crate) fn thread_extensions(
     );
     codex_guardian_v2::install(&mut builder, auth_manager.clone(), thread_manager);
     codex_memories_extension::install(&mut builder, codex_otel::global());
+    codex_browser_extension::install(&mut builder, codex_otel::global());
     codex_mcp_extension::install(&mut builder);
     codex_mcp_extension::install_plugins(&mut builder, environment_manager);
     codex_web_search_extension::install(&mut builder, auth_manager.clone());

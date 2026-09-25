@@ -1,0 +1,4 @@
+interface:
+  display_name: "Tailwind Design System"
+  short_description: "Production-ready Tailwind design tokens and layout"
+  default_prompt: "Use $tailwind-design-system to perform Tailwind Design System tasks."

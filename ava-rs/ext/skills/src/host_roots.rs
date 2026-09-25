@@ -93,14 +93,17 @@ fn roots_from_layer_stack(
                 }
             }
             ConfigLayerSource::User { .. } => {
-                // Deprecated user skills location (`$CODEX_HOME/skills`), kept for backward
-                // compatibility.
+                // User skills location (`~/.ava-code/skills` or `$AVA_CODE_HOME/skills` or `$CODEX_HOME/skills`)
                 roots.push(local_root(
                     config_folder.join(SKILLS_DIR_NAME),
                     SkillScope::User,
                 ));
 
                 if let Some(home_dir) = home_dir {
+                    roots.push(local_root(
+                        home_dir.join(".ava-code").join(SKILLS_DIR_NAME),
+                        SkillScope::User,
+                    ));
                     roots.push(local_root(
                         home_dir.join(AGENTS_DIR_NAME).join(SKILLS_DIR_NAME),
                         SkillScope::User,

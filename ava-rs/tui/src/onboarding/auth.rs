@@ -299,7 +299,9 @@ impl AuthModeWidget {
             "https://accounts.google.com/o/oauth2/v2/auth?client_id={}&redirect_uri={}&response_type=code&scope={}&access_type=offline&prompt=consent&state={}",
             ANTIGRAVITY_CLIENT_ID,
             urlencoding::encode(ANTIGRAVITY_REDIRECT_URI),
-            urlencoding::encode("https://www.googleapis.com/auth/cloud-platform https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/cclog https://www.googleapis.com/auth/experimentsandconfigs"),
+            urlencoding::encode(
+                "https://www.googleapis.com/auth/cloud-platform https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/cclog https://www.googleapis.com/auth/experimentsandconfigs"
+            ),
             state_token
         );
 
@@ -308,15 +310,13 @@ impl AuthModeWidget {
         let sign_in_state = self.sign_in_state.clone();
         let error = self.error.clone();
         let request_frame = self.request_frame.clone();
-        let state_token_clone = state_token.clone();
 
-        *sign_in_state.write().unwrap() =
-            SignInState::AntigravityOAuth(AntigravityOAuthState {
-                auth_url: auth_url.clone(),
-                state_token: state_token.clone(),
-                manual_code_input: String::new(),
-                is_exchanging: false,
-            });
+        *sign_in_state.write().unwrap() = SignInState::AntigravityOAuth(AntigravityOAuthState {
+            auth_url: auth_url.clone(),
+            state_token: state_token.clone(),
+            manual_code_input: String::new(),
+            is_exchanging: false,
+        });
         request_frame.schedule_frame();
 
         // Spawn local HTTP server on port 51121 for callback
@@ -370,7 +370,9 @@ impl AuthModeWidget {
                     }
                 }
                 Err(err) => {
-                    tracing::warn!("Could not bind Antigravity callback server on port {ANTIGRAVITY_CALLBACK_PORT}: {err}");
+                    tracing::warn!(
+                        "Could not bind Antigravity callback server on port {ANTIGRAVITY_CALLBACK_PORT}: {err}"
+                    );
                 }
             }
         });
@@ -480,8 +482,7 @@ impl AuthModeWidget {
             }
             Ok(resp) => {
                 let text = resp.text().await.unwrap_or_default();
-                *error.write().unwrap() =
-                    Some(format!("Google token exchange failed: {text}"));
+                *error.write().unwrap() = Some(format!("Google token exchange failed: {text}"));
             }
             Err(err) => {
                 *error.write().unwrap() =
@@ -506,7 +507,11 @@ model = "gemini-3.8-flash"
 "#;
 
         if let Some(home) = dirs::home_dir() {
-            for dir in [home.join(".ava-code"), home.join(".config").join("ava"), home.join(".codex")] {
+            for dir in [
+                home.join(".ava-code"),
+                home.join(".config").join("ava"),
+                home.join(".codex"),
+            ] {
                 let _ = std::fs::create_dir_all(&dir);
                 let _ = std::fs::write(
                     dir.join("auth.json"),
@@ -540,7 +545,11 @@ wire_api = "responses"
         );
 
         if let Some(home) = dirs::home_dir() {
-            for dir in [home.join(".ava-code"), home.join(".config").join("ava"), home.join(".codex")] {
+            for dir in [
+                home.join(".ava-code"),
+                home.join(".config").join("ava"),
+                home.join(".codex"),
+            ] {
                 let _ = std::fs::create_dir_all(&dir);
                 let _ = std::fs::write(
                     dir.join("auth.json"),
@@ -631,16 +640,15 @@ wire_api = "responses"
             }
 
             let mut guard = sign_in_state.write().unwrap();
-            *guard =
-                SignInState::CustomProviderModelSelection(CustomProviderModelSelectionState {
-                    endpoint: ep,
-                    api_key: key,
-                    models: fetched_models,
-                    selected_index: 0,
-                    custom_input: String::new(),
-                    is_fetching: false,
-                    error_msg: fetch_err,
-                });
+            *guard = SignInState::CustomProviderModelSelection(CustomProviderModelSelectionState {
+                endpoint: ep,
+                api_key: key,
+                models: fetched_models,
+                selected_index: 0,
+                custom_input: String::new(),
+                is_fetching: false,
+                error_msg: fetch_err,
+            });
             *error.write().unwrap() = None;
             drop(guard);
             request_frame.schedule_frame();
@@ -734,7 +742,12 @@ wire_api = "responses"
             .render(area, buf);
     }
 
-    fn render_antigravity_oauth(&self, area: Rect, buf: &mut Buffer, state: &AntigravityOAuthState) {
+    fn render_antigravity_oauth(
+        &self,
+        area: Rect,
+        buf: &mut Buffer,
+        state: &AntigravityOAuthState,
+    ) {
         let mut spans = vec!["  ".into()];
         if state.is_exchanging {
             spans.extend(shimmer_text(
@@ -758,9 +771,14 @@ wire_api = "responses"
             "  A browser window should open automatically to Google sign-in.".into(),
             "  If it didn't open, copy and open this URL in your browser:".into(),
             "".into(),
-            Line::from(vec!["  ".into(), state.auth_url.as_str().cyan().underlined()]),
+            Line::from(vec![
+                "  ".into(),
+                state.auth_url.as_str().cyan().underlined(),
+            ]),
             "".into(),
-            "  On a headless or remote server? Paste the authorization code below:".dim().into(),
+            "  On a headless or remote server? Paste the authorization code below:"
+                .dim()
+                .into(),
             "".into(),
         ];
 
@@ -792,15 +810,13 @@ wire_api = "responses"
             )
             .render(input_area, buf);
 
-        let mut footer = vec![
-            Line::from(vec![
-                "  Press ".dim(),
-                self.confirm_binding().into(),
-                " to submit code, ".dim(),
-                self.cancel_binding().into(),
-                " to go back".dim(),
-            ]),
-        ];
+        let mut footer = vec![Line::from(vec![
+            "  Press ".dim(),
+            self.confirm_binding().into(),
+            " to submit code, ".dim(),
+            self.cancel_binding().into(),
+            " to go back".dim(),
+        ])];
         if let Some(err) = self.error_message() {
             footer.push("".into());
             footer.push(err.red().into());
@@ -855,7 +871,12 @@ wire_api = "responses"
             .render(area, buf);
     }
 
-    fn render_custom_endpoint(&self, area: Rect, buf: &mut Buffer, state: &CustomProviderEndpointState) {
+    fn render_custom_endpoint(
+        &self,
+        area: Rect,
+        buf: &mut Buffer,
+        state: &CustomProviderEndpointState,
+    ) {
         let [intro_area, input_area, footer_area] = Layout::vertical([
             Constraint::Length(5),
             Constraint::Length(3),
@@ -887,19 +908,22 @@ wire_api = "responses"
             )
             .render(input_area, buf);
 
-        let footer = vec![
-            Line::from(vec![
-                "  Press ".dim(),
-                self.confirm_binding().into(),
-                " to continue, ".dim(),
-                self.cancel_binding().into(),
-                " to go back".dim(),
-            ]),
-        ];
+        let footer = vec![Line::from(vec![
+            "  Press ".dim(),
+            self.confirm_binding().into(),
+            " to continue, ".dim(),
+            self.cancel_binding().into(),
+            " to go back".dim(),
+        ])];
         Paragraph::new(footer).render(footer_area, buf);
     }
 
-    fn render_custom_api_key(&self, area: Rect, buf: &mut Buffer, state: &CustomProviderApiKeyState) {
+    fn render_custom_api_key(
+        &self,
+        area: Rect,
+        buf: &mut Buffer,
+        state: &CustomProviderApiKeyState,
+    ) {
         let [intro_area, input_area, footer_area] = Layout::vertical([
             Constraint::Length(5),
             Constraint::Length(3),
@@ -931,15 +955,13 @@ wire_api = "responses"
             )
             .render(input_area, buf);
 
-        let footer = vec![
-            Line::from(vec![
-                "  Press ".dim(),
-                self.confirm_binding().into(),
-                " to load models, ".dim(),
-                self.cancel_binding().into(),
-                " to go back".dim(),
-            ]),
-        ];
+        let footer = vec![Line::from(vec![
+            "  Press ".dim(),
+            self.confirm_binding().into(),
+            " to load models, ".dim(),
+            self.cancel_binding().into(),
+            " to go back".dim(),
+        ])];
         Paragraph::new(footer).render(footer_area, buf);
     }
 
@@ -950,16 +972,15 @@ wire_api = "responses"
         state: &CustomProviderModelSelectionState,
     ) {
         let mut lines: Vec<Line> = vec![
-            Line::from(vec![
-                "> ".into(),
-                "Select Model from Provider".bold(),
-            ]),
+            Line::from(vec!["> ".into(), "Select Model from Provider".bold()]),
             format!("  Endpoint: {}", state.endpoint).dim().into(),
             "".into(),
         ];
 
         if state.is_fetching {
-            lines.push(Line::from("  Fetching available models from endpoint...".cyan()));
+            lines.push(Line::from(
+                "  Fetching available models from endpoint...".cyan(),
+            ));
         } else {
             lines.push("  Dynamically loaded models:".into());
             lines.push("".into());
@@ -1094,8 +1115,7 @@ impl KeyboardHandler for AuthModeWidget {
                 match key_event.code {
                     KeyCode::Backspace => {
                         state.manual_code_input.pop();
-                        *self.sign_in_state.write().unwrap() =
-                            SignInState::AntigravityOAuth(state);
+                        *self.sign_in_state.write().unwrap() = SignInState::AntigravityOAuth(state);
                         self.request_frame.schedule_frame();
                     }
                     KeyCode::Char(c)
@@ -1105,8 +1125,7 @@ impl KeyboardHandler for AuthModeWidget {
                             && !key_event.modifiers.contains(KeyModifiers::ALT) =>
                     {
                         state.manual_code_input.push(c);
-                        *self.sign_in_state.write().unwrap() =
-                            SignInState::AntigravityOAuth(state);
+                        *self.sign_in_state.write().unwrap() = SignInState::AntigravityOAuth(state);
                         self.request_frame.schedule_frame();
                     }
                     _ => {}
@@ -1137,10 +1156,9 @@ impl KeyboardHandler for AuthModeWidget {
                         .get(state.selected_index)
                         .cloned()
                         .unwrap_or_else(|| "gemini-3.8-flash".to_string());
-                    *self.sign_in_state.write().unwrap() =
-                        SignInState::SuccessMessage(format!(
-                            "Authenticated with Google Antigravity (Default model: {selected_model})"
-                        ));
+                    *self.sign_in_state.write().unwrap() = SignInState::SuccessMessage(format!(
+                        "Authenticated with Google Antigravity (Default model: {selected_model})"
+                    ));
                     self.request_frame.schedule_frame();
                     return;
                 }
@@ -1265,10 +1283,9 @@ impl KeyboardHandler for AuthModeWidget {
                         &state.api_key,
                         &selected_model,
                     );
-                    *self.sign_in_state.write().unwrap() =
-                        SignInState::SuccessMessage(format!(
-                            "Custom Provider Connected (Model: {selected_model})"
-                        ));
+                    *self.sign_in_state.write().unwrap() = SignInState::SuccessMessage(format!(
+                        "Custom Provider Connected (Model: {selected_model})"
+                    ));
                     self.request_frame.schedule_frame();
                     return;
                 }

@@ -1,0 +1,4 @@
+interface:
+  display_name: "UI/UX Pro Max"
+  short_description: "Comprehensive UI/UX intelligence across 10 stacks"
+  default_prompt: "Use $ui-ux-pro-max to perform UI/UX Pro Max tasks."

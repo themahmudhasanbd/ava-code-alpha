@@ -1,0 +1,4 @@
+interface:
+  display_name: "Brand Identity"
+  short_description: "Brand voice, visual identity, and asset management"
+  default_prompt: "Use $brand to perform Brand Identity tasks."

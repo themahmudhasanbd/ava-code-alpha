@@ -34,13 +34,20 @@ use codex_app_server_protocol::FeedbackRequirements;
 use codex_app_server_protocol::InAppBrowserRequirements;
 use codex_app_server_protocol::JSONRPCErrorError;
 use codex_app_server_protocol::ManagedHooksRequirements;
+use codex_app_server_protocol::MergeStrategy;
 use codex_app_server_protocol::ModelProviderCapabilitiesReadResponse;
 use codex_app_server_protocol::ModelsRequirements;
 use codex_app_server_protocol::NetworkDomainPermission;
 use codex_app_server_protocol::NetworkRequirements;
 use codex_app_server_protocol::NetworkUnixSocketPermission;
 use codex_app_server_protocol::NewThreadModelDefaults;
+use codex_app_server_protocol::PersonalityPresetOption;
+use codex_app_server_protocol::PersonalityPresetsListResponse;
 use codex_app_server_protocol::SandboxMode;
+use codex_app_server_protocol::UserProfileReadParams;
+use codex_app_server_protocol::UserProfileReadResponse;
+use codex_app_server_protocol::UserProfileWriteParams;
+use codex_app_server_protocol::UserProfileWriteResponse;
 use codex_app_server_protocol::WindowsSandboxImplementation;
 use codex_config::ConfigRequirementsToml;
 use codex_config::HookEventsToml;
@@ -127,6 +134,51 @@ impl ConfigRequestProcessor {
             }
         }
         Ok(response)
+    }
+
+    pub(crate) async fn user_profile_read(
+        &self,
+        params: UserProfileReadParams,
+    ) -> Result<UserProfileReadResponse, JSONRPCErrorError> {
+        let fallback_cwd = params.cwd.as_ref().map(PathBuf::from);
+        let config = self.load_latest_config(fallback_cwd).await?;
+        Ok(UserProfileReadResponse {
+            profile: config.user_profile,
+            presets: PersonalityPresetOption::all(),
+        })
+    }
+
+    pub(crate) async fn user_profile_write(
+        &self,
+        params: UserProfileWriteParams,
+    ) -> Result<UserProfileWriteResponse, JSONRPCErrorError> {
+        let toml_obj = codex_config::UserProfileToml::from(params.profile.clone());
+        let json_value = serde_json::to_value(&toml_obj)
+            .map_err(|err| internal_error(format!("failed to serialize user profile: {err}")))?;
+        let write_params = ConfigValueWriteParams {
+            file_path: None,
+            expected_version: None,
+            key_path: "user_profile".to_string(),
+            value: json_value,
+            merge_strategy: MergeStrategy::Replace,
+        };
+        self.handle_config_mutation_result(self.write_value(write_params).await)
+            .await?;
+        if params.reload_active_threads {
+            reload_user_config(&self.config_manager, &self.thread_manager).await;
+        }
+        Ok(UserProfileWriteResponse {
+            success: true,
+            profile: params.profile,
+        })
+    }
+
+    pub(crate) async fn personality_presets_list(
+        &self,
+    ) -> Result<PersonalityPresetsListResponse, JSONRPCErrorError> {
+        Ok(PersonalityPresetsListResponse {
+            presets: PersonalityPresetOption::all(),
+        })
     }
 
     pub(crate) async fn config_requirements_read(

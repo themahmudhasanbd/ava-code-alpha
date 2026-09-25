@@ -1,0 +1,60 @@
+{
+  "expo": {
+    "name": "AvA Code",
+    "slug": "ava-mobile",
+    "version": "2.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0B0F19"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "pro.mahmudhasan.ava",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0B0F19"
+      },
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "READ_MEDIA_IMAGES",
+        "VIBRATE",
+        "POST_NOTIFICATIONS"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-document-picker",
+        {
+          "appleTeamId": "NONE"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow AvA Code to access your photos to attach code and design images.",
+          "cameraPermission": "Allow AvA Code to access your camera to capture screenshots or documents."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#3B82F6"
+        }
+      ],
+      "expo-secure-store",
+      "expo-sharing",
+      "expo-status-bar"
+    ]
+  }
+}

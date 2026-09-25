@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use codex_config::types::MemoriesConfig;
 use codex_extension_api::FunctionCallError;
 use codex_extension_api::ResponsesApiTool;
 use codex_extension_api::ToolCall;
@@ -24,6 +25,12 @@ mod ad_hoc_note;
 mod list;
 mod read;
 mod search;
+pub mod unified_memory;
+
+pub use unified_memory::UNIFIED_MEMORY_TOOL_NAME;
+pub use unified_memory::UnifiedMemoryArgs;
+pub use unified_memory::UnifiedMemoryResponse;
+pub use unified_memory::UnifiedMemoryTool;
 
 pub(crate) fn memory_tools<B>(
     backend: B,
@@ -50,6 +57,19 @@ where
             metrics_client,
         }),
     ]
+}
+
+#[allow(dead_code)]
+pub(crate) fn unified_memory_tool(
+    workspace_dir: std::path::PathBuf,
+    config: MemoriesConfig,
+    metrics_client: Option<MetricsClient>,
+) -> Arc<dyn for<'call> ToolExecutor<ToolCall<'call>>> {
+    Arc::new(UnifiedMemoryTool::new(
+        workspace_dir,
+        config,
+        metrics_client,
+    ))
 }
 
 pub(super) fn memory_tool_name(name: &str) -> ToolName {

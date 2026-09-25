@@ -1,5 +1,7 @@
+use std::path::PathBuf;
 use std::sync::Arc;
 
+use codex_config::types::MemoriesConfig;
 use codex_core::config::Config;
 use codex_core::context::ContextualUserFragment;
 use codex_core::context::MemoryContextFragment;
@@ -12,7 +14,9 @@ use codex_extension_api::ExtensionRegistryBuilder;
 use codex_extension_api::PromptFragment;
 use codex_extension_api::ThreadLifecycleContributor;
 use codex_extension_api::ThreadStartInput;
+use codex_extension_api::ToolCall;
 use codex_extension_api::ToolContributor;
+use codex_extension_api::ToolExecutor;
 use codex_features::Feature;
 use codex_otel::MetricsClient;
 use codex_protocol::MemoryVersion;
@@ -22,7 +26,7 @@ use crate::local::LocalMemoriesBackend;
 use crate::prompts::build_memory_tool_developer_instructions;
 use crate::tools;
 
-/// Contributes Codex memory read-path prompt context and memory read tools.
+/// Contributes Codex memory read-path prompt context and unified memory tool.
 #[derive(Clone, Default)]
 pub(crate) struct MemoriesExtension {
     metrics_client: Option<MetricsClient>,
@@ -39,16 +43,21 @@ pub(crate) struct MemoriesExtensionConfig {
     pub(crate) enabled: bool,
     pub(crate) dedicated_tools: bool,
     pub(crate) codex_home: AbsolutePathBuf,
+    pub(crate) cwd: PathBuf,
     pub(crate) version: MemoryVersion,
+    pub(crate) memories: MemoriesConfig,
 }
 
 impl MemoriesExtensionConfig {
     fn from_config(config: &Config) -> Self {
         Self {
-            enabled: config.features.enabled(Feature::MemoryTool) && config.memories.use_memories,
+            enabled: (config.features.enabled(Feature::MemoryTool) || config.memories.use_memories)
+                && config.memories.use_memories,
             dedicated_tools: config.memories.dedicated_tools,
             codex_home: config.codex_home.clone(),
+            cwd: config.cwd.to_path_buf(),
             version: config.memories.version,
+            memories: config.memories.clone(),
         }
     }
 }
@@ -143,19 +152,30 @@ impl ToolContributor for MemoriesExtension {
         let Some(config) = thread_store.get::<MemoriesExtensionConfig>() else {
             return Vec::new();
         };
-        if !config.enabled || !config.dedicated_tools {
+        if !config.enabled {
             return Vec::new();
         }
 
-        tools::memory_tools(
-            LocalMemoriesBackend::from_memory_root(
-                config
-                    .codex_home
-                    .join(config.version.directory_name())
-                    .to_path_buf(),
-            ),
-            self.metrics_client.clone(),
-        )
+        let mut tool_list: Vec<Arc<dyn for<'call> ToolExecutor<ToolCall<'call>>>> =
+            vec![Arc::new(tools::UnifiedMemoryTool::new(
+                config.cwd.clone(),
+                config.memories.clone(),
+                self.metrics_client.clone(),
+            ))];
+
+        if config.dedicated_tools {
+            tool_list.extend(tools::memory_tools(
+                LocalMemoriesBackend::from_memory_root(
+                    config
+                        .codex_home
+                        .join(config.version.directory_name())
+                        .to_path_buf(),
+                ),
+                self.metrics_client.clone(),
+            ));
+        }
+
+        tool_list
     }
 }
 

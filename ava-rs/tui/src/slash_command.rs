@@ -128,7 +128,9 @@ impl SlashCommand {
             SlashCommand::Stop => "stop all background terminals",
             SlashCommand::MemoryDrop => "DO NOT USE",
             SlashCommand::MemoryUpdate => "DO NOT USE",
-            SlashCommand::Connect => "connect or switch AI provider (Google Antigravity, API Key, Ollama, Bedrock)",
+            SlashCommand::Connect => {
+                "connect or switch AI provider (Google Antigravity, API Key, Ollama, Bedrock)"
+            }
             SlashCommand::Model => "choose what model and reasoning effort to use",
             SlashCommand::Ide => {
                 "include current selection, open files, and other context from your IDE"

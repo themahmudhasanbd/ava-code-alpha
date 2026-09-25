@@ -15,6 +15,10 @@ name = "ava-alpha"
 path = "src/main.rs"
 
 [[bin]]
+name = "ava-cli"
+path = "src/main.rs"
+
+[[bin]]
 name = "codex"
 path = "src/main.rs"
 

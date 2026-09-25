@@ -2184,6 +2184,7 @@ dependencies = [
  "codex-arg0",
  "codex-aws-auth",
  "codex-backend-client",
+ "codex-browser-extension",
  "codex-chatgpt",
  "codex-cloud-config",
  "codex-code-mode",
@@ -2535,6 +2536,34 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_with",
+]
+
+[[package]]
+name = "codex-browser-extension"
+version = "0.0.0"
+dependencies = [
+ "base64 0.22.1",
+ "chrono",
+ "codex-config",
+ "codex-core",
+ "codex-extension-api",
+ "codex-otel",
+ "codex-protocol",
+ "codex-tools",
+ "codex-utils-absolute-path",
+ "futures",
+ "http 1.4.0",
+ "pretty_assertions",
+ "reqwest 0.12.28",
+ "schemars 0.8.22",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tokio-tungstenite",
+ "tracing",
+ "url",
+ "uuid",
+ "which 8.0.0",
 ]
 
 [[package]]
@@ -3951,6 +3980,8 @@ dependencies = [
 name = "codex-memories-extension"
 version = "0.0.0"
 dependencies = [
+ "chrono",
+ "codex-config",
  "codex-core",
  "codex-extension-api",
  "codex-features",
@@ -3964,9 +3995,11 @@ dependencies = [
  "schemars 0.8.22",
  "serde",
  "serde_json",
+ "sqlx",
  "tempfile",
  "thiserror 2.0.18",
  "tokio",
+ "uuid",
 ]
 
 [[package]]

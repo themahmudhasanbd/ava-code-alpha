@@ -1197,6 +1197,21 @@ impl MessageProcessor {
                 .clients_revoke(params)
                 .await
                 .map(|response| Some(response.into())),
+            ClientRequest::UserProfileRead { params, .. } => self
+                .config_processor
+                .user_profile_read(params)
+                .await
+                .map(|response| Some(response.into())),
+            ClientRequest::UserProfileWrite { params, .. } => self
+                .config_processor
+                .user_profile_write(params)
+                .await
+                .map(|response| Some(response.into())),
+            ClientRequest::PersonalityPresetsList { params: _, .. } => self
+                .config_processor
+                .personality_presets_list()
+                .await
+                .map(|response| Some(response.into())),
             ClientRequest::ConfigRequirementsRead { params: _, .. } => self
                 .config_processor
                 .config_requirements_read()

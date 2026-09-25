@@ -1,0 +1,4 @@
+interface:
+  display_name: "Brand Kit Generation"
+  short_description: "Create high-end brand guidelines and identity decks"
+  default_prompt: "Use $brandkit to perform Brand Kit Generation tasks."

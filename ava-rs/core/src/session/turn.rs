@@ -813,7 +813,48 @@ pub(crate) async fn run_turn(
         }
     }
 
+    evaluate_auto_quality_gate(&sess, &turn_context, &turn_diff_tracker).await;
+
     Ok(last_agent_message)
+}
+
+async fn evaluate_auto_quality_gate(
+    sess: &Arc<Session>,
+    turn_context: &Arc<TurnContext>,
+    turn_diff_tracker: &SharedTurnDiffTracker,
+) {
+    let (changed_files, diff_content) = {
+        let tracker = turn_diff_tracker.lock().await;
+        (
+            tracker.changed_file_paths(),
+            tracker.get_unified_diff().unwrap_or_default(),
+        )
+    };
+
+    if changed_files.is_empty() && diff_content.is_empty() {
+        return;
+    }
+
+    let input = crate::quality_gate::types::QualityGateInput {
+        session_id: turn_context.sub_id.clone(),
+        workspace_path: turn_context.cwd.display().to_string(),
+        task_description: String::new(),
+        diff_content,
+        changed_files,
+        verification_signals: Vec::new(),
+        turn_count: None,
+    };
+
+    let result = crate::quality_gate::QualityGate::evaluate(&input);
+    tracing::info!(
+        "Quality gate auto-evaluated: status={:?}, score={}/100, blockers={}, warnings={}",
+        result.status,
+        result.risk_score.composite_score,
+        result.blockers.len(),
+        result.warnings.len()
+    );
+
+    sess.set_last_quality_gate(result).await;
 }
 
 #[instrument(level = "trace", skip_all)]

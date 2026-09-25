@@ -9,6 +9,7 @@ use crate::types::ApprovalsReviewer;
 use crate::types::Personality;
 use crate::types::SessionPickerViewMode;
 use crate::types::WindowsToml;
+use crate::user_profile_toml::UserProfileToml;
 use codex_features::FeaturesToml;
 use codex_protocol::config_types::ReasoningSummary;
 use codex_protocol::config_types::SandboxMode;
@@ -58,6 +59,7 @@ pub struct ConfigProfile {
     pub experimental_use_unified_exec_tool: Option<bool>,
     pub tools: Option<ToolsToml>,
     pub web_search: Option<WebSearchMode>,
+    pub user_profile: Option<UserProfileToml>,
     pub analytics: Option<AnalyticsConfigToml>,
     /// TUI settings scoped to this profile.
     #[serde(default)]

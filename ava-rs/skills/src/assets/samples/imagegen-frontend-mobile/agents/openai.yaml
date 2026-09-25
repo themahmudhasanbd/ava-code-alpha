@@ -1,0 +1,4 @@
+interface:
+  display_name: "Mobile Image Generation"
+  short_description: "Generate premium mobile app UI concepts and screens"
+  default_prompt: "Use $imagegen-frontend-mobile to perform Mobile Image Generation tasks."

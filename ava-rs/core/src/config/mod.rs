@@ -40,6 +40,7 @@ use codex_config::sandbox_mode_requirement_for_permission_profile;
 use codex_config::types::ApprovalsReviewer;
 use codex_config::types::AuthCredentialsStoreMode;
 use codex_config::types::AuthKeyringBackendKind;
+use codex_config::types::BrowserConfig;
 use codex_config::types::History;
 use codex_config::types::McpServerConfig;
 use codex_config::types::McpServerDisabledReason;
@@ -56,6 +57,7 @@ use codex_config::types::TuiKeymap;
 use codex_config::types::TuiNotificationSettings;
 use codex_config::types::TuiPetAnchor;
 use codex_config::types::UriBasedFileOpener;
+use codex_config::types::UserProfileConfig;
 use codex_config::types::WindowsSandboxModeToml;
 use codex_core_plugins::PluginLoadOutcome;
 use codex_core_plugins::PluginsConfigInput;
@@ -913,6 +915,12 @@ pub struct Config {
 
     /// Memories subsystem settings.
     pub memories: MemoriesConfig,
+
+    /// Dynamic user profile & AI persona context settings.
+    pub user_profile: UserProfileConfig,
+
+    /// Browser automation subsystem settings.
+    pub browser: BrowserConfig,
 
     /// Directory containing all Codex state (defaults to `~/.codex` but can be
     /// overridden by the `CODEX_HOME` environment variable).
@@ -2663,7 +2671,7 @@ fn resolve_update_plan_enabled(config_toml: &ConfigToml) -> bool {
         .tools
         .as_ref()
         .and_then(|tools| tools.update_plan.as_ref())
-        .is_some_and(|config| config.enabled)
+        .map_or(true, |config| config.enabled)
 }
 
 fn resolve_orchestrator_feature_enabled(
@@ -3444,6 +3452,7 @@ impl Config {
         }
 
         let memories_config: MemoriesConfig = cfg.memories.clone().unwrap_or_default().into();
+        let browser_config: BrowserConfig = cfg.browser.clone().unwrap_or_default().into();
         let memories_root = codex_home.join(memories_config.version.directory_name());
 
         let profiles_are_active = effective_permission_selection.profiles_are_active(
@@ -4280,7 +4289,9 @@ impl Config {
                     })
                 })
                 .transpose()?,
+            user_profile: cfg.user_profile.map(Into::into).unwrap_or_default(),
             memories: memories_config,
+            browser: browser_config,
             agent_interrupt_message_enabled,
             codex_home,
             sqlite: codex_state::SqliteConfig::from_sqlite_home(sqlite_home),

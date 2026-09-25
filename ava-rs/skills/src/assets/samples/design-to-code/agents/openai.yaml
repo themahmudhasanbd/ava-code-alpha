@@ -1,0 +1,4 @@
+interface:
+  display_name: "Design to Code"
+  short_description: "Pixel-perfect Figma to React conversion with Vite"
+  default_prompt: "Use $design-to-code to perform Design to Code tasks."

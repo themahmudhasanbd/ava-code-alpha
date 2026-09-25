@@ -17,9 +17,12 @@ use crate::context::world_state::MultiAgentModeState;
 use crate::context::world_state::MultiAgentUsageHintState;
 use crate::context::world_state::PermissionsState;
 use crate::context::world_state::PersistentModeState;
+use crate::context::world_state::PlanState;
 use crate::context::world_state::PluginsInstructionsState;
+use crate::context::world_state::QualityState;
 use crate::context::world_state::RealtimeState;
 use crate::context::world_state::ToolsState;
+use crate::context::world_state::UserProfileState;
 use crate::context::world_state::WorldState;
 use codex_connectors::AppToolPolicyEvaluator;
 use codex_extension_api::WorldStateContributionInput;
@@ -86,11 +89,16 @@ impl Session {
             String::new()
         };
         let mut world_state = WorldState::default();
+        world_state.add_section(UserProfileState::new(&turn_context.config.user_profile));
         world_state.add_section(ModelInstructionsState::new(
             &model_info.slug,
             previous_model.as_deref(),
             model_instructions,
         ));
+        let active_plan = self.get_active_plan().await;
+        world_state.add_section(PlanState::new(active_plan.as_ref()));
+        let last_quality = self.get_last_quality_gate().await;
+        world_state.add_section(QualityState::new(last_quality.as_ref()));
         let token_budget_enabled = turn_context.config.features.enabled(Feature::TokenBudget)
             && step_context
                 .settings

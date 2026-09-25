@@ -124,9 +124,22 @@ pub(crate) async fn decide_approval(
     .decide(&session.services.extensions)
     .await;
     // Enforce cancellation after extension callbacks too, including cached decisions.
-    if history_reset.is_cancelled() || cancellation.is_cancelled() {
+    let decision = if history_reset.is_cancelled() || cancellation.is_cancelled() {
         Some(ReviewDecision::Abort)
     } else {
         decision
+    };
+
+    // Enforce Next-Gen Smart Quality Gate on approvals:
+    if let Ok(ref req) = request.request {
+        if let Some(qg_result) = super::quality_gate_adapter::evaluate_guardian_quality_gate(
+            req,
+            &session.thread_id.to_string(),
+            None,
+        ) {
+            return super::quality_gate_adapter::apply_quality_gate_decision(decision, &qg_result);
+        }
     }
+
+    decision
 }

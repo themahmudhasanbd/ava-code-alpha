@@ -1,6 +1,7 @@
 use std::path::Path;
 use std::sync::Arc;
 
+use codex_config::types::MemoriesConfig;
 use codex_extension_api::ContextContributor;
 use codex_extension_api::ExtensionData;
 use codex_extension_api::ExtensionRegistryBuilder;
@@ -20,6 +21,7 @@ use codex_utils_output_truncation::TruncationPolicy;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 
+use crate::UNIFIED_MEMORY_TOOL_NAME;
 use crate::backend::ListMemoriesRequest;
 use crate::backend::ListMemoriesResponse;
 use crate::backend::MemoriesBackend;
@@ -30,6 +32,7 @@ use crate::backend::SearchMemoriesRequest;
 use crate::extension::MemoriesExtension;
 use crate::extension::MemoriesExtensionConfig;
 use crate::local::LocalMemoriesBackend;
+use crate::tools::UnifiedMemoryTool;
 
 #[test]
 fn memory_tool_namespace_matches_responses_api_identifier() {
@@ -64,6 +67,8 @@ fn tools_are_not_contributed_when_disabled() {
         enabled: false,
         dedicated_tools: true,
         codex_home: test_path_buf("/tmp/codex-home").abs(),
+        cwd: test_path_buf("/tmp/codex-cwd").to_path_buf(),
+        memories: MemoriesConfig::default(),
     });
 
     assert!(
@@ -74,7 +79,7 @@ fn tools_are_not_contributed_when_disabled() {
 }
 
 #[test]
-fn tools_are_not_contributed_when_dedicated_tools_disabled() {
+fn unified_tool_contributed_when_enabled_without_dedicated_tools() {
     let extension = MemoriesExtension::default();
     let thread_store = ExtensionData::new("thread");
     thread_store.insert(MemoriesExtensionConfig {
@@ -82,13 +87,17 @@ fn tools_are_not_contributed_when_dedicated_tools_disabled() {
         enabled: true,
         dedicated_tools: false,
         codex_home: test_path_buf("/tmp/codex-home").abs(),
+        cwd: test_path_buf("/tmp/codex-cwd").to_path_buf(),
+        memories: MemoriesConfig::default(),
     });
 
-    assert!(
-        extension
-            .tools(&ExtensionData::new("session"), &thread_store)
-            .is_empty()
-    );
+    let tool_names = extension
+        .tools(&ExtensionData::new("session"), &thread_store)
+        .into_iter()
+        .map(|tool| tool.tool_name())
+        .collect::<Vec<_>>();
+
+    assert_eq!(tool_names, vec![memory_tool_name(UNIFIED_MEMORY_TOOL_NAME)]);
 }
 
 #[test]
@@ -100,6 +109,8 @@ fn tools_are_contributed_when_enabled_with_dedicated_tools() {
         enabled: true,
         dedicated_tools: true,
         codex_home: test_path_buf("/tmp/codex-home").abs(),
+        cwd: test_path_buf("/tmp/codex-cwd").to_path_buf(),
+        memories: MemoriesConfig::default(),
     });
 
     let tool_names = extension
@@ -111,6 +122,7 @@ fn tools_are_contributed_when_enabled_with_dedicated_tools() {
     assert_eq!(
         tool_names,
         vec![
+            memory_tool_name(UNIFIED_MEMORY_TOOL_NAME),
             memory_tool_name(crate::ADD_AD_HOC_NOTE_TOOL_NAME),
             memory_tool_name(crate::LIST_TOOL_NAME),
             memory_tool_name(crate::READ_TOOL_NAME),
@@ -130,6 +142,8 @@ fn install_registers_dedicated_tool_contributor() {
         enabled: true,
         dedicated_tools: true,
         codex_home: test_path_buf("/tmp/codex-home").abs(),
+        cwd: test_path_buf("/tmp/codex-cwd").to_path_buf(),
+        memories: MemoriesConfig::default(),
     });
 
     let tool_names = registry
@@ -142,6 +156,7 @@ fn install_registers_dedicated_tool_contributor() {
     assert_eq!(
         tool_names,
         vec![
+            memory_tool_name(UNIFIED_MEMORY_TOOL_NAME),
             memory_tool_name(crate::ADD_AD_HOC_NOTE_TOOL_NAME),
             memory_tool_name(crate::LIST_TOOL_NAME),
             memory_tool_name(crate::READ_TOOL_NAME),
@@ -191,6 +206,8 @@ async fn prompt_contribution_uses_memory_summary_when_enabled() {
         enabled: true,
         dedicated_tools: false,
         codex_home: tempdir.path().abs(),
+        cwd: tempdir.path().to_path_buf(),
+        memories: MemoriesConfig::default(),
     });
 
     let fragments = extension
@@ -203,6 +220,374 @@ async fn prompt_contribution_uses_memory_summary_when_enabled() {
         fragments[0]
             .text()
             .contains("Remember repository-specific implementation preferences.")
+    );
+}
+
+#[tokio::test]
+async fn unified_memory_tool_crud_and_search_operations() {
+    let tempdir = tempfile::tempdir().expect("tempdir");
+    let workspace_dir = tempdir.path().to_path_buf();
+    let config = MemoriesConfig::default();
+    let tool = UnifiedMemoryTool::new(workspace_dir, config, None);
+
+    // 1. Save memory
+    let save_payload = ToolPayload::Function {
+        arguments: json!({
+            "action": "save",
+            "content": "Always use PostgreSQL connection pooling with max 20 connections.",
+            "evidence": "Observed connection exhaustion in staging load tests; pooling resolved it.",
+            "domain": "architecture",
+            "category": "database",
+            "importance": "high",
+            "tags": ["postgres", "pooling", "performance"],
+            "scope": "project"
+        })
+        .to_string(),
+    };
+
+    let save_output = tool
+        .handle(ToolCall {
+            turn_id: "turn-1".to_string(),
+            call_id: "call-save".to_string(),
+            tool_name: memory_tool_name(UNIFIED_MEMORY_TOOL_NAME),
+            model: "gpt-test".to_string(),
+            codex_turn_metadata: None,
+            truncation_policy: TruncationPolicy::Bytes(4096),
+            source: ToolCallSource::Direct,
+            conversation_history: codex_extension_api::ConversationHistory::default(),
+            turn_item_emitter: Arc::new(NoopTurnItemEmitter),
+            environments: Vec::new(),
+            payload: save_payload.clone(),
+        })
+        .await
+        .expect("save memory should succeed");
+
+    let save_resp = save_output
+        .post_tool_use_response("call-save", &save_payload)
+        .expect("response json");
+    assert_eq!(save_resp.pointer("/success"), Some(&json!(true)));
+    let record_id = save_resp
+        .pointer("/record_id")
+        .and_then(|v| v.as_str())
+        .expect("record_id returned")
+        .to_string();
+
+    // 2. Search memory
+    let search_payload = ToolPayload::Function {
+        arguments: json!({
+            "action": "search",
+            "query": "PostgreSQL connection pooling",
+            "scope": "project"
+        })
+        .to_string(),
+    };
+
+    let search_output = tool
+        .handle(ToolCall {
+            turn_id: "turn-1".to_string(),
+            call_id: "call-search".to_string(),
+            tool_name: memory_tool_name(UNIFIED_MEMORY_TOOL_NAME),
+            model: "gpt-test".to_string(),
+            codex_turn_metadata: None,
+            truncation_policy: TruncationPolicy::Bytes(4096),
+            source: ToolCallSource::Direct,
+            conversation_history: codex_extension_api::ConversationHistory::default(),
+            turn_item_emitter: Arc::new(NoopTurnItemEmitter),
+            environments: Vec::new(),
+            payload: search_payload.clone(),
+        })
+        .await
+        .expect("search memory should succeed");
+
+    let search_resp = search_output
+        .post_tool_use_response("call-search", &search_payload)
+        .expect("search response json");
+    assert_eq!(search_resp.pointer("/success"), Some(&json!(true)));
+    assert_eq!(search_resp.pointer("/count"), Some(&json!(1)));
+
+    // 3. Get memory by ID
+    let get_payload = ToolPayload::Function {
+        arguments: json!({
+            "action": "get",
+            "id": record_id.clone(),
+            "scope": "project"
+        })
+        .to_string(),
+    };
+
+    let get_output = tool
+        .handle(ToolCall {
+            turn_id: "turn-1".to_string(),
+            call_id: "call-get".to_string(),
+            tool_name: memory_tool_name(UNIFIED_MEMORY_TOOL_NAME),
+            model: "gpt-test".to_string(),
+            codex_turn_metadata: None,
+            truncation_policy: TruncationPolicy::Bytes(4096),
+            source: ToolCallSource::Direct,
+            conversation_history: codex_extension_api::ConversationHistory::default(),
+            turn_item_emitter: Arc::new(NoopTurnItemEmitter),
+            environments: Vec::new(),
+            payload: get_payload.clone(),
+        })
+        .await
+        .expect("get memory should succeed");
+
+    let get_resp = get_output
+        .post_tool_use_response("call-get", &get_payload)
+        .expect("get response json");
+    assert_eq!(get_resp.pointer("/success"), Some(&json!(true)));
+
+    // 4. Stats
+    let stats_payload = ToolPayload::Function {
+        arguments: json!({
+            "action": "stats",
+            "scope": "project"
+        })
+        .to_string(),
+    };
+
+    let stats_output = tool
+        .handle(ToolCall {
+            turn_id: "turn-1".to_string(),
+            call_id: "call-stats".to_string(),
+            tool_name: memory_tool_name(UNIFIED_MEMORY_TOOL_NAME),
+            model: "gpt-test".to_string(),
+            codex_turn_metadata: None,
+            truncation_policy: TruncationPolicy::Bytes(4096),
+            source: ToolCallSource::Direct,
+            conversation_history: codex_extension_api::ConversationHistory::default(),
+            turn_item_emitter: Arc::new(NoopTurnItemEmitter),
+            environments: Vec::new(),
+            payload: stats_payload.clone(),
+        })
+        .await
+        .expect("stats should succeed");
+
+    let stats_resp = stats_output
+        .post_tool_use_response("call-stats", &stats_payload)
+        .expect("stats response json");
+    assert_eq!(stats_resp.pointer("/success"), Some(&json!(true)));
+
+    // 5. Delete memory
+    let delete_payload = ToolPayload::Function {
+        arguments: json!({
+            "action": "delete",
+            "id": record_id,
+            "scope": "project"
+        })
+        .to_string(),
+    };
+
+    let delete_output = tool
+        .handle(ToolCall {
+            turn_id: "turn-1".to_string(),
+            call_id: "call-delete".to_string(),
+            tool_name: memory_tool_name(UNIFIED_MEMORY_TOOL_NAME),
+            model: "gpt-test".to_string(),
+            codex_turn_metadata: None,
+            truncation_policy: TruncationPolicy::Bytes(4096),
+            source: ToolCallSource::Direct,
+            conversation_history: codex_extension_api::ConversationHistory::default(),
+            turn_item_emitter: Arc::new(NoopTurnItemEmitter),
+            environments: Vec::new(),
+            payload: delete_payload.clone(),
+        })
+        .await
+        .expect("delete should succeed");
+
+    let delete_resp = delete_output
+        .post_tool_use_response("call-delete", &delete_payload)
+        .expect("delete response json");
+    assert_eq!(delete_resp.pointer("/success"), Some(&json!(true)));
+}
+
+#[tokio::test]
+async fn unified_memory_tool_session_memory_operations() {
+    let tempdir = tempfile::tempdir().expect("tempdir");
+    let workspace_dir = tempdir.path().to_path_buf();
+    let config = MemoriesConfig::default();
+    let tool = UnifiedMemoryTool::new(workspace_dir, config, None);
+
+    // 1. Session save
+    let session_save_payload = ToolPayload::Function {
+        arguments: json!({
+            "action": "session_save",
+            "session_id": "sess-alpha-100",
+            "content": "User asked to implement OAuth2 PKCE auth flow for mobile clients.",
+            "category": "auth",
+            "tags": ["oauth2", "pkce", "mobile"],
+            "scope": "project"
+        })
+        .to_string(),
+    };
+
+    let save_output = tool
+        .handle(ToolCall {
+            turn_id: "turn-1".to_string(),
+            call_id: "call-sess-save".to_string(),
+            tool_name: memory_tool_name(UNIFIED_MEMORY_TOOL_NAME),
+            model: "gpt-test".to_string(),
+            codex_turn_metadata: None,
+            truncation_policy: TruncationPolicy::Bytes(4096),
+            source: ToolCallSource::Direct,
+            conversation_history: codex_extension_api::ConversationHistory::default(),
+            turn_item_emitter: Arc::new(NoopTurnItemEmitter),
+            environments: Vec::new(),
+            payload: session_save_payload.clone(),
+        })
+        .await
+        .expect("session save should succeed");
+
+    let save_resp = save_output
+        .post_tool_use_response("call-sess-save", &session_save_payload)
+        .expect("session save response json");
+    assert_eq!(save_resp.pointer("/success"), Some(&json!(true)));
+    let sess_record_id = save_resp
+        .pointer("/record_id")
+        .and_then(|v| v.as_str())
+        .expect("record id")
+        .to_string();
+
+    // 2. Session search
+    let session_search_payload = ToolPayload::Function {
+        arguments: json!({
+            "action": "session_search",
+            "query": "OAuth2 PKCE",
+            "scope": "project"
+        })
+        .to_string(),
+    };
+
+    let search_output = tool
+        .handle(ToolCall {
+            turn_id: "turn-1".to_string(),
+            call_id: "call-sess-search".to_string(),
+            tool_name: memory_tool_name(UNIFIED_MEMORY_TOOL_NAME),
+            model: "gpt-test".to_string(),
+            codex_turn_metadata: None,
+            truncation_policy: TruncationPolicy::Bytes(4096),
+            source: ToolCallSource::Direct,
+            conversation_history: codex_extension_api::ConversationHistory::default(),
+            turn_item_emitter: Arc::new(NoopTurnItemEmitter),
+            environments: Vec::new(),
+            payload: session_search_payload.clone(),
+        })
+        .await
+        .expect("session search should succeed");
+
+    let search_resp = search_output
+        .post_tool_use_response("call-sess-search", &session_search_payload)
+        .expect("session search response json");
+    assert_eq!(search_resp.pointer("/success"), Some(&json!(true)));
+    assert_eq!(search_resp.pointer("/count"), Some(&json!(1)));
+
+    // 3. Session list
+    let session_list_payload = ToolPayload::Function {
+        arguments: json!({
+            "action": "session_list",
+            "session_id": "sess-alpha-100",
+            "scope": "project"
+        })
+        .to_string(),
+    };
+
+    let list_output = tool
+        .handle(ToolCall {
+            turn_id: "turn-1".to_string(),
+            call_id: "call-sess-list".to_string(),
+            tool_name: memory_tool_name(UNIFIED_MEMORY_TOOL_NAME),
+            model: "gpt-test".to_string(),
+            codex_turn_metadata: None,
+            truncation_policy: TruncationPolicy::Bytes(4096),
+            source: ToolCallSource::Direct,
+            conversation_history: codex_extension_api::ConversationHistory::default(),
+            turn_item_emitter: Arc::new(NoopTurnItemEmitter),
+            environments: Vec::new(),
+            payload: session_list_payload.clone(),
+        })
+        .await
+        .expect("session list should succeed");
+
+    let list_resp = list_output
+        .post_tool_use_response("call-sess-list", &session_list_payload)
+        .expect("session list response json");
+    assert_eq!(list_resp.pointer("/success"), Some(&json!(true)));
+
+    // 4. Session get
+    let session_get_payload = ToolPayload::Function {
+        arguments: json!({
+            "action": "session_get",
+            "id": sess_record_id,
+            "scope": "project"
+        })
+        .to_string(),
+    };
+
+    let get_output = tool
+        .handle(ToolCall {
+            turn_id: "turn-1".to_string(),
+            call_id: "call-sess-get".to_string(),
+            tool_name: memory_tool_name(UNIFIED_MEMORY_TOOL_NAME),
+            model: "gpt-test".to_string(),
+            codex_turn_metadata: None,
+            truncation_policy: TruncationPolicy::Bytes(4096),
+            source: ToolCallSource::Direct,
+            conversation_history: codex_extension_api::ConversationHistory::default(),
+            turn_item_emitter: Arc::new(NoopTurnItemEmitter),
+            environments: Vec::new(),
+            payload: session_get_payload.clone(),
+        })
+        .await
+        .expect("session get should succeed");
+
+    let get_resp = get_output
+        .post_tool_use_response("call-sess-get", &session_get_payload)
+        .expect("session get response json");
+    assert_eq!(get_resp.pointer("/success"), Some(&json!(true)));
+}
+
+#[tokio::test]
+async fn unified_memory_tool_session_disabled_toggle() {
+    let tempdir = tempfile::tempdir().expect("tempdir");
+    let workspace_dir = tempdir.path().to_path_buf();
+    let mut config = MemoriesConfig::default();
+    config.session_memory_enabled = false;
+    let tool = UnifiedMemoryTool::new(workspace_dir, config, None);
+
+    let session_search_payload = ToolPayload::Function {
+        arguments: json!({
+            "action": "session_search",
+            "query": "something"
+        })
+        .to_string(),
+    };
+
+    let output = tool
+        .handle(ToolCall {
+            turn_id: "turn-1".to_string(),
+            call_id: "call-sess-disabled".to_string(),
+            tool_name: memory_tool_name(UNIFIED_MEMORY_TOOL_NAME),
+            model: "gpt-test".to_string(),
+            codex_turn_metadata: None,
+            truncation_policy: TruncationPolicy::Bytes(4096),
+            source: ToolCallSource::Direct,
+            conversation_history: codex_extension_api::ConversationHistory::default(),
+            turn_item_emitter: Arc::new(NoopTurnItemEmitter),
+            environments: Vec::new(),
+            payload: session_search_payload.clone(),
+        })
+        .await
+        .expect("tool call handled");
+
+    let resp = output
+        .post_tool_use_response("call-sess-disabled", &session_search_payload)
+        .expect("response json");
+    assert_eq!(resp.pointer("/success"), Some(&json!(false)));
+    assert!(
+        resp.pointer("/output")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .contains("disabled")
     );
 }
 

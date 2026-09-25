@@ -3,7 +3,7 @@
 - Wants analysis structured by severity (critical/high/medium) with concrete root causes, not just symptom descriptions. Confidence: 0.75
 - Expects actionable fix proposals alongside bug reports — not just diagnosis but prioritized remediation steps. Confidence: 0.75
 - When presented with a prioritized list of fixes, wants all implemented in one batch — brief "yes please" confirmation means go ahead with everything, no need for per-fix review. Confidence: 0.75
-- Works on AvA mobile — a Flutter/Dart mobile app with SSE/WebSocket streaming architecture (ava-mobile/). Confidence: 0.95
+- Works on AvA — an AI agent platform with a Rust backend (ava-rs/) and multiple frontends; currently migrating mobile from Flutter/Dart to Tauri 2 + React + TypeScript + Rust (ava-mobile/v2/). Confidence: 0.9
 - Familiar with streaming state management concepts (agent turns, timeline, pending messages, heartbeat, reconnect) — communicates at a senior developer level despite informal typing. Confidence: 0.8
 - Prefers single-command automated deploy via `deploy.sh` (git → build → deploy → health check) — expects the agent to find and run the deploy script, not do steps manually. Confidence: 0.85
 - Uses conventional commit format (`fix(mobile):`, `feat:`, etc.) with descriptive bodies; deploy script auto-generates commit messages from the summary the user approves. Confidence: 0.7
@@ -13,3 +13,12 @@
 - Communicates requirements in informal/broken English but provides precise, actionable technical specs — parse the intent, not the grammar. Confidence: 0.85
 - Reports immediately when a fix doesn't work and expects the agent to re-trace root causes more deeply rather than patch over symptoms again. Confidence: 0.8
 - Expects static analysis (`flutter analyze`) to be run and pass before any deploy — won't accept "it should compile" without proof. Confidence: 0.8
+- Gives extremely terse instructions (a link + a short path) and expects the assistant to infer full context, fetch resources autonomously, and execute end-to-end without step-by-step guidance. Confidence: 0.85
+- For large/greenfield projects, expects comprehensive upfront discovery and planning documentation (architecture, MVP scope, API contracts, UI spec, implementation plan, risk register, ADRs) before any code is written. Confidence: 0.8
+- Organizes major rewrites in versioned subdirectories (e.g. `ava-mobilev2/`) rather than in-place upgrades. Confidence: 0.7
+- Expects external design docs (Google Docs, specs) to be followed step-by-step as the authoritative source of truth — "read it and follow it" means implement exactly what the doc says, don't improvise. Confidence: 0.85
+- Expects incremental git commits and pushes at each milestone or phase completion — don't accumulate all changes until the end; preserve progress in version control continuously. Confidence: 0.8
+- Expects live-server integration testing as part of phase completion — providing a server URL means "test everything end-to-end against this server now," not just build/compile checks. Autonomous testing with script-based API verification (Python/websockets, curl) is expected. Confidence: 0.85
+- When live-server testing reveals API contract bugs (e.g. param naming, response shape), expects immediate fixes + commit + push without asking permission — bugs found during testing are treated as blockers to close out. Confidence: 0.75
+- Strongly opposes dark theme as default — UI should not force dark mode; use light theme unless explicitly told otherwise. Confidence: 0.9
+- When rewriting/migrating an existing app, the new version MUST visually match the original's layout, theme, and component design — never improvise UI from scratch; study the existing codebase as the source of truth for all visual decisions. Confidence: 0.9

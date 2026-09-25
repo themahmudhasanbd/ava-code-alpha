@@ -1,0 +1,4 @@
+interface:
+  display_name: "GPT Taste & GSAP"
+  short_description: "Advanced UX/UI & GSAP Motion engineering protocol"
+  default_prompt: "Use $gpt-taste to perform GPT Taste & GSAP tasks."

@@ -11,11 +11,14 @@ mod multi_agent_mode;
 mod multi_agent_usage_hint;
 mod permissions;
 mod persistent_mode;
+mod plan;
 mod plugins_instructions;
+mod quality;
 mod realtime;
 #[cfg(test)]
 mod test_support;
 mod tools;
+mod user_profile;
 
 use crate::context::ContextualUserFragment;
 use codex_extension_api::PreviousWorldStateSection;
@@ -50,9 +53,12 @@ pub(crate) use multi_agent_mode::MultiAgentModeState;
 pub(crate) use multi_agent_usage_hint::MultiAgentUsageHintState;
 pub(crate) use permissions::PermissionsState;
 pub(crate) use persistent_mode::PersistentModeState;
+pub(crate) use plan::PlanState;
 pub(crate) use plugins_instructions::PluginsInstructionsState;
+pub(crate) use quality::QualityState;
 pub(crate) use realtime::RealtimeState;
 pub(crate) use tools::ToolsState;
+pub(crate) use user_profile::UserProfileState;
 
 trait ErasedWorldStateSection: Send + Sync {
     fn snapshot(&self) -> Option<Value>;

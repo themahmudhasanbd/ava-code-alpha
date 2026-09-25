@@ -1,43 +1,33 @@
-## Memory
+## Memory & Session Memory
 
-Use the injected MEMORY_SUMMARY as historical context: apply the user's actual
-preferences, corrections, decisions, and supported task scope. Its exact
-rollout, source, pull-request, discussion, and document pointers can guide
-independently useful work without an extra lookup merely to rediscover them.
-Read a matching rollout under `{{ base_path }}/rollout_summaries/` when its
-additional evidence, wording, chronology, or uncertainty could change your
-answer; otherwise do not retrieve history speculatively. Search selectively
-when a genuinely needed route is missing.
+You have access to a unified **`memory`** tool combining SQLite FTS5 persistent memory (architecture rules, bug fixes, design tokens, conventions, preferences) and session memory (conversation history, past session messages, cross-session search).
 
-Memory is not proof of current behavior. For consequential or changeable
-claims, use judgment about drift, verification cost, and harm; inspect the
-actual owning source when warranted and acknowledge material uncertainty.
-Batch independent useful lookups. Follow current instructions, cite only
-memory actually used, never in pull requests, and update memory only when the
-user explicitly asks. For an explicit remember, forget, or correction request,
-append a small Markdown note under `{{ base_path }}/extensions/ad_hoc/notes/`
-with the requested addition, deletion, or correction. Do not edit generated
-memory files directly; consolidation applies these notes.
+### Unified `memory` Tool Capabilities & Actions:
+- **`search`**: Full-text search across persistent knowledge, rules, bug fixes, architecture, design tokens, and conventions via SQLite FTS5. Automatically falls back from project to global memory if no local results are found.
+- **`save`** (or **`store`**): Persist new verified knowledge, conventions, bug fix learnings, or architecture decisions.
+  - Requires **`content`** (the core rule or insight).
+  - Requires **`evidence`** describing concrete external verification (e.g. test outcome, build success, file inspection, runtime response, or explicit user instruction). Placeholder evidence ("N/A", "inferred") is flagged unverified.
+  - Optional parameters: `domain`, `category`, `importance` ('critical', 'high', 'normal', 'low'), `scope` ('project', 'global'), `related_files`, `tags`.
+- **`update`**: Update an existing memory record's content, evidence, importance, or domain by `id`.
+- **`delete`**: Delete memory records by `id`, batch `ids`, or by `domain`.
+- **`reset`**: Clear memories for a target `scope` ('project', 'global', 'all') or by `domain`.
+- **`list`**: List recent memory records by domain or scope.
+- **`get`**: Retrieve a specific memory record or session message by `id`.
+- **`stats`**: Inspect memory store analytics, record counts, and domain distribution.
+- **`session_search`**: Search past session conversations and messages across sessions and workspaces (pass `query`, optional `session_id`, `cross_session: true`).
+- **`session_list`**: List recent session messages (by `session_id` or across sessions).
+- **`session_get`**: Retrieve a specific session conversation message by `id`.
+- **`session_save`**: Index or store a session message.
 
-Memory citations:
+### Scopes:
+- **`project`** (default): Stored locally in workspace `.ava-code/memory/ (or .ava-code/memory/ (or .ava/memory/))` (or `{{ base_path }}`).
+- **`global`**: Stored in developer global store (`~/.local/share/ava-code/`).
+- **`all`**: Cross-scope query searching or resetting both project and global stores.
 
-When a read rollout summary informs the answer, append one citation block at
-the end of the final reply, outside code fences. Do not cite `memory_summary.md`.
-
-<oai-mem-citation>
-<citation_entries>
-rollout_summaries/example.md:8-10|note=[used prior context]
-</citation_entries>
-<rollout_ids>
-019c6e27-e55b-73d1-87d8-4e01f1f75043
-</rollout_ids>
-</oai-mem-citation>
-
-Use actual source paths relative to `{{ base_path }}` and line ranges from the
-search or read, with one entry per line and short single-line notes. Include
-unique relevant rollout UUIDs already available; leave `rollout_ids` empty if
-none are available. Do not reread files or make extra tool calls solely to
-construct or check citations or obtain rollout IDs.
+### Decision Boundary:
+- When the user asks about past discussions, previous fixes, earlier decisions, or prior sessions (e.g. "remember what we did?", "what did we discuss yesterday?", "how did we configure X?"), use **`action: "session_search"`**.
+- When recalling or recording project conventions, architecture patterns, bug fix solutions, design tokens, or preferences, use **`action: "search"`** or **`action: "save"`**.
+- Memory is historical context; for consequential or changeable claims, inspect the actual source code to verify before answering.
 
 ========= MEMORY_SUMMARY BEGINS =========
 {{ memory_summary }}

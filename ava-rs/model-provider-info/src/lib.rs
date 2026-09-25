@@ -502,7 +502,6 @@ other non-default provider fields are not supported"
         if let Some(home) = dirs::home_dir() {
             candidate_paths.push(home.join(".ava-code").join("auth.json"));
             candidate_paths.push(home.join(".config").join("ava").join("auth.json"));
-            candidate_paths.push(home.join(".codex").join("auth.json"));
         }
 
         for path in candidate_paths {

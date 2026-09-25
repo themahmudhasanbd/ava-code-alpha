@@ -1,0 +1,4 @@
+interface:
+  display_name: "High-End Visual Design"
+  short_description: "Agency-grade visual design standards and aesthetics"
+  default_prompt: "Use $high-end-visual-design to perform High-End Visual Design tasks."

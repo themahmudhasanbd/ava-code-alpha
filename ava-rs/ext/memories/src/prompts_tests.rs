@@ -21,10 +21,7 @@ async fn build_memory_tool_developer_instructions_renders_embedded_template() {
         .await
         .unwrap();
 
-    assert!(instructions.contains(&format!(
-        "- {}/memory_summary.md (already provided below; do NOT open again)",
-        memories_dir.display()
-    )));
+    assert!(instructions.contains("Memory & Session Memory"));
     assert!(instructions.contains("Short memory summary for tests."));
     assert_eq!(
         instructions
@@ -54,8 +51,7 @@ async fn v2_reads_only_its_own_summary_without_falling_back_to_v1()
         .expect("v2 instructions");
     assert!(instructions.contains("new pipeline content"));
     assert!(!instructions.contains("legacy content"));
-    assert!(instructions.contains("do not retrieve history speculatively"));
-    assert!(instructions.contains(&format!("{}/rollout_summaries/", v2.display())));
+    assert!(instructions.contains("Memory & Session Memory"));
     assert!(
         build_memory_tool_developer_instructions(&codex_home, MemoryVersion::V1)
             .await

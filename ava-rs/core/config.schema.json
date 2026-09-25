@@ -2337,6 +2337,14 @@
           "description": "When `true`, expose dedicated memory tools through the extension tool surface.",
           "type": "boolean"
         },
+        "default_scope": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/MemoryScope"
+            }
+          ],
+          "description": "Default memory scope for queries (project, global, all). Defaults to project."
+        },
         "disable_on_external_context": {
           "description": "When `true`, external context sources mark the thread `memory_mode` as `\"polluted\"`.",
           "type": "boolean"
@@ -2389,8 +2397,20 @@
           "format": "int64",
           "type": "integer"
         },
+        "preferences": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/MemoryPreferencesToml"
+            }
+          ],
+          "description": "Granular memory preferences and thresholds."
+        },
+        "session_memory_enabled": {
+          "description": "When `false`, disable session memory conversation indexing and cross-session search.",
+          "type": "boolean"
+        },
         "use_memories": {
-          "description": "When `false`, skip injecting memory usage instructions into developer prompts.",
+          "description": "When `false`, skip injecting memory usage instructions into developer prompts and disable memory tools.",
           "type": "boolean"
         },
         "version": {
@@ -2403,6 +2423,64 @@
         }
       },
       "type": "object"
+    },
+    "MemoryPreferencesToml": {
+      "additionalProperties": false,
+      "description": "Fine-grained memory preferences loaded from config.toml.",
+      "properties": {
+        "auto_save_verified_evidence": {
+          "description": "Whether to automatically verify and tag memories with detected evidence. Default: true.",
+          "type": "boolean"
+        },
+        "cross_session_search": {
+          "description": "Whether cross-session search is permitted by default. Default: true.",
+          "type": "boolean"
+        },
+        "default_importance": {
+          "description": "Default importance level (critical, high, normal, low). Default: \"normal\".",
+          "type": "string"
+        },
+        "max_results": {
+          "description": "Default maximum results returned by memory searches. Default: 10.",
+          "format": "uint",
+          "minimum": 0.0,
+          "type": "integer"
+        },
+        "min_confidence_percent": {
+          "description": "Minimum confidence threshold percentage (0 to 100). Default: 60 (0.6).",
+          "format": "uint32",
+          "maximum": 100.0,
+          "minimum": 0.0,
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "MemoryScope": {
+      "description": "Scope for memory retrieval and persistence operations.",
+      "oneOf": [
+        {
+          "description": "Stored in project-level `.ava-code/memory/` (or `.ava/memory/`) SQLite database.",
+          "enum": [
+            "project"
+          ],
+          "type": "string"
+        },
+        {
+          "description": "Stored in cross-project `~/.local/share/ava-code/` SQLite database.",
+          "enum": [
+            "global"
+          ],
+          "type": "string"
+        },
+        {
+          "description": "Cross-scope query searching both project and global stores.",
+          "enum": [
+            "all"
+          ],
+          "type": "string"
+        }
+      ]
     },
     "MemoryVersion": {
       "enum": [

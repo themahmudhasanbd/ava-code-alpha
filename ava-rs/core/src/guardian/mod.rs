@@ -19,6 +19,7 @@ mod review;
 mod review_session;
 mod reviewer_config;
 pub(crate) use reviewer_config::resolve_review_model;
+pub(crate) mod quality_gate_adapter;
 mod runtime;
 #[cfg(test)]
 pub(crate) mod test_host;

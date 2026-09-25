@@ -104,3 +104,37 @@ fn memories_version_selects_pipeline_without_changing_other_defaults() {
     }
     assert!(toml::from_str::<MemoriesToml>("version = \"v3\"").is_err());
 }
+
+#[test]
+fn memories_config_scope_and_preferences_defaults_and_parsing() {
+    let source = r#"
+enabled = true
+session_memory_enabled = false
+default_scope = "global"
+
+[preferences]
+min_confidence_percent = 85
+default_importance = "high"
+max_results = 25
+auto_save_verified_evidence = false
+cross_session_search = false
+"#;
+    let parsed: MemoriesToml = toml::from_str(source).expect("parse memories config");
+    let config = MemoriesConfig::from(parsed);
+    assert!(config.use_memories);
+    assert!(!config.session_memory_enabled);
+    assert_eq!(config.default_scope, crate::types::MemoryScope::Global);
+    assert_eq!(config.preferences.min_confidence_percent, 85);
+    assert_eq!(config.preferences.default_importance, "high");
+    assert_eq!(config.preferences.max_results, 25);
+    assert!(!config.preferences.auto_save_verified_evidence);
+    assert!(!config.preferences.cross_session_search);
+}
+
+#[test]
+fn memories_config_disabled_via_alias() {
+    let source = "enabled = false";
+    let parsed: MemoriesToml = toml::from_str(source).expect("parse memories config");
+    let config = MemoriesConfig::from(parsed);
+    assert!(!config.use_memories);
+}

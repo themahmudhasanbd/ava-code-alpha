@@ -289,6 +289,93 @@ pub struct ToolSuggestConfig {
 
 pub use codex_protocol::MemoryVersion;
 
+/// Scope for memory retrieval and persistence operations.
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Default, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum MemoryScope {
+    /// Stored in project-level `.ava-code/memory/` (or `.ava/memory/`) SQLite database.
+    #[default]
+    Project,
+    /// Stored in cross-project `~/.local/share/ava-code/` SQLite database.
+    Global,
+    /// Cross-scope query searching both project and global stores.
+    All,
+}
+
+impl MemoryScope {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Project => "project",
+            Self::Global => "global",
+            Self::All => "all",
+        }
+    }
+}
+
+/// Fine-grained memory preferences loaded from config.toml.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Default, JsonSchema)]
+#[schemars(deny_unknown_fields)]
+pub struct MemoryPreferencesToml {
+    /// Minimum confidence threshold percentage (0 to 100). Default: 60 (0.6).
+    #[schemars(range(min = 0, max = 100))]
+    pub min_confidence_percent: Option<u32>,
+    /// Default importance level (critical, high, normal, low). Default: "normal".
+    pub default_importance: Option<String>,
+    /// Default maximum results returned by memory searches. Default: 10.
+    pub max_results: Option<usize>,
+    /// Whether to automatically verify and tag memories with detected evidence. Default: true.
+    pub auto_save_verified_evidence: Option<bool>,
+    /// Whether cross-session search is permitted by default. Default: true.
+    pub cross_session_search: Option<bool>,
+}
+
+/// Effective memory preferences after defaults are applied.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct MemoryPreferencesConfig {
+    pub min_confidence_percent: u32,
+    pub default_importance: String,
+    pub max_results: usize,
+    pub auto_save_verified_evidence: bool,
+    pub cross_session_search: bool,
+}
+
+impl Default for MemoryPreferencesConfig {
+    fn default() -> Self {
+        Self {
+            min_confidence_percent: 60,
+            default_importance: "normal".to_string(),
+            max_results: 10,
+            auto_save_verified_evidence: true,
+            cross_session_search: true,
+        }
+    }
+}
+
+impl From<MemoryPreferencesToml> for MemoryPreferencesConfig {
+    fn from(toml: MemoryPreferencesToml) -> Self {
+        let defaults = Self::default();
+        Self {
+            min_confidence_percent: toml
+                .min_confidence_percent
+                .unwrap_or(defaults.min_confidence_percent)
+                .clamp(0, 100),
+            default_importance: toml
+                .default_importance
+                .unwrap_or(defaults.default_importance),
+            max_results: toml
+                .max_results
+                .unwrap_or(defaults.max_results)
+                .clamp(1, 100),
+            auto_save_verified_evidence: toml
+                .auto_save_verified_evidence
+                .unwrap_or(defaults.auto_save_verified_evidence),
+            cross_session_search: toml
+                .cross_session_search
+                .unwrap_or(defaults.cross_session_search),
+        }
+    }
+}
+
 /// Memories settings loaded from config.toml.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default, JsonSchema)]
 #[schemars(deny_unknown_fields)]
@@ -302,8 +389,15 @@ pub struct MemoriesToml {
     pub disable_on_external_context: Option<bool>,
     /// When `false`, newly created threads are stored with `memory_mode = "disabled"` in the state DB.
     pub generate_memories: Option<bool>,
-    /// When `false`, skip injecting memory usage instructions into developer prompts.
+    /// When `false`, skip injecting memory usage instructions into developer prompts and disable memory tools.
+    #[serde(alias = "enabled")]
     pub use_memories: Option<bool>,
+    /// When `false`, disable session memory conversation indexing and cross-session search.
+    pub session_memory_enabled: Option<bool>,
+    /// Default memory scope for queries (project, global, all). Defaults to project.
+    pub default_scope: Option<MemoryScope>,
+    /// Granular memory preferences and thresholds.
+    pub preferences: Option<MemoryPreferencesToml>,
     /// When `true`, expose dedicated memory tools through the extension tool surface.
     pub dedicated_tools: Option<bool>,
     /// Maximum number of recent raw memories retained for global consolidation.
@@ -335,6 +429,9 @@ pub struct MemoriesConfig {
     pub disable_on_external_context: bool,
     pub generate_memories: bool,
     pub use_memories: bool,
+    pub session_memory_enabled: bool,
+    pub default_scope: MemoryScope,
+    pub preferences: MemoryPreferencesConfig,
     pub dedicated_tools: bool,
     pub max_raw_memories_for_consolidation: usize,
     pub max_unused_days: i64,
@@ -354,6 +451,9 @@ impl Default for MemoriesConfig {
             disable_on_external_context: false,
             generate_memories: true,
             use_memories: true,
+            session_memory_enabled: true,
+            default_scope: MemoryScope::Project,
+            preferences: MemoryPreferencesConfig::default(),
             dedicated_tools: false,
             max_raw_memories_for_consolidation: DEFAULT_MEMORIES_MAX_RAW_MEMORIES_FOR_CONSOLIDATION,
             max_unused_days: DEFAULT_MEMORIES_MAX_UNUSED_DAYS,
@@ -378,6 +478,14 @@ impl From<MemoriesToml> for MemoriesConfig {
                 .unwrap_or(defaults.disable_on_external_context),
             generate_memories: toml.generate_memories.unwrap_or(defaults.generate_memories),
             use_memories: toml.use_memories.unwrap_or(defaults.use_memories),
+            session_memory_enabled: toml
+                .session_memory_enabled
+                .unwrap_or(defaults.session_memory_enabled),
+            default_scope: toml.default_scope.unwrap_or(defaults.default_scope),
+            preferences: toml
+                .preferences
+                .map(Into::into)
+                .unwrap_or(defaults.preferences),
             dedicated_tools: toml.dedicated_tools.unwrap_or(defaults.dedicated_tools),
             max_raw_memories_for_consolidation: toml
                 .max_raw_memories_for_consolidation
@@ -411,6 +519,96 @@ impl From<MemoriesToml> for MemoriesConfig {
                 .clamp(0, 100),
             extract_model: toml.extract_model,
             consolidation_model: toml.consolidation_model,
+        }
+    }
+}
+
+/// Browser automation subsystem settings loaded from config.toml.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default, JsonSchema)]
+#[schemars(deny_unknown_fields)]
+pub struct BrowserToml {
+    /// When `false`, disable native browser tool.
+    #[serde(alias = "use_browser")]
+    pub enabled: Option<bool>,
+    /// Whether to run browser in headless mode (default: true).
+    pub headless: Option<bool>,
+    /// Default viewport profile: "desktop" (1920x1080), "laptop" (1440x900), "tablet" (768x1024), "mobile" (375x812), or "WxH".
+    pub default_viewport: Option<String>,
+    /// Navigation timeout in milliseconds (default: 15000).
+    pub navigation_timeout_ms: Option<u64>,
+    /// Action timeout in milliseconds (default: 10000).
+    pub action_timeout_ms: Option<u64>,
+    /// Automatically verify navigation on mutating actions (default: true).
+    pub auto_verify_navigation: Option<bool>,
+    /// Automatically re-observe page after mutating actions (default: true).
+    pub auto_observe_on_mutation: Option<bool>,
+    /// Maximum mutation actions without explicit observe before warning/auto-refresh (default: 3).
+    pub max_mutations_without_observe: Option<usize>,
+    /// Directory where screenshots are saved (defaults to /tmp or system temp).
+    pub screenshot_dir: Option<String>,
+    /// Custom path to Chromium/Chrome executable.
+    pub executable_path: Option<String>,
+    /// Path to browser storage state JSON file (cookies/localStorage persistence).
+    pub storage_state_path: Option<String>,
+}
+
+/// Effective browser automation settings after defaults are applied.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct BrowserConfig {
+    pub enabled: bool,
+    pub headless: bool,
+    pub default_viewport: String,
+    pub navigation_timeout_ms: u64,
+    pub action_timeout_ms: u64,
+    pub auto_verify_navigation: bool,
+    pub auto_observe_on_mutation: bool,
+    pub max_mutations_without_observe: usize,
+    pub screenshot_dir: Option<String>,
+    pub executable_path: Option<String>,
+    pub storage_state_path: Option<String>,
+}
+
+impl Default for BrowserConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            headless: true,
+            default_viewport: "desktop".to_string(),
+            navigation_timeout_ms: 15_000,
+            action_timeout_ms: 10_000,
+            auto_verify_navigation: true,
+            auto_observe_on_mutation: true,
+            max_mutations_without_observe: 3,
+            screenshot_dir: None,
+            executable_path: None,
+            storage_state_path: None,
+        }
+    }
+}
+
+impl From<BrowserToml> for BrowserConfig {
+    fn from(toml: BrowserToml) -> Self {
+        let defaults = Self::default();
+        Self {
+            enabled: toml.enabled.unwrap_or(defaults.enabled),
+            headless: toml.headless.unwrap_or(defaults.headless),
+            default_viewport: toml.default_viewport.unwrap_or(defaults.default_viewport),
+            navigation_timeout_ms: toml
+                .navigation_timeout_ms
+                .unwrap_or(defaults.navigation_timeout_ms),
+            action_timeout_ms: toml.action_timeout_ms.unwrap_or(defaults.action_timeout_ms),
+            auto_verify_navigation: toml
+                .auto_verify_navigation
+                .unwrap_or(defaults.auto_verify_navigation),
+            auto_observe_on_mutation: toml
+                .auto_observe_on_mutation
+                .unwrap_or(defaults.auto_observe_on_mutation),
+            max_mutations_without_observe: toml
+                .max_mutations_without_observe
+                .unwrap_or(defaults.max_mutations_without_observe),
+            screenshot_dir: toml.screenshot_dir,
+            executable_path: toml.executable_path,
+            storage_state_path: toml.storage_state_path,
         }
     }
 }
@@ -1063,3 +1261,6 @@ pub struct SandboxWorkspaceWrite {
 #[cfg(test)]
 #[path = "types_tests.rs"]
 mod tests;
+
+pub use codex_protocol::user_profile::PersonalityPreset;
+pub use codex_protocol::user_profile::UserProfileConfig;

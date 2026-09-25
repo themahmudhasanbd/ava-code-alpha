@@ -29,7 +29,6 @@ use ratatui::style::Color;
 use ratatui::widgets::Clear;
 use ratatui::widgets::WidgetRef;
 
-
 use crate::LoginStatus;
 use crate::app_server_session::AppServerSession;
 use crate::config_update::RemoteProjectTrust;

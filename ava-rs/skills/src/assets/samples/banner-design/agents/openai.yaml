@@ -1,0 +1,4 @@
+interface:
+  display_name: "Banner Design"
+  short_description: "Design banners for social media, ads, and web heroes"
+  default_prompt: "Use $banner-design to perform Banner Design tasks."

@@ -1427,6 +1427,22 @@ client_request_definitions! {
         response: v2::ConfigWriteResponse,
     },
 
+    UserProfileRead => "userProfile/read" {
+        params: v2::UserProfileReadParams,
+        serialization: global_shared_read("config"),
+        response: v2::UserProfileReadResponse,
+    },
+    UserProfileWrite => "userProfile/write" {
+        params: v2::UserProfileWriteParams,
+        serialization: global("config"),
+        response: v2::UserProfileWriteResponse,
+    },
+    PersonalityPresetsList => "personalityPresets/list" {
+        params: #[ts(type = "undefined")] #[serde(skip_serializing_if = "Option::is_none")] Option<()>,
+        serialization: global_shared_read("config"),
+        response: v2::PersonalityPresetsListResponse,
+    },
+
     ConfigRequirementsRead => "configRequirements/read" {
         params: #[ts(type = "undefined")] #[serde(skip_serializing_if = "Option::is_none")] Option<()>,
         serialization: global_shared_read("config"),

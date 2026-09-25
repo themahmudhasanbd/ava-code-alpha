@@ -27,6 +27,7 @@ use crate::tools::handlers::RequestUserInputHandler;
 use crate::tools::handlers::SendMessageToUserAsyncHandler;
 use crate::tools::handlers::SleepHandler;
 use crate::tools::handlers::TestSyncHandler;
+use crate::tools::handlers::TodoWriteHandler;
 use crate::tools::handlers::ToolSearchHandlerCache;
 use crate::tools::handlers::ViewImageHandler;
 use crate::tools::handlers::WaitForEnvironmentHandler;
@@ -1099,6 +1100,7 @@ fn add_core_utility_tools(context: &CoreToolPlanContext<'_>, registry: &mut Tool
 
     if turn_context.config.update_plan_enabled {
         registry.add(PlanHandler);
+        registry.add(TodoWriteHandler);
     }
 
     if features.enabled(Feature::DeferredExecutor) {

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Image to Code"
+  short_description: "Generate and convert design images to web interfaces"
+  default_prompt: "Use $image-to-code to perform Image to Code tasks."

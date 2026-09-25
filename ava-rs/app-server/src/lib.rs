@@ -96,9 +96,9 @@ mod app_info;
 mod app_server_tracing;
 mod attestation;
 mod auth_mode;
+mod ava_home_metrics;
 mod bespoke_event_handling;
 mod code_mode_host;
-mod codex_home_metrics;
 mod command_exec;
 mod config_layer;
 mod config_manager;
@@ -873,7 +873,7 @@ pub async fn run_main_with_transport_options(
 
     // Only the standalone server measures its local home, not embedded/cloud runtimes.
     if let Some(metrics) = otel.as_ref().and_then(codex_otel::OtelProvider::metrics) {
-        codex_home_metrics::spawn(&config, metrics.clone(), transport_shutdown_token.clone());
+        ava_home_metrics::spawn(&config, metrics.clone(), transport_shutdown_token.clone());
     }
 
     let otel_reloader_handle = otel_reloader::spawn(

@@ -119,6 +119,18 @@ impl TurnDiffTracker {
         self.unified_diff.is_some()
     }
 
+    pub fn changed_file_paths(&self) -> Vec<String> {
+        let mut paths: Vec<String> = self
+            .baseline_by_path
+            .keys()
+            .chain(self.current_by_path.keys())
+            .map(|p| self.display_path(p))
+            .collect();
+        paths.sort();
+        paths.dedup();
+        paths
+    }
+
     fn refresh_unified_diff(&mut self) {
         let rename_pairs = self.rename_pairs();
         let paired_destinations = rename_pairs.values().cloned().collect::<HashSet<_>>();

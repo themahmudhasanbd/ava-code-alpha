@@ -1,0 +1,4 @@
+interface:
+  display_name: "UI Styling & Components"
+  short_description: "Build accessible UI with shadcn/ui and Tailwind"
+  default_prompt: "Use $ui-styling to perform UI Styling & Components tasks."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Redesign Projects"
+  short_description: "Upgrade existing websites & apps to premium quality"
+  default_prompt: "Use $redesign-existing-projects to perform Redesign Projects tasks."

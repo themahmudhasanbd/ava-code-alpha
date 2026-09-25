@@ -1,0 +1,4 @@
+interface:
+  display_name: "Project Manager"
+  short_description: "Core workflow planning and memory for all projects"
+  default_prompt: "Use $project-manager to perform Project Manager tasks."

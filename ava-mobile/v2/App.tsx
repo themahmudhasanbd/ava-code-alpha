@@ -1,3 +1,4 @@
+import "@/polyfills";
 import "react-native-gesture-handler";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";

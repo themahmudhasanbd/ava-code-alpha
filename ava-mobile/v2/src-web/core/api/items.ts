@@ -39,8 +39,20 @@ export function toPlanSteps(list: Raw[]): PlanStep[] {
 }
 
 /** Converts one server "item" into a UI part. Shared by history and live streaming. */
+function generatePartId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    try {
+      return crypto.randomUUID();
+    } catch {
+      // ignore
+    }
+  }
+  return `part_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+}
+
+/** Converts one server "item" into a UI part. Shared by history and live streaming. */
 export function itemToPart(item: Raw, fallback: MessagePart["status"] = "done"): MessagePart | null {
-  const id = str(item.id, crypto.randomUUID());
+  const id = item?.id ? String(item.id) : generatePartId();
   const type = str(item.type);
   const status = itemStatus(item, fallback);
   switch (type) {

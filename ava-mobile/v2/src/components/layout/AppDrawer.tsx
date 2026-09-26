@@ -1,5 +1,8 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
+  ActivityIndicator,
+  Animated,
+  Easing,
   Platform,
   ScrollView,
   StyleSheet,
@@ -8,22 +11,31 @@ import {
   View,
 } from "react-native";
 import type { DrawerContentComponentProps } from "@react-navigation/drawer";
+import { DrawerActions } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   ChevronDown,
   ChevronRight,
   Folder,
   LogOut,
+  Pin,
+  PinOff,
   Plus,
   Trash2,
   X,
 } from "lucide-react-native";
-import { StatusDot, GlassIconButton } from "@/components/kit";
+import { StatusDot } from "@/components/kit";
+import { WorkspaceModal } from "@/components/modals/WorkspaceModal";
 import { APP } from "@/config/app";
 import { NAV_SECTIONS, type AppScreenName } from "@/config/navigation";
+import { storage } from "@/core/storage";
 import { useAva } from "@/state/ava-provider";
 import { useDeleteSession, useSessions } from "@/state/queries";
 import type { Session } from "@/core/types";
 import { COLORS } from "@/theme/colors";
+import { font, FONTS, mono } from "@/theme/fonts";
+
+const PIN_KEY = "ava.workspace.pins";
 
 const projectName = (dir: string) =>
   dir.split("/").filter(Boolean).pop() ?? "Root";
@@ -39,22 +51,82 @@ function groupByProject(sessions: Session[]) {
 
 export function AppDrawer(props: DrawerContentComponentProps) {
   const { navigation, state } = props;
-  const { auth, status, signOut, activeSessionId, setActiveSessionId } =
+  const insets = useSafeAreaInsets();
+  const { auth, status, signOut, activeSessionId, setActiveSessionId, workingCwd, setWorkingCwd } =
     useAva();
   const { data: sessions = [], isLoading } = useSessions();
   const deleteSession = useDeleteSession();
 
   const [tab, setTab] = useState<"menu" | "sessions">("sessions");
+  const [pins, setPins] = useState<string[]>([]);
   const [expandedDirs, setExpandedDirs] = useState<string[]>([]);
+  const [tabWidth, setTabWidth] = useState(0);
+  const [workspaceModalOpen, setWorkspaceModalOpen] = useState(false);
 
-  const currentRouteName = state.routes[state.index]?.name;
+  // Load pinned directories from storage
+  useEffect(() => {
+    try {
+      const raw = storage.get(PIN_KEY);
+      if (raw) {
+        setPins(JSON.parse(raw));
+      }
+    } catch {}
+  }, []);
+
+  // Animations for tab indicator
+  const tabAnim = useRef(new Animated.Value(tab === "menu" ? 0 : 1)).current;
+
+  useEffect(() => {
+    Animated.timing(tabAnim, {
+      toValue: tab === "menu" ? 0 : 1,
+      duration: 160,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [tab, tabAnim]);
+
+  const currentRoute = state.routes[state.index];
+  const currentRouteName = currentRoute?.name;
+  const currentParams = currentRoute?.params as
+    | { sessionId?: string }
+    | undefined;
+  const currentSessionId =
+    currentRouteName === "Session" ? currentParams?.sessionId : null;
 
   const handleNav = (screenName: AppScreenName) => {
-    navigation.navigate(screenName);
+    navigation.closeDrawer();
+    if (screenName === "Chat") {
+      const targetSessionId = activeSessionId ?? currentSessionId;
+      if (targetSessionId) {
+        navigation.navigate("Session", { sessionId: targetSessionId });
+      } else {
+        navigation.navigate("Chat");
+      }
+    } else {
+      navigation.navigate(screenName);
+    }
   };
 
   const handlePickSession = (id: string | null) => {
-    setActiveSessionId(id);
+    navigation.closeDrawer();
+    if (!id) {
+      setActiveSessionId(null);
+      navigation.navigate("Chat");
+    } else {
+      setActiveSessionId(id);
+      navigation.navigate("Session", { sessionId: id });
+    }
+  };
+
+  const handleNewSessionClick = () => {
+    setWorkspaceModalOpen(true);
+  };
+
+  const handleWorkspaceSelect = (path: string) => {
+    setWorkingCwd(path);
+    setActiveSessionId(null);
+    setWorkspaceModalOpen(false);
+    navigation.closeDrawer();
     navigation.navigate("Chat");
   };
 
@@ -64,249 +136,485 @@ export function AppDrawer(props: DrawerContentComponentProps) {
     );
   };
 
+  const togglePin = (dir: string) => {
+    setPins((prev) => {
+      const next = prev.includes(dir)
+        ? prev.filter((d) => d !== dir)
+        : [dir, ...prev];
+      try {
+        storage.set(PIN_KEY, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
+
+  const activeDirectory = useMemo(() => {
+    const active = sessions.find(
+      (s) => s.id === (currentSessionId ?? activeSessionId)
+    );
+    return active?.directory ?? workingCwd ?? (sessions.length > 0 ? sessions[0].directory : "/");
+  }, [sessions, currentSessionId, activeSessionId, workingCwd]);
+
+  // Auto-expand active directory
+  useEffect(() => {
+    if (activeDirectory) {
+      setExpandedDirs((prev) =>
+        prev.includes(activeDirectory) ? prev : [...prev, activeDirectory]
+      );
+    }
+  }, [activeDirectory]);
+
+  // Sort project groups: Active workspace first, then pinned, then alphabetical
   const projectGroups = useMemo(() => {
-    return groupByProject(sessions);
-  }, [sessions]);
+    const grouped = groupByProject(sessions);
+    return grouped.sort(([a], [b]) => {
+      const aIsActive = a === activeDirectory;
+      const bIsActive = b === activeDirectory;
+      if (aIsActive && !bIsActive) return -1;
+      if (!aIsActive && bIsActive) return 1;
+      const aPin = pins.indexOf(a);
+      const bPin = pins.indexOf(b);
+      if (aPin >= 0 || bPin >= 0) return aPin < 0 ? 1 : bPin < 0 ? -1 : aPin - bPin;
+      return projectName(a).localeCompare(projectName(b));
+    });
+  }, [sessions, pins, activeDirectory]);
+
+  const singleTabWidth = tabWidth > 0 ? (tabWidth - 6) / 2 : 0;
+  const indicatorTranslateX = tabAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, singleTabWidth],
+  });
 
   return (
-    <View style={styles.outerContainer}>
-      <View style={styles.glassModal}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerTitleGroup}>
-            <Text style={styles.brandTitle}>{APP.name}</Text>
-            <Text style={styles.brandSubtitle}>
-              {APP.tagline} · v{APP.version}
-            </Text>
-          </View>
-          <TouchableOpacity
-            onPress={() => navigation.closeDrawer()}
-            style={styles.closeBtn}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          >
-            <X size={18} color={COLORS.mutedForeground} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Segmented Tabs (Menu | Sessions) */}
-        <View style={styles.tabsContainer}>
-          <View style={styles.tabsList}>
+    <>
+      <View
+        style={[
+          styles.outerContainer,
+          {
+            paddingTop:
+              Platform.OS === "android"
+                ? Math.max(insets.top, 14)
+                : insets.top + 8,
+            paddingBottom:
+              Platform.OS === "android"
+                ? Math.max(insets.bottom, 14)
+                : insets.bottom + 8,
+          },
+        ]}
+      >
+        <View style={styles.glassModal}>
+          {/* Header */}
+          <View style={styles.header}>
+            <View style={styles.headerTitleGroup}>
+              <Text style={[styles.brandTitle, font("bold")]}>{APP.name}</Text>
+              <Text style={[styles.brandSubtitle, font("regular")]}>
+                {APP.tagline} · v{APP.version}
+              </Text>
+            </View>
             <TouchableOpacity
-              style={[styles.tabBtn, tab === "menu" && styles.tabBtnActive]}
-              onPress={() => setTab("menu")}
+              onPress={() => navigation.closeDrawer()}
+              style={styles.closeBtn}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               activeOpacity={0.7}
             >
-              <Text
-                style={[
-                  styles.tabText,
-                  tab === "menu" && styles.tabTextActive,
-                ]}
-              >
-                Menu
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.tabBtn, tab === "sessions" && styles.tabBtnActive]}
-              onPress={() => setTab("sessions")}
-              activeOpacity={0.7}
-            >
-              <Text
-                style={[
-                  styles.tabText,
-                  tab === "sessions" && styles.tabTextActive,
-                ]}
-              >
-                Sessions
-              </Text>
+              <X size={18} color={COLORS.mutedForeground} />
             </TouchableOpacity>
           </View>
-        </View>
 
-        {/* Tab Contents */}
-        {tab === "menu" ? (
-          <ScrollView
-            style={styles.scrollArea}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
-            {NAV_SECTIONS.map((section) => (
-              <View key={section.title} style={styles.sectionBlock}>
-                <Text style={styles.sectionHeader}>{section.title}</Text>
-                {section.items.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = currentRouteName === item.screen;
-                  return (
-                    <TouchableOpacity
-                      key={item.label}
-                      style={[
-                        styles.menuItem,
-                        isActive && styles.menuItemActive,
-                      ]}
-                      onPress={() => handleNav(item.screen)}
-                      activeOpacity={0.7}
-                    >
-                      <Icon
-                        size={18}
-                        color={isActive ? COLORS.primary : COLORS.mutedForeground}
-                      />
-                      <Text
+          {/* Animated Segmented Tabs (Menu | Sessions) */}
+          <View style={styles.tabsContainer}>
+            <View
+              style={styles.tabsList}
+              onLayout={(e) => setTabWidth(e.nativeEvent.layout.width)}
+            >
+              {singleTabWidth > 0 && (
+                <Animated.View
+                  style={[
+                    styles.tabIndicator,
+                    {
+                      width: singleTabWidth,
+                      transform: [{ translateX: indicatorTranslateX }],
+                    },
+                  ]}
+                />
+              )}
+              <TouchableOpacity
+                style={styles.tabBtn}
+                onPress={() => setTab("menu")}
+                activeOpacity={0.8}
+              >
+                <Text
+                  style={[
+                    styles.tabText,
+                    font("medium"),
+                    tab === "menu" && styles.tabTextActive,
+                  ]}
+                >
+                  Menu
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.tabBtn}
+                onPress={() => setTab("sessions")}
+                activeOpacity={0.8}
+              >
+                <Text
+                  style={[
+                    styles.tabText,
+                    font("medium"),
+                    tab === "sessions" && styles.tabTextActive,
+                  ]}
+                >
+                  Sessions
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Tab Contents */}
+          <View style={styles.tabContentWrapper}>
+            {tab === "menu" ? (
+              <ScrollView
+                style={styles.scrollArea}
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+              >
+                {NAV_SECTIONS.map((section) => (
+                  <View key={section.title} style={styles.sectionBlock}>
+                    <Text style={[styles.sectionHeader, font("semibold")]}>{section.title}</Text>
+                    {section.items.map((item) => {
+                      const Icon = item.icon;
+                      const isActive =
+                        (item.screen === "Chat" &&
+                          (currentRouteName === "Chat" ||
+                            currentRouteName === "Session")) ||
+                        currentRouteName === item.screen;
+                      return (
+                        <TouchableOpacity
+                          key={item.label}
+                          style={[
+                            styles.menuItem,
+                            isActive && styles.menuItemActive,
+                          ]}
+                          onPress={() => handleNav(item.screen)}
+                          activeOpacity={0.7}
+                        >
+                          <Icon
+                            size={18}
+                            color={
+                              isActive ? COLORS.primary : COLORS.mutedForeground
+                            }
+                          />
+                          <Text
+                            style={[
+                              styles.menuItemText,
+                              font("medium"),
+                              isActive && styles.menuItemTextActive,
+                            ]}
+                          >
+                            {item.label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                ))}
+              </ScrollView>
+            ) : (
+              <ScrollView
+                style={styles.scrollArea}
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+              >
+                {/* ── New Session Button -> Opens Workspace Directory Selector ── */}
+                <TouchableOpacity
+                  style={[
+                    styles.newSessionBtn,
+                    (currentRouteName === "Chat" || !currentSessionId) &&
+                      styles.newSessionBtnActive,
+                  ]}
+                  onPress={handleNewSessionClick}
+                  activeOpacity={0.7}
+                >
+                  <Plus
+                    size={16}
+                    color={
+                      currentRouteName === "Chat" || !currentSessionId
+                        ? COLORS.primary
+                        : COLORS.foreground
+                    }
+                  />
+                  <Text
+                    style={[
+                      styles.newSessionText,
+                      font("medium"),
+                      (currentRouteName === "Chat" || !currentSessionId) &&
+                        styles.newSessionTextActive,
+                    ]}
+                  >
+                    New session
+                  </Text>
+                </TouchableOpacity>
+
+                {status !== "online" && (
+                  <Text style={[styles.hintText, font("regular")]}>
+                    Waiting for server connection…
+                  </Text>
+                )}
+                {isLoading && (
+                  <Text style={[styles.hintText, font("regular")]}>Loading sessions…</Text>
+                )}
+                {!isLoading && sessions.length === 0 && (
+                  <Text style={[styles.hintText, font("regular")]}>No sessions yet.</Text>
+                )}
+
+                <View style={styles.groupsWrapper}>
+                  {projectGroups.map(([dir, sList]) => {
+                    const isOpen = expandedDirs.includes(dir);
+                    const isPinned = pins.includes(dir);
+                    const isActiveWorkspace = dir === activeDirectory;
+
+                    return (
+                      <View
+                        key={dir}
                         style={[
-                          styles.menuItemText,
-                          isActive && styles.menuItemTextActive,
+                          styles.groupContainer,
+                          isActiveWorkspace && styles.activeWorkspaceContainer,
                         ]}
                       >
-                        {item.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            ))}
-          </ScrollView>
-        ) : (
-          <ScrollView
-            style={styles.scrollArea}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
-            <TouchableOpacity
-              style={styles.newSessionBtn}
-              onPress={() => handlePickSession(null)}
-              activeOpacity={0.7}
-            >
-              <Plus size={16} color={COLORS.foreground} />
-              <Text style={styles.newSessionText}>New session</Text>
-            </TouchableOpacity>
+                        {/* Project / Workspace Group Header */}
+                        <TouchableOpacity
+                          style={[
+                            styles.groupHeader,
+                            isActiveWorkspace && styles.activeWorkspaceHeader,
+                          ]}
+                          onPress={() => toggleExpand(dir)}
+                          activeOpacity={0.7}
+                        >
+                          {isOpen ? (
+                            <ChevronDown
+                              size={14}
+                              color={
+                                isActiveWorkspace
+                                  ? COLORS.primary
+                                  : COLORS.mutedForeground
+                              }
+                            />
+                          ) : (
+                            <ChevronRight
+                              size={14}
+                              color={
+                                isActiveWorkspace
+                                  ? COLORS.primary
+                                  : COLORS.mutedForeground
+                              }
+                            />
+                          )}
 
-            {status !== "online" && (
-              <Text style={styles.hintText}>Waiting for server connection…</Text>
-            )}
-            {isLoading && <Text style={styles.hintText}>Loading sessions…</Text>}
-            {!isLoading && sessions.length === 0 && (
-              <Text style={styles.hintText}>No sessions yet.</Text>
-            )}
+                          <Folder
+                            size={15}
+                            color={
+                              isActiveWorkspace
+                                ? COLORS.primary
+                                : COLORS.mutedForeground
+                            }
+                          />
 
-            <View style={styles.groupsWrapper}>
-              {projectGroups.map(([dir, sList]) => {
-                const isOpen =
-                  expandedDirs.includes(dir) || expandedDirs.length === 0;
-                return (
-                  <View key={dir} style={styles.groupContainer}>
-                    <TouchableOpacity
-                      style={styles.groupHeader}
-                      onPress={() => toggleExpand(dir)}
-                      activeOpacity={0.7}
-                    >
-                      {isOpen ? (
-                        <ChevronDown size={15} color={COLORS.mutedForeground} />
-                      ) : (
-                        <ChevronRight size={15} color={COLORS.mutedForeground} />
-                      )}
-                      <Folder size={15} color={COLORS.primary} />
-                      <Text style={styles.groupTitle} numberOfLines={1}>
-                        {projectName(dir)}
-                      </Text>
-                      <Text style={styles.groupCount}>{sList.length}</Text>
-                    </TouchableOpacity>
-
-                    {isOpen && (
-                      <View style={styles.groupSessionList}>
-                        {sList.map((s) => {
-                          const isSelected = activeSessionId === s.id;
-                          return (
-                            <View key={s.id} style={styles.sessionRow}>
-                              <TouchableOpacity
+                          <View style={styles.groupInfoCol}>
+                            <View style={styles.groupTitleRow}>
+                              <Text
                                 style={[
-                                  styles.sessionBtn,
-                                  isSelected && styles.sessionBtnActive,
+                                  styles.groupTitle,
+                                  font("semibold", projectName(dir)),
+                                  isActiveWorkspace && styles.activeGroupTitle,
                                 ]}
-                                onPress={() => handlePickSession(s.id)}
-                                activeOpacity={0.7}
+                                numberOfLines={1}
                               >
-                                <Text
-                                  style={[
-                                    styles.sessionBtnText,
-                                    isSelected && styles.sessionBtnTextActive,
-                                  ]}
-                                  numberOfLines={1}
-                                >
-                                  {s.title || "Untitled"}
-                                </Text>
-                              </TouchableOpacity>
-                              <TouchableOpacity
-                                style={styles.deleteBtn}
-                                onPress={() => {
-                                  if (activeSessionId === s.id) {
-                                    setActiveSessionId(null);
-                                  }
-                                  deleteSession.mutate(s.id);
-                                }}
-                                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                              >
-                                <Trash2 size={13} color={COLORS.mutedForeground} />
-                              </TouchableOpacity>
-                            </View>
-                          );
-                        })}
-                      </View>
-                    )}
-                  </View>
-                );
-              })}
-            </View>
-          </ScrollView>
-        )}
+                                {projectName(dir)}
+                              </Text>
 
-        {/* Footer */}
-        <View style={styles.footer}>
-          <View style={styles.avatarBox}>
-            <Text style={styles.avatarText}>
-              {(auth?.username || "A").slice(0, 2).toUpperCase()}
-            </Text>
+                              {/* Active Workspace Pill Tag */}
+                              {isActiveWorkspace && (
+                                <View style={styles.activeWorkspaceBadge}>
+                                  <Text style={[styles.activeWorkspaceBadgeText, font("bold")]}>
+                                    Workspace
+                                  </Text>
+                                </View>
+                              )}
+
+                              {/* Pinned Pill Tag */}
+                              {isPinned && !isActiveWorkspace && (
+                                <View style={styles.pinnedBadge}>
+                                  <Pin size={10} color={COLORS.primary} />
+                                  <Text style={[styles.pinnedBadgeText, font("semibold")]}>
+                                    Pinned
+                                  </Text>
+                                </View>
+                              )}
+                            </View>
+
+                            <Text style={[styles.pathTag, mono("regular")]} numberOfLines={1}>
+                              {dir}
+                            </Text>
+                          </View>
+
+                          <Text style={[styles.groupCount, mono("medium")]}>{sList.length}</Text>
+
+                          {/* Quick Pin / Unpin Action */}
+                          <TouchableOpacity
+                            style={styles.pinBtn}
+                            onPress={() => togglePin(dir)}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            activeOpacity={0.7}
+                          >
+                            {isPinned ? (
+                              <PinOff size={13} color={COLORS.primary} />
+                            ) : (
+                              <Pin size={13} color={COLORS.mutedForeground} />
+                            )}
+                          </TouchableOpacity>
+                        </TouchableOpacity>
+
+                        {/* Smooth Collapsible Session List */}
+                        {isOpen && (
+                          <View style={styles.groupSessionList}>
+                            {sList.map((s) => {
+                              const isSelected =
+                                currentSessionId === s.id ||
+                                (activeSessionId === s.id &&
+                                  currentRouteName === "Session");
+                              const isRunning =
+                                s.active ||
+                                s.status === "active" ||
+                                s.status === "inProgress";
+                              return (
+                                <View key={s.id} style={styles.sessionRow}>
+                                  <TouchableOpacity
+                                    style={[
+                                      styles.sessionBtn,
+                                      isSelected && styles.sessionBtnActive,
+                                    ]}
+                                    onPress={() => handlePickSession(s.id)}
+                                    activeOpacity={0.7}
+                                  >
+                                    {isRunning ? (
+                                      <ActivityIndicator
+                                        size="small"
+                                        color={COLORS.primary}
+                                        style={{ transform: [{ scale: 0.75 }] }}
+                                      />
+                                    ) : isSelected ? (
+                                      <View style={styles.activeSessionDot} />
+                                    ) : null}
+                                    <Text
+                                      style={[
+                                        styles.sessionBtnText,
+                                        font("regular", s.title || "Untitled Session"),
+                                        isSelected &&
+                                          styles.sessionBtnTextActive,
+                                      ]}
+                                      numberOfLines={1}
+                                    >
+                                      {s.title || "Untitled Session"}
+                                    </Text>
+                                    {isRunning && (
+                                      <View style={styles.runningBadge}>
+                                        <Text style={[styles.runningBadgeText, font("bold")]}>
+                                          Running
+                                        </Text>
+                                      </View>
+                                    )}
+                                  </TouchableOpacity>
+                                  <TouchableOpacity
+                                    style={styles.deleteBtn}
+                                    onPress={() => {
+                                      if (
+                                        activeSessionId === s.id ||
+                                        currentSessionId === s.id
+                                      ) {
+                                        handlePickSession(null);
+                                      }
+                                      deleteSession.mutate(s.id);
+                                    }}
+                                    hitSlop={{
+                                      top: 8,
+                                      bottom: 8,
+                                      left: 8,
+                                      right: 8,
+                                    }}
+                                    activeOpacity={0.7}
+                                  >
+                                    <Trash2
+                                      size={13}
+                                      color={COLORS.mutedForeground}
+                                    />
+                                  </TouchableOpacity>
+                                </View>
+                              );
+                            })}
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })}
+                </View>
+              </ScrollView>
+            )}
           </View>
-          <View style={styles.userMetaCol}>
-            <Text style={styles.usernameText} numberOfLines={1}>
-              {auth?.username || "Guest"}
-            </Text>
-            <View style={styles.serverRow}>
-              <StatusDot status={status} size={6} />
-              <Text style={styles.serverHostText} numberOfLines={1}>
-                {auth?.serverUrl.replace(/^https?:\/\//, "") || "offline"}
+
+          {/* Footer */}
+          <View style={styles.footer}>
+            <View style={styles.avatarBox}>
+              <Text style={[styles.avatarText, font("bold")]}>
+                {(auth?.username || "A").slice(0, 2).toUpperCase()}
               </Text>
             </View>
+            <View style={styles.userMetaCol}>
+              <Text style={[styles.usernameText, font("semibold")]} numberOfLines={1}>
+                {auth?.username || "Guest"}
+              </Text>
+              <View style={styles.serverRow}>
+                <StatusDot status={status} size={6} />
+                <Text style={[styles.serverHostText, font("regular")]} numberOfLines={1}>
+                  {auth?.serverUrl.replace(/^https?:\/\//, "") || "offline"}
+                </Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              style={styles.logoutBtn}
+              onPress={signOut}
+              activeOpacity={0.7}
+            >
+              <LogOut size={16} color={COLORS.foreground} />
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            style={styles.logoutBtn}
-            onPress={signOut}
-            activeOpacity={0.7}
-          >
-            <LogOut size={16} color={COLORS.foreground} />
-          </TouchableOpacity>
         </View>
       </View>
-    </View>
+
+      {/* Workspace Directory Selector Modal */}
+      <WorkspaceModal
+        open={workspaceModalOpen}
+        onClose={() => setWorkspaceModalOpen(false)}
+        currentPath={workingCwd}
+        onSelectPath={handleWorkspaceSelect}
+      />
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   outerContainer: {
     flex: 1,
-    backgroundColor: "transparent",
-    paddingVertical: Platform.OS === "android" ? 16 : 12,
-    paddingLeft: 8,
-    paddingRight: 4,
+    backgroundColor: COLORS.card,
+    paddingLeft: 0,
+    paddingRight: 0,
   },
   glassModal: {
     flex: 1,
-    backgroundColor: COLORS.glassBg,
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: COLORS.glassBorder,
-    shadowColor: COLORS.glassShadow,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.15,
-    shadowRadius: 24,
-    elevation: 8,
+    backgroundColor: COLORS.card,
+    borderRadius: 0,
+    borderRightWidth: 1,
+    borderRightColor: COLORS.glassBorder,
     overflow: "hidden",
   },
   header: {
@@ -314,7 +622,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingTop: 18,
+    paddingTop: 16,
     paddingBottom: 14,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.sidebarBorder,
@@ -347,24 +655,31 @@ const styles = StyleSheet.create({
   },
   tabsList: {
     flexDirection: "row",
+    position: "relative",
     height: 38,
     backgroundColor: COLORS.secondary,
     borderRadius: 12,
     padding: 3,
+  },
+  tabIndicator: {
+    position: "absolute",
+    top: 3,
+    left: 3,
+    bottom: 3,
+    backgroundColor: COLORS.card,
+    borderRadius: 9,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
   },
   tabBtn: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 9,
-  },
-  tabBtnActive: {
-    backgroundColor: COLORS.card,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 2,
-    elevation: 2,
+    zIndex: 2,
   },
   tabText: {
     fontSize: 13,
@@ -374,6 +689,9 @@ const styles = StyleSheet.create({
   tabTextActive: {
     color: COLORS.foreground,
     fontWeight: "600",
+  },
+  tabContentWrapper: {
+    flex: 1,
   },
   scrollArea: {
     flex: 1,
@@ -426,10 +744,18 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.glassBg,
     marginBottom: 14,
   },
+  newSessionBtnActive: {
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.sidebarAccent,
+  },
   newSessionText: {
     fontSize: 14,
     fontWeight: "500",
     color: COLORS.foreground,
+  },
+  newSessionTextActive: {
+    color: COLORS.primary,
+    fontWeight: "600",
   },
   hintText: {
     fontSize: 13,
@@ -441,33 +767,91 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   groupContainer: {
-    borderRadius: 12,
+    borderRadius: 14,
     overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "transparent",
+    backgroundColor: "transparent",
+  },
+  activeWorkspaceContainer: {
+    backgroundColor: "rgba(66, 64, 225, 0.04)",
+    borderColor: "rgba(66, 64, 225, 0.2)",
   },
   groupHeader: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    height: 38,
-    paddingHorizontal: 6,
+    paddingVertical: 9,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+  },
+  activeWorkspaceHeader: {
+    backgroundColor: "rgba(66, 64, 225, 0.06)",
+  },
+  groupInfoCol: {
+    flex: 1,
+  },
+  groupTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
   groupTitle: {
     fontSize: 13,
     fontWeight: "500",
+    color: COLORS.foreground,
+  },
+  activeGroupTitle: {
+    color: COLORS.primary,
+    fontWeight: "700",
+  },
+  activeWorkspaceBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 6,
+    backgroundColor: "rgba(66, 64, 225, 0.12)",
+  },
+  activeWorkspaceBadgeText: {
+    fontSize: 9.5,
+    fontWeight: "700",
+    color: COLORS.primary,
+  },
+  pinnedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    paddingHorizontal: 5,
+    paddingVertical: 1.5,
+    borderRadius: 6,
+    backgroundColor: COLORS.secondary,
+  },
+  pinnedBadgeText: {
+    fontSize: 9.5,
+    fontWeight: "600",
+    color: COLORS.primary,
+  },
+  pathTag: {
+    fontSize: 10.5,
     color: COLORS.mutedForeground,
-    flex: 1,
+    marginTop: 1,
   },
   groupCount: {
     fontSize: 11,
+    fontWeight: "600",
     color: COLORS.mutedForeground,
   },
+  pinBtn: {
+    padding: 4,
+    marginLeft: 4,
+  },
   groupSessionList: {
-    marginLeft: 16,
-    borderLeftWidth: 1,
-    borderLeftColor: COLORS.sidebarBorder,
+    marginLeft: 18,
+    borderLeftWidth: 1.5,
+    borderLeftColor: "rgba(66, 64, 225, 0.2)",
     paddingLeft: 10,
     gap: 2,
-    marginVertical: 4,
+    marginTop: 4,
+    marginBottom: 8,
   },
   sessionRow: {
     flexDirection: "row",
@@ -476,16 +860,26 @@ const styles = StyleSheet.create({
   },
   sessionBtn: {
     flex: 1,
-    paddingVertical: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 7,
     paddingHorizontal: 8,
     borderRadius: 8,
   },
   sessionBtnActive: {
     backgroundColor: COLORS.sidebarAccent,
   },
+  activeSessionDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: COLORS.primary,
+  },
   sessionBtnText: {
-    fontSize: 13,
+    fontSize: 12.5,
     color: COLORS.mutedForeground,
+    flex: 1,
   },
   sessionBtnTextActive: {
     color: COLORS.foreground,
@@ -493,6 +887,18 @@ const styles = StyleSheet.create({
   },
   deleteBtn: {
     padding: 6,
+  },
+  runningBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 6,
+    backgroundColor: "rgba(66, 64, 225, 0.12)",
+    marginLeft: 4,
+  },
+  runningBadgeText: {
+    fontSize: 9.5,
+    fontWeight: "700",
+    color: COLORS.primary,
   },
   footer: {
     flexDirection: "row",

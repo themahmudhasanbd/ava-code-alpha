@@ -2199,7 +2199,11 @@ fn should_show_onboarding(
     should_show_login_screen(login_status, requires_openai_auth)
 }
 
-fn should_show_login_screen(login_status: LoginStatus, _requires_openai_auth: bool) -> bool {
+fn should_show_login_screen(login_status: LoginStatus, requires_openai_auth: bool) -> bool {
+    if !requires_openai_auth {
+        return false;
+    }
+
     login_status == LoginStatus::NotAuthenticated
 }
 

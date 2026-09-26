@@ -6,13 +6,36 @@ export interface Session {
   directory: string;
   model?: string | undefined;
   updatedAt?: number | undefined;
+  status?: "idle" | "active" | "inProgress" | string | undefined;
+  active?: boolean | undefined;
 }
 
-export type PartKind = "text" | "reasoning" | "tool" | "plan" | "notice";
+export type PartKind = "text" | "reasoning" | "tool" | "plan" | "notice" | "question";
 
 export interface PlanStep {
   text: string;
   status: "pending" | "active" | "done";
+}
+
+export interface AgentQuestion {
+  id?: string;
+  title: string;
+  options?: string[];
+  requestId?: number | string;
+}
+
+export interface QueuedPrompt {
+  id: string;
+  text: string;
+  createdAt?: number;
+}
+
+export interface MediaItem {
+  type: "image" | "video" | "audio" | "file";
+  url: string;
+  name?: string;
+  size?: number;
+  mimeType?: string;
 }
 
 export interface PartMeta {
@@ -20,10 +43,13 @@ export interface PartMeta {
   cwd?: string | undefined;
   exitCode?: number | undefined;
   durationMs?: number | undefined;
+  startedAt?: number | undefined;
   server?: string | undefined;
   files?: { path: string; kind: string }[] | undefined;
   steps?: PlanStep[] | undefined;
   tone?: "info" | "warning" | "error" | undefined;
+  media?: MediaItem[] | undefined;
+  questions?: AgentQuestion[] | undefined;
 }
 
 export interface MessagePart {
@@ -59,6 +85,9 @@ export interface ModelInfo {
   supportsImages: boolean;
   reasoningEfforts: string[];
   isDefault?: boolean | undefined;
+  contextLimit?: number | undefined;
+  contextWindow?: number | undefined;
+  reasoning?: boolean | undefined;
 }
 
 export interface McpTool {

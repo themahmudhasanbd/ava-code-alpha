@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { Animated, StyleSheet, Text, type TextStyle } from "react-native";
+import { Animated, type StyleProp, StyleSheet, Text, type TextStyle } from "react-native";
 import { COLORS } from "@/theme/colors";
 
 export function Shimmer({
@@ -7,7 +7,7 @@ export function Shimmer({
   style,
 }: {
   children: string;
-  style?: TextStyle;
+  style?: StyleProp<TextStyle>;
 }) {
   const opacity = useRef(new Animated.Value(0.4)).current;
 
@@ -31,7 +31,7 @@ export function Shimmer({
   }, [opacity]);
 
   return (
-    <Animated.Text style={[styles.shimmerText, { opacity }, style]}>
+    <Animated.Text style={[styles.shimmerText, style, { opacity }]}>
       {children}
     </Animated.Text>
   );

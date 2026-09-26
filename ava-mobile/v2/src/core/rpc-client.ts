@@ -3,7 +3,7 @@ import { toCoreError } from "./errors";
 import type { ConnectionStatus } from "./types";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Notification = { method: string; params: any };
+export type Notification = { method: string; params: any; id?: number | string };
 type Listener = (n: Notification) => void;
 type Pending = { resolve: (v: unknown) => void; reject: (e: Error) => void; timer: ReturnType<typeof setTimeout> };
 
@@ -87,9 +87,18 @@ export class RpcClient {
       return;
     }
     if (typeof msg.method === "string") {
-      const n = { method: msg.method, params: (msg.params as Record<string, unknown>) ?? {} };
+      const n: Notification = {
+        method: msg.method,
+        params: (msg.params as Record<string, unknown>) ?? {},
+        id: msg.id,
+      };
       this.listeners.forEach((l) => l(n));
     }
+  }
+
+  respond(id: number | string, result: unknown) {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+    this.ws.send(JSON.stringify({ jsonrpc: "2.0", id, result }));
   }
 
   private send(method: string, params: Record<string, unknown>): Promise<unknown> {

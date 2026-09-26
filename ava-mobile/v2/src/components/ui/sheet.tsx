@@ -1,6 +1,7 @@
 import * as React from "react";
 import {
   Modal,
+  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -113,7 +114,7 @@ export function SheetOverlay({ style }: { style?: StyleProp<ViewStyle> }) {
 }
 
 export interface SheetContentProps {
-  side?: "top" | "bottom" | "left" | "right";
+  side?: "top" | "bottom" | "left" | "right" | "center";
   style?: StyleProp<ViewStyle>;
   children: React.ReactNode;
 }
@@ -132,6 +133,8 @@ export function SheetContent({
       ? styles.alignRight
       : side === "top"
       ? styles.alignTop
+      : side === "center"
+      ? styles.alignCenter
       : styles.alignBottom;
 
   const contentShape =
@@ -141,13 +144,16 @@ export function SheetContent({
       ? styles.sheetRight
       : side === "top"
       ? styles.sheetTop
+      : side === "center"
+      ? styles.sheetCenter
       : styles.sheetBottom;
 
   return (
     <Modal
       visible={open}
       transparent
-      animationType="slide"
+      statusBarTranslucent
+      animationType="fade"
       onRequestClose={() => setOpen(false)}
     >
       <View style={[styles.backdrop, containerAlignment]}>
@@ -155,13 +161,12 @@ export function SheetContent({
           <View style={StyleSheet.absoluteFill} />
         </TouchableWithoutFeedback>
         <View style={[styles.sheetBase, contentShape, style]}>
-          <View style={styles.handle} />
           <TouchableOpacity
             style={styles.closeBtn}
             onPress={() => setOpen(false)}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <X size={16} color={COLORS.mutedForeground} />
+            <X size={15} color={COLORS.mutedForeground} />
           </TouchableOpacity>
           {children}
         </View>
@@ -235,7 +240,7 @@ export function SheetDescription({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.60)",
+    backgroundColor: "transparent",
   },
   alignLeft: {
     justifyContent: "center",
@@ -247,95 +252,101 @@ const styles = StyleSheet.create({
   },
   alignTop: {
     justifyContent: "flex-start",
+    alignItems: "center",
+  },
+  alignCenter: {
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 16,
   },
   alignBottom: {
     justifyContent: "flex-end",
+    alignItems: "center",
   },
   sheetBase: {
-    backgroundColor: COLORS.background,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: "rgba(255, 255, 255, 0.98)",
+    borderWidth: 1.2,
+    borderColor: "rgba(0, 0, 0, 0.08)",
     paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 24,
+    paddingTop: 14,
+    paddingBottom: 18,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.18,
-    shadowRadius: 20,
-    elevation: 10,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.14,
+    shadowRadius: 24,
+    elevation: 12,
     position: "relative",
-  },
-  handle: {
-    width: 44,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: COLORS.mutedForeground,
-    opacity: 0.25,
-    alignSelf: "center",
-    marginBottom: 12,
   },
   sheetLeft: {
     width: "88%",
-    maxWidth: 360,
+    maxWidth: 340,
     height: "100%",
-    borderTopRightRadius: 24,
-    borderBottomRightRadius: 24,
+    borderTopRightRadius: 22,
+    borderBottomRightRadius: 22,
     borderLeftWidth: 0,
   },
   sheetRight: {
     width: "88%",
-    maxWidth: 360,
+    maxWidth: 340,
     height: "100%",
-    borderTopLeftRadius: 24,
-    borderBottomLeftRadius: 24,
+    borderTopLeftRadius: 22,
+    borderBottomLeftRadius: 22,
     borderRightWidth: 0,
   },
   sheetBottom: {
-    width: "100%",
-    maxHeight: "85%",
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    borderBottomWidth: 0,
-    paddingBottom: 36,
+    width: 326,
+    maxWidth: "92%",
+    maxHeight: "80%",
+    borderRadius: 22,
+    marginBottom: Platform.OS === "ios" ? 24 : 16,
+    alignSelf: "center",
+  },
+  sheetCenter: {
+    width: 326,
+    maxWidth: "92%",
+    maxHeight: "80%",
+    borderRadius: 22,
+    alignSelf: "center",
   },
   sheetTop: {
-    width: "100%",
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    borderTopWidth: 0,
+    width: 326,
+    maxWidth: "92%",
+    borderRadius: 22,
+    marginTop: Platform.OS === "ios" ? 44 : 20,
+    alignSelf: "center",
   },
   closeBtn: {
     position: "absolute",
-    right: 16,
-    top: 14,
-    width: 28,
-    height: 28,
-    borderRadius: 8,
+    right: 12,
+    top: 12,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: COLORS.secondary,
+    backgroundColor: "rgba(0, 0, 0, 0.05)",
     zIndex: 10,
   },
   header: {
-    marginBottom: 12,
+    marginBottom: 10,
     gap: 2,
     paddingRight: 32,
-    paddingHorizontal: 4,
+    paddingHorizontal: 2,
   },
   title: {
-    fontSize: 17,
-    fontWeight: "600",
+    fontSize: 15,
+    fontWeight: "700",
     color: COLORS.foreground,
     letterSpacing: -0.2,
   },
   description: {
-    fontSize: 13,
+    fontSize: 12,
     color: COLORS.mutedForeground,
   },
   footer: {
     flexDirection: "row",
     justifyContent: "flex-end",
     gap: 8,
-    marginTop: 16,
+    marginTop: 14,
   },
 });

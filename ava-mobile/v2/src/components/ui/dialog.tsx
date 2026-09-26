@@ -125,6 +125,7 @@ export function DialogContent({
     <Modal
       visible={open}
       transparent
+      statusBarTranslucent
       animationType="fade"
       onRequestClose={() => setOpen(false)}
     >
@@ -137,7 +138,7 @@ export function DialogContent({
                 onPress={() => setOpen(false)}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <X size={16} color={COLORS.mutedForeground} />
+                <X size={15} color={COLORS.mutedForeground} />
               </TouchableOpacity>
               {children}
             </View>
@@ -213,58 +214,58 @@ export function DialogDescription({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.65)",
+    backgroundColor: "transparent",
     alignItems: "center",
     justifyContent: "center",
-    padding: 20,
+    padding: 16,
   },
   dialogCard: {
-    width: "100%",
-    maxWidth: 420,
-    backgroundColor: COLORS.background,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: 24,
+    width: 326,
+    maxWidth: "92%",
+    backgroundColor: "rgba(255, 255, 255, 0.98)",
+    borderRadius: 22,
+    borderWidth: 1.2,
+    borderColor: "rgba(0, 0, 0, 0.08)",
+    padding: 20,
     position: "relative",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 20,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.14,
+    shadowRadius: 24,
+    elevation: 12,
   },
   closeBtn: {
     position: "absolute",
-    right: 16,
-    top: 16,
-    width: 28,
-    height: 28,
-    borderRadius: 8,
+    right: 12,
+    top: 12,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: COLORS.secondary,
+    backgroundColor: "rgba(0, 0, 0, 0.05)",
     zIndex: 10,
   },
   header: {
-    marginBottom: 16,
-    gap: 4,
-    paddingRight: 32,
+    marginBottom: 12,
+    gap: 2,
+    paddingRight: 30,
   },
   title: {
-    fontSize: 18,
-    fontWeight: "600",
+    fontSize: 16,
+    fontWeight: "700",
     color: COLORS.foreground,
     letterSpacing: -0.3,
   },
   description: {
-    fontSize: 14,
+    fontSize: 13,
     color: COLORS.mutedForeground,
-    lineHeight: 20,
+    lineHeight: 18,
   },
   footer: {
     flexDirection: "row",
     justifyContent: "flex-end",
     gap: 8,
-    marginTop: 18,
+    marginTop: 16,
   },
 });

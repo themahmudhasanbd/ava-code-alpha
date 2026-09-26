@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import {
   Image,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -8,13 +9,13 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { Camera, Keyboard, Monitor, Pause, Play } from "lucide-react-native";
+import { useNavigation, DrawerActions } from "@react-navigation/native";
+import { Camera, Keyboard, Menu, Monitor, RefreshCw } from "lucide-react-native";
 import { AppShell } from "@/components/layout/AppShell";
 import {
   Badge,
   EmptyState,
   GlassIconButton,
-  PageIntro,
   SkeletonRows,
   Surface,
 } from "@/components/kit";
@@ -28,7 +29,8 @@ import { COLORS } from "@/theme/colors";
 const KEYS = ["Return", "Escape", "Tab", "BackSpace", "ctrl+c", "ctrl+v"];
 
 export function DesktopScreen() {
-  const { data: status, isLoading, error } = useDesktopStatus();
+  const navigation = useNavigation<any>();
+  const { data: status, isLoading, error, refetch, isFetching } = useDesktopStatus();
   const capture = useCaptureScreen();
   const desktopInput = useDesktopInput();
 
@@ -61,28 +63,52 @@ export function DesktopScreen() {
     setText("");
   };
 
+  // Dedicated Customized Header for Remote Desktop
+  const customDesktopHeader = (
+    <Surface style={styles.customHeaderSurface}>
+      <View style={styles.headerLeft}>
+        <GlassIconButton
+          icon={Menu}
+          size={18}
+          onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+        />
+        <View style={styles.headerTextGroup}>
+          <View style={styles.headerTitleRow}>
+            <Monitor size={14} color={COLORS.primary} />
+            <Text style={styles.headerTitleText}>Remote Desktop</Text>
+          </View>
+          <Text style={styles.headerSubtitleText} numberOfLines={1}>
+            {display ? `Display :${display} · ${status?.vncRunning ? "VNC Active" : "No VNC"}` : "Xvfb / VNC Server"}
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.headerRight}>
+        {display ? (
+          <GlassIconButton
+            icon={Camera}
+            size={17}
+            onPress={handleCapture}
+            disabled={capture.isPending}
+          />
+        ) : null}
+        <GlassIconButton
+          icon={RefreshCw}
+          size={17}
+          disabled={isFetching}
+          onPress={() => refetch()}
+        />
+      </View>
+    </Surface>
+  );
+
   return (
-    <AppShell title="Remote desktop">
+    <AppShell customHeader={customDesktopHeader}>
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <PageIntro
-          title="Remote desktop"
-          description="View and interact with your server desktop."
-          action={
-            display ? (
-              <GlassIconButton
-                icon={Camera}
-                size={18}
-                onPress={handleCapture}
-                disabled={capture.isPending}
-              />
-            ) : null
-          }
-        />
-
         {isLoading && <SkeletonRows count={2} />}
 
         {error && (
@@ -104,7 +130,7 @@ export function DesktopScreen() {
         {status && display && (
           <>
             <View style={styles.badgeRow}>
-              <Badge variant="secondary">Display {display}</Badge>
+              <Badge variant="secondary">Display :{display}</Badge>
               <Badge variant={status.vncRunning ? "default" : "secondary"}>
                 {status.vncRunning ? "VNC running" : "VNC off"}
               </Badge>
@@ -124,7 +150,7 @@ export function DesktopScreen() {
                 >
                   <Text style={styles.captureText}>
                     {capture.isPending
-                      ? "Capturing…"
+                      ? "Capturing screen…"
                       : "Tap to capture screen"}
                   </Text>
                 </TouchableOpacity>
@@ -150,6 +176,7 @@ export function DesktopScreen() {
                   key={k}
                   style={styles.keyBtn}
                   onPress={() => handleSendKey(k)}
+                  activeOpacity={0.7}
                 >
                   <Text style={styles.keyText}>{k}</Text>
                 </TouchableOpacity>
@@ -165,6 +192,48 @@ export function DesktopScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  customHeaderSurface: {
+    marginHorizontal: 12,
+    marginTop: Platform.OS === "android" ? 8 : 4,
+    marginBottom: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderRadius: 18,
+    height: 56,
+  },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    flex: 1,
+  },
+  headerTextGroup: {
+    justifyContent: "center",
+    flex: 1,
+  },
+  headerTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  headerTitleText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: COLORS.foreground,
+  },
+  headerSubtitleText: {
+    fontSize: 10.5,
+    color: COLORS.mutedForeground,
+    marginTop: 1,
+  },
+  headerRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
   content: {
     padding: 16,
@@ -221,7 +290,7 @@ const styles = StyleSheet.create({
   },
   keyText: {
     fontSize: 11,
-    fontFamily: "monospace",
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
     color: COLORS.foreground,
   },
 });

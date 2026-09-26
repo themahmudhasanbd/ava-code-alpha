@@ -2,9 +2,12 @@ import React from "react";
 import { createDrawerNavigator } from "@react-navigation/drawer";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { AppDrawer } from "@/components/layout/AppDrawer";
+import { COLORS } from "@/theme/colors";
 import { useAva } from "@/state/ava-provider";
 import { LoginScreen } from "@/screens/LoginScreen";
 import { ChatScreen } from "@/screens/ChatScreen";
+import { SessionScreen } from "@/screens/SessionScreen";
+import { TimelineScreen } from "@/screens/TimelineScreen";
 import { FilesScreen } from "@/screens/FilesScreen";
 import { TerminalScreen } from "@/screens/TerminalScreen";
 import { BrowserScreen } from "@/screens/BrowserScreen";
@@ -23,19 +26,36 @@ const Stack = createNativeStackNavigator();
 function MainDrawerNavigator() {
   return (
     <Drawer.Navigator
+      defaultStatus="closed"
       drawerContent={(props) => <AppDrawer {...props} />}
       screenOptions={{
         headerShown: false,
-        drawerType: "slide",
-        overlayColor: "rgba(0, 0, 0, 0.55)",
+        drawerType: "front",
+        overlayColor: "rgba(0, 0, 0, 0.40)",
+        swipeEnabled: false,
+        drawerHideStatusBarOnOpen: false,
         drawerStyle: {
-          width: "88%",
-          maxWidth: 360,
-          backgroundColor: "transparent",
+          width: "82%",
+          maxWidth: 340,
+          backgroundColor: COLORS.card,
         },
       }}
     >
       <Drawer.Screen name="Chat" component={ChatScreen} />
+      <Drawer.Screen
+        name="Session"
+        component={SessionScreen}
+        options={{
+          drawerItemStyle: { display: "none" },
+        }}
+      />
+      <Drawer.Screen
+        name="Timeline"
+        component={TimelineScreen}
+        options={{
+          drawerItemStyle: { display: "none" },
+        }}
+      />
       <Drawer.Screen name="Files" component={FilesScreen} />
       <Drawer.Screen name="Terminal" component={TerminalScreen} />
       <Drawer.Screen name="Browser" component={BrowserScreen} />

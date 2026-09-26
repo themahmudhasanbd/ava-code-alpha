@@ -1,0 +1,6 @@
+- [x] Clean empty session and align its contrast with web-v2.
+- [x] Fix drawer session switching bug (instant session unmounting/state sync).
+- [x] Improve agent workflow and steps overview, align theme.
+- [x] Separate live workflow/decision/thinking trace into Timeline screen while keeping Session screen clean with final output.
+- [x] Remove VPS/MCP internal prefixes from displayed tool names across relevant screens.
+- [x] Smoke-check updated source without a heavy server compile.

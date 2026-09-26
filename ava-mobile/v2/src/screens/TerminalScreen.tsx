@@ -11,14 +11,23 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { CornerDownLeft, Eraser, Loader2, Terminal as TerminalSquare } from "lucide-react-native";
+import { useNavigation, DrawerActions } from "@react-navigation/native";
+import {
+  CornerDownLeft,
+  Eraser,
+  Folder,
+  Loader2,
+  Menu,
+  Terminal as TerminalSquare,
+} from "lucide-react-native";
 import { AppShell } from "@/components/layout/AppShell";
-import { GlassIconButton, PageIntro, Surface, Button } from "@/components/kit";
+import { Button, GlassIconButton, StatusDot, Surface } from "@/components/kit";
 import { APP } from "@/config/app";
+import { useAva } from "@/state/ava-provider";
 import { useRunCommand } from "@/state/queries";
 import { COLORS } from "@/theme/colors";
 
-const PRESETS = ["ls -la", "git status", "uptime", "df -h", "ps aux | head -15"];
+const PRESETS = ["ls -la", "git status", "uptime", "df -h", "ps aux | head -15", "node -v", "bun -v"];
 
 interface Entry {
   id: number;
@@ -28,6 +37,8 @@ interface Entry {
 }
 
 export function TerminalScreen() {
+  const navigation = useNavigation<any>();
+  const { status } = useAva();
   const [cwd, setCwd] = useState<string>(APP.defaultCwd);
   const [command, setCommand] = useState("");
   const [log, setLog] = useState<Entry[]>([]);
@@ -38,7 +49,6 @@ export function TerminalScreen() {
     const trimmed = cmd.trim();
     if (!trimmed || run.isPending) return;
     setCommand("");
-
 
     try {
       const res = await run.mutateAsync({ command: trimmed, cwd });
@@ -64,18 +74,41 @@ export function TerminalScreen() {
     }
   };
 
-  return (
-    <AppShell
-      title="Terminal"
-      actions={
+  // Dedicated Customized Header for Terminal
+  const customTerminalHeader = (
+    <Surface style={styles.customHeaderSurface}>
+      <View style={styles.headerLeft}>
+        <GlassIconButton
+          icon={Menu}
+          size={18}
+          onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+        />
+        <View style={styles.shellBadge}>
+          <TerminalSquare size={13} color={COLORS.primary} />
+          <Text style={styles.shellBadgeText}>bash</Text>
+        </View>
+        <View style={styles.cwdPill}>
+          <Folder size={11} color={COLORS.mutedForeground} />
+          <Text style={styles.cwdText} numberOfLines={1}>
+            {cwd}
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.headerRight}>
+        <StatusDot status={status} size={8} />
         <GlassIconButton
           icon={Eraser}
-          size={18}
+          size={17}
           onPress={() => setLog([])}
           disabled={log.length === 0}
         />
-      }
-    >
+      </View>
+    </Surface>
+  );
+
+  return (
+    <AppShell customHeader={customTerminalHeader}>
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -92,6 +125,7 @@ export function TerminalScreen() {
                 key={p}
                 style={styles.presetPill}
                 onPress={() => exec(p)}
+                activeOpacity={0.7}
               >
                 <Text style={styles.presetText}>{p}</Text>
               </TouchableOpacity>
@@ -111,9 +145,9 @@ export function TerminalScreen() {
           ListEmptyComponent={
             <View style={styles.emptyBox}>
               <TerminalSquare size={36} color={COLORS.mutedForeground} />
-              <Text style={styles.emptyTitle}>Terminal Console</Text>
+              <Text style={styles.emptyTitle}>VPS Shell Terminal</Text>
               <Text style={styles.emptySub}>
-                Type a command below or tap any preset above.
+                Execute commands directly on the server.
               </Text>
             </View>
           }
@@ -144,7 +178,7 @@ export function TerminalScreen() {
           <Surface style={styles.inputCard}>
             <TextInput
               style={styles.input}
-              placeholder="Run a command (e.g. bun test)…"
+              placeholder="Enter shell command…"
               placeholderTextColor={COLORS.mutedForeground}
               value={command}
               onChangeText={setCommand}
@@ -172,8 +206,61 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  customHeaderSurface: {
+    marginHorizontal: 12,
+    marginTop: Platform.OS === "android" ? 8 : 4,
+    marginBottom: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderRadius: 18,
+    height: 56,
+  },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flex: 1,
+  },
+  shellBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    backgroundColor: "rgba(66, 64, 225, 0.1)",
+  },
+  shellBadgeText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: COLORS.primary,
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
+  },
+  cwdPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    backgroundColor: COLORS.secondary,
+    maxWidth: 160,
+  },
+  cwdText: {
+    fontSize: 11,
+    color: COLORS.mutedForeground,
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
+  },
+  headerRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
   presetsContainer: {
-    paddingVertical: 6,
+    paddingVertical: 4,
   },
   presetsScroll: {
     paddingHorizontal: 14,

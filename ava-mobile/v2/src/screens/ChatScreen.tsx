@@ -1,91 +1,77 @@
-import React, { useRef, useState } from "react";
+import React, { useState } from "react";
 import {
-  FlatList,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
 import { SquarePen } from "lucide-react-native";
 import { AppShell } from "@/components/layout/AppShell";
-import { AvaMascot, Button, GlassIconButton } from "@/components/kit";
-import { Shimmer } from "@/components/ai-elements/shimmer";
+import { AvaMascot, GlassIconButton } from "@/components/kit";
 import { APP } from "@/config/app";
 import { useAva } from "@/state/ava-provider";
-import { useSessions } from "@/state/queries";
-import { useChat } from "@/state/use-chat";
-import { ChatMessageView } from "@/components/chat/message-parts";
+import { startSession } from "@/core/api/sessions";
+import { formatCoreError } from "@/core/errors";
 import { Composer } from "@/components/chat/composer";
+import { SuggestedPromptCards } from "@/components/chat/suggested-prompts";
 import { COLORS } from "@/theme/colors";
 
-const SUGGESTIONS = [
-  "Create a new feature",
-  "Fix an error",
-  "Explain this project",
-];
 
-function EmptyChat({ onPick }: { onPick: (s: string) => void }) {
-  return (
-    <View style={styles.emptyWrap}>
-      <AvaMascot size="lg" />
-      <Text style={styles.emptyHeading}>What do you want to build?</Text>
-      <Text style={styles.emptyDesc}>
-        Describe a feature, paste an error, or ask AvA to explore your code.
-      </Text>
 
-      <View style={styles.suggestionsRow}>
-        {SUGGESTIONS.map((s) => (
-          <TouchableOpacity
-            key={s}
-            style={styles.suggestionPill}
-            onPress={() => onPick(s)}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.suggestionText}>{s}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-    </View>
-  );
-}
-
-export function ChatScreen() {
-  const { activeSessionId, setActiveSessionId } = useAva();
-  const { data: sessions } = useSessions();
-  const {
-    messages,
-    status,
-    error,
-    send,
-    stop,
-    clear,
-    loadingHistory,
-    hasOlder,
-    loadOlder,
-  } = useChat();
-
+export function ChatScreen({ navigation }: { navigation: any }) {
+  const { rpc, setActiveSessionId, modelId, sandbox, workingCwd, defaultCwd } = useAva();
   const [draft, setDraft] = useState("");
-  const flatListRef = useRef<FlatList>(null);
-  const activeSession = sessions?.find((s) => s.id === activeSessionId);
-  const title = activeSession?.title ?? "New session";
+  const [isStarting, setIsStarting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (text: string) => {
-    setDraft("");
-    send(text);
+  const handleStartNewSession = async (text: string) => {
+    if (!rpc || !text.trim()) return;
+    setError(null);
+    setIsStarting(true);
+    const targetCwd = workingCwd || defaultCwd || APP.defaultCwd;
+    try {
+      const threadId = await startSession(rpc, {
+        cwd: targetCwd,
+        sandbox,
+        ...(modelId ? { model: modelId } : {}),
+      });
+      setActiveSessionId(threadId);
+      setDraft("");
+      setIsStarting(false);
+      navigation.navigate("Session", {
+        sessionId: threadId,
+        initialPrompt: text,
+      });
+    } catch (e) {
+      setIsStarting(false);
+      setError(formatCoreError(e));
+    }
+  };
+
+  const handleSelectPrompt = (prompt: string, autoSend?: boolean) => {
+    if (autoSend) {
+      handleStartNewSession(prompt);
+    } else {
+      setDraft(prompt);
+    }
   };
 
   return (
     <AppShell
-      title={title}
+      title="New session"
       actions={
         <GlassIconButton
           icon={SquarePen}
           size={18}
           onPress={() => {
             setActiveSessionId(null);
-
+            setDraft("");
+            setError(null);
           }}
         />
       }
@@ -93,60 +79,31 @@ export function ChatScreen() {
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
       >
-        {messages.length === 0 && !loadingHistory ? (
-          <EmptyChat onPick={(s) => setDraft(s)} />
-        ) : (
-          <FlatList
-            ref={flatListRef}
-            data={messages}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item, index }) => (
-              <ChatMessageView
-                message={item}
-                live={
-                  (status === "submitted" || status === "streaming") &&
-                  index === messages.length - 1 &&
-                  item.role === "assistant"
-                }
-              />
-            )}
-            contentContainerStyle={styles.listContent}
-            onContentSizeChange={() =>
-              flatListRef.current?.scrollToEnd({ animated: true })
-            }
-            ListHeaderComponent={
-              loadingHistory ? (
-                <View style={styles.historyLoader}>
-                  <Shimmer style={styles.historyLoaderText}>Loading session…</Shimmer>
-                </View>
-              ) : hasOlder ? (
-                <TouchableOpacity
-                  style={styles.loadOlderBtn}
-                  onPress={loadOlder}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.loadOlderText}>Load earlier messages</Text>
-                </TouchableOpacity>
-              ) : null
-            }
-          />
-        )}
+        <ScrollView
+          style={styles.scrollArea}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <SuggestedPromptCards onSelectPrompt={handleSelectPrompt} />
 
-        {error ? (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorBannerText}>{error}</Text>
-          </View>
-        ) : null}
+          {error ? (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorBannerText}>{error}</Text>
+            </View>
+          ) : null}
+        </ScrollView>
 
         <View style={styles.composerWrapper}>
           <Composer
             value={draft}
             onChange={setDraft}
-            onSubmit={handleSubmit}
-            onStop={stop}
-            onClear={clear}
-            status={status}
+            onSubmit={handleStartNewSession}
+            onStop={() => {}}
+            onClear={() => setDraft("")}
+            status={isStarting ? "submitted" : "ready"}
           />
           <Text style={styles.disclaimerText}>
             {APP.name} can make mistakes. Review generated code before using it.
@@ -160,13 +117,20 @@ export function ChatScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    justifyContent: "space-between",
+  },
+  scrollArea: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: "center",
   },
   emptyWrap: {
-    flex: 1,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 24,
-    paddingBottom: 40,
+    paddingVertical: 20,
   },
   emptyHeading: {
     fontSize: 22,
@@ -201,32 +165,6 @@ const styles = StyleSheet.create({
   suggestionText: {
     fontSize: 13,
     color: COLORS.foreground,
-    fontWeight: "500",
-  },
-  listContent: {
-    paddingHorizontal: 14,
-    paddingVertical: 16,
-    gap: 16,
-  },
-  historyLoader: {
-    alignItems: "center",
-    paddingVertical: 8,
-  },
-  historyLoaderText: {
-    fontSize: 13,
-    color: COLORS.mutedForeground,
-  },
-  loadOlderBtn: {
-    alignSelf: "center",
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-    borderRadius: 999,
-    backgroundColor: COLORS.secondary,
-    marginBottom: 8,
-  },
-  loadOlderText: {
-    fontSize: 12,
-    color: COLORS.mutedForeground,
     fontWeight: "500",
   },
   errorContainer: {

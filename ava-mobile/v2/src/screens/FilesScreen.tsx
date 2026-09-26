@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Platform,
   ScrollView,
   StyleSheet,
@@ -9,6 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useNavigation, DrawerActions } from "@react-navigation/native";
 import {
   Check,
   ChevronDown,
@@ -19,19 +21,21 @@ import {
   FileCode2,
   Folder,
   FolderOpen,
+  Menu,
   RefreshCw,
   Search,
   Share2,
   X,
 } from "lucide-react-native";
+import * as Clipboard from "expo-clipboard";
 import * as Sharing from "expo-sharing";
 import { File, Paths } from "expo-file-system";
 import { AppShell } from "@/components/layout/AppShell";
-import { EmptyState, GlassIconButton, SkeletonRows } from "@/components/kit";
+import { EmptyState, GlassIconButton, SkeletonRows, Surface } from "@/components/kit";
 import { CodeBlock } from "@/components/ai-elements/code-block";
 import { APP } from "@/config/app";
 import type { FileEntry } from "@/core/types";
-import { parentPath } from "@/core/api/files";
+import { parentPath, pathCrumbs } from "@/core/api/files";
 import { useDirectory, useFileContent } from "@/state/queries";
 import { COLORS } from "@/theme/colors";
 
@@ -77,7 +81,6 @@ function TreeBranch({
           <View key={entry.path}>
             <TouchableOpacity
               onPress={() => {
-
                 if (entry.isDirectory) {
                   setExpanded((items) =>
                     isOpen
@@ -153,40 +156,35 @@ function FileEditor({
   const [copied, setCopied] = useState(false);
   const name = path.split("/").filter(Boolean).pop() ?? path;
 
-  const handleCopy = () => {
-
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+  const handleCopy = async () => {
+    if (data?.text) {
+      await Clipboard.setStringAsync(data.text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    }
   };
 
   const handleShare = async () => {
     if (!data?.text) return;
     try {
       const file = new File(Paths.cache, name);
+      file.create({ overwrite: true });
       file.write(data.text);
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(file.uri);
+      } else {
+        Alert.alert("File Saved", `Cached at: ${file.uri}`);
       }
-    } catch {}
+    } catch (err: any) {
+      Alert.alert("Share Error", err?.message || "Failed to share file");
+    }
   };
 
   return (
     <View style={styles.editorContainer}>
-      <View style={styles.editorHeader}>
-        <TouchableOpacity onPress={onBack} style={styles.editorNavBtn}>
-          <ChevronLeft size={20} color={COLORS.codeForeground} />
-        </TouchableOpacity>
-        <Text style={styles.editorHeaderTitle} numberOfLines={1}>
-          {name}
-        </Text>
-        <TouchableOpacity onPress={onBack} style={styles.editorNavBtn}>
-          <Folder size={18} color={COLORS.codeForeground} />
-        </TouchableOpacity>
-      </View>
-
       <View style={styles.editorSubHeader}>
         <View style={styles.editorTab}>
-          <FileIcon size={14} color={COLORS.mutedForeground} />
+          <FileIcon size={14} color={COLORS.primary} />
           <Text style={styles.editorTabText} numberOfLines={1}>
             {name}
           </Text>
@@ -198,9 +196,9 @@ function FileEditor({
             activeOpacity={0.7}
           >
             {copied ? (
-              <Check size={14} color={COLORS.success} />
+              <Check size={13} color={COLORS.success} />
             ) : (
-              <Copy size={14} color={COLORS.mutedForeground} />
+              <Copy size={13} color={COLORS.mutedForeground} />
             )}
             <Text style={styles.editorActionBtnText}>
               {copied ? "Copied" : "Copy"}
@@ -211,7 +209,7 @@ function FileEditor({
             style={styles.editorActionBtn}
             activeOpacity={0.7}
           >
-            <Share2 size={14} color={COLORS.mutedForeground} />
+            <Share2 size={13} color={COLORS.mutedForeground} />
             <Text style={styles.editorActionBtnText}>Share</Text>
           </TouchableOpacity>
         </View>
@@ -221,7 +219,7 @@ function FileEditor({
         {isLoading ? (
           <View style={styles.loadingBox}>
             <ActivityIndicator size="small" color={COLORS.primary} />
-            <Text style={styles.loadingText}>Opening…</Text>
+            <Text style={styles.loadingText}>Opening file…</Text>
           </View>
         ) : error ? (
           <Text style={styles.errorText}>{(error as Error).message}</Text>
@@ -242,64 +240,139 @@ function FileEditor({
 }
 
 export function FilesScreen() {
+  const navigation = useNavigation<any>();
   const [root, setRoot] = useState<string>(APP.defaultCwd);
   const [query, setQuery] = useState("");
+  const [showSearch, setShowSearch] = useState(false);
   const [openFile, setOpenFile] = useState<string | null>(null);
   const { refetch, isFetching, error } = useDirectory(root);
 
+  const crumbs = useMemo(() => pathCrumbs(root), [root]);
+
+  // Dedicated Customized Header for Files / Explorer
+  const customFilesHeader = (
+    <Surface style={styles.customHeaderSurface}>
+      {openFile ? (
+        <>
+          <View style={styles.headerLeft}>
+            <GlassIconButton
+              icon={ChevronLeft}
+              size={18}
+              onPress={() => setOpenFile(null)}
+            />
+            <View style={styles.headerTextGroup}>
+              <Text style={styles.headerTitleText} numberOfLines={1}>
+                {openFile.split("/").pop()}
+              </Text>
+              <Text style={styles.headerSubtitleText} numberOfLines={1}>
+                {openFile}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.headerRight}>
+            <GlassIconButton
+              icon={X}
+              size={16}
+              onPress={() => setOpenFile(null)}
+            />
+          </View>
+        </>
+      ) : (
+        <>
+          <View style={styles.headerLeft}>
+            <GlassIconButton
+              icon={Menu}
+              size={18}
+              onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+            />
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.crumbScroll}
+            >
+              <TouchableOpacity
+                onPress={() => setRoot("/")}
+                style={styles.crumbBtn}
+              >
+                <Text style={styles.crumbRootText}>/</Text>
+              </TouchableOpacity>
+              {crumbs.map((crumb, idx) => (
+                <View key={crumb.path} style={styles.crumbItem}>
+                  <Text style={styles.crumbSlash}>/</Text>
+                  <TouchableOpacity
+                    onPress={() => setRoot(crumb.path)}
+                    style={styles.crumbBtn}
+                  >
+                    <Text
+                      style={[
+                        styles.crumbText,
+                        idx === crumbs.length - 1 && styles.crumbTextActive,
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {crumb.name}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+
+          <View style={styles.headerRight}>
+            {root !== "/" && (
+              <GlassIconButton
+                icon={ChevronLeft}
+                size={17}
+                onPress={() => setRoot(parentPath(root))}
+              />
+            )}
+            <GlassIconButton
+              icon={Search}
+              size={17}
+              onPress={() => setShowSearch(!showSearch)}
+            />
+            <GlassIconButton
+              icon={RefreshCw}
+              size={17}
+              disabled={isFetching}
+              onPress={() => refetch()}
+            />
+          </View>
+        </>
+      )}
+    </Surface>
+  );
+
   return (
-    <AppShell
-      title="Code"
-      actions={
-        <GlassIconButton
-          icon={RefreshCw}
-          size={18}
-          disabled={isFetching}
-          onPress={() => refetch()}
-        />
-      }
-    >
+    <AppShell customHeader={customFilesHeader}>
       <View style={styles.container}>
         <View style={styles.codeCard}>
           {openFile ? (
             <FileEditor path={openFile} onBack={() => setOpenFile(null)} />
           ) : (
             <View style={{ flex: 1 }}>
-              <View style={styles.cardHeader}>
-                {root !== "/" ? (
-                  <TouchableOpacity
-                    onPress={() => {
-
-                      setRoot(parentPath(root));
-                    }}
-                    style={styles.parentBtn}
-                  >
-                    <ChevronLeft size={18} color={COLORS.codeForeground} />
-                  </TouchableOpacity>
-                ) : (
-                  <View style={{ width: 32 }} />
-                )}
-                <Text style={styles.cardTitle}>Code</Text>
-                <View style={{ width: 32 }} />
-              </View>
-
-              <View style={styles.searchBarWrapper}>
-                <View style={styles.searchBox}>
-                  <Search size={15} color={COLORS.mutedForeground} />
-                  <TextInput
-                    value={query}
-                    onChangeText={setQuery}
-                    placeholder="Search code"
-                    placeholderTextColor={COLORS.mutedForeground}
-                    style={styles.searchInput}
-                  />
-                  {query ? (
-                    <TouchableOpacity onPress={() => setQuery("")}>
-                      <X size={14} color={COLORS.mutedForeground} />
-                    </TouchableOpacity>
-                  ) : null}
+              {/* Optional Search bar */}
+              {showSearch && (
+                <View style={styles.searchBarWrapper}>
+                  <View style={styles.searchBox}>
+                    <Search size={15} color={COLORS.mutedForeground} />
+                    <TextInput
+                      value={query}
+                      onChangeText={setQuery}
+                      placeholder="Filter files in directory…"
+                      placeholderTextColor={COLORS.mutedForeground}
+                      style={styles.searchInput}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
+                    {query ? (
+                      <TouchableOpacity onPress={() => setQuery("")}>
+                        <X size={14} color={COLORS.mutedForeground} />
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
                 </View>
-              </View>
+              )}
 
               <ScrollView
                 style={styles.treeScroll}
@@ -335,30 +408,85 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 12,
   },
-  codeCard: {
-    flex: 1,
-    backgroundColor: COLORS.codeBg,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
-    overflow: "hidden",
-  },
-  cardHeader: {
-    height: 48,
+  customHeaderSurface: {
+    marginHorizontal: 12,
+    marginTop: Platform.OS === "android" ? 8 : 4,
+    marginBottom: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255, 255, 255, 0.08)",
-    paddingHorizontal: 8,
+    borderRadius: 18,
+    height: 56,
   },
-  parentBtn: {
-    padding: 6,
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flex: 1,
+    overflow: "hidden",
   },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: COLORS.codeForeground,
+  headerTextGroup: {
+    justifyContent: "center",
+    flex: 1,
+  },
+  headerTitleText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: COLORS.foreground,
+  },
+  headerSubtitleText: {
+    fontSize: 10.5,
+    color: COLORS.mutedForeground,
+    marginTop: 1,
+  },
+  headerRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  crumbScroll: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+    paddingRight: 8,
+  },
+  crumbItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+  },
+  crumbBtn: {
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  crumbRootText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: COLORS.primary,
+  },
+  crumbSlash: {
+    fontSize: 12,
+    color: COLORS.mutedForeground,
+  },
+  crumbText: {
+    fontSize: 12.5,
+    color: COLORS.foreground,
+    fontWeight: "500",
+  },
+  crumbTextActive: {
+    color: COLORS.primary,
+    fontWeight: "700",
+  },
+  codeCard: {
+    flex: 1,
+    backgroundColor: COLORS.codeBg,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.1)",
+    overflow: "hidden",
   },
   searchBarWrapper: {
     padding: 10,
@@ -408,33 +536,14 @@ const styles = StyleSheet.create({
   editorContainer: {
     flex: 1,
   },
-  editorHeader: {
-    height: 48,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255, 255, 255, 0.08)",
-    paddingHorizontal: 8,
-  },
-  editorNavBtn: {
-    padding: 6,
-  },
-  editorHeaderTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: COLORS.codeForeground,
-    flex: 1,
-    textAlign: "center",
-  },
   editorSubHeader: {
-    height: 40,
+    height: 42,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     borderBottomWidth: 1,
     borderBottomColor: "rgba(255, 255, 255, 0.08)",
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     backgroundColor: "rgba(255, 255, 255, 0.03)",
   },
   editorTab: {
@@ -444,9 +553,9 @@ const styles = StyleSheet.create({
     maxWidth: "50%",
   },
   editorTabText: {
-    fontSize: 12,
+    fontSize: 12.5,
     color: COLORS.codeForeground,
-    fontWeight: "500",
+    fontWeight: "600",
   },
   editorActions: {
     flexDirection: "row",

@@ -126,7 +126,7 @@ export function DropdownMenuLabel({ children }: { children: ReactNode }) {
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    backgroundColor: "transparent",
     alignItems: "center",
     justifyContent: "center",
     padding: 24,

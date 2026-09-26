@@ -1,11 +1,10 @@
-import React, { forwardRef, type ReactNode } from "react";
+import React, { type ReactNode } from "react";
 import {
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
   type ViewStyle,
-  type TextStyle,
   type StyleProp,
 } from "react-native";
 import type { LucideIcon } from "lucide-react-native";
@@ -25,8 +24,8 @@ export { Switch, type SwitchProps } from "@/components/ui/switch";
 export { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 /**
- * AppGlow - Background container mimicking web `app-glow` radial gradients.
- * Uses layered soft ambient glow spheres with violet and sky-blue tinting.
+/**
+ * AppGlow - Clean background container matching web v2 background.
  */
 export function AppGlow({
   children,
@@ -37,12 +36,6 @@ export function AppGlow({
 }) {
   return (
     <View style={[styles.glowContainer, style]}>
-      {/* Top Left Violet Radial Ambient Glow */}
-      <View style={styles.glowTopLeft} pointerEvents="none" />
-      {/* Mid/Bottom Right Sky Blue Radial Ambient Glow */}
-      <View style={styles.glowBottomRight} pointerEvents="none" />
-      {/* Subtle Center Ambient Dispersion */}
-      <View style={styles.glowCenter} pointerEvents="none" />
       {children}
     </View>
   );
@@ -241,33 +234,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     position: "relative",
     overflow: "hidden",
-  },
-  glowTopLeft: {
-    position: "absolute",
-    top: -100,
-    left: -100,
-    width: 380,
-    height: 380,
-    borderRadius: 190,
-    backgroundColor: "rgba(180, 170, 250, 0.45)",
-  },
-  glowBottomRight: {
-    position: "absolute",
-    bottom: -80,
-    right: -80,
-    width: 340,
-    height: 340,
-    borderRadius: 170,
-    backgroundColor: "rgba(190, 220, 250, 0.40)",
-  },
-  glowCenter: {
-    position: "absolute",
-    top: "35%",
-    left: "15%",
-    width: 260,
-    height: 260,
-    borderRadius: 130,
-    backgroundColor: "rgba(220, 215, 255, 0.20)",
   },
   surface: {
     backgroundColor: COLORS.glassBg,

@@ -12,10 +12,14 @@
       "backgroundColor": "#0B0F19"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Allow AvA Code to access microphone for voice messages and voice prompts."
+      }
     },
     "android": {
       "package": "pro.mahmudhasan.ava",
+      "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0B0F19"
@@ -27,6 +31,8 @@
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",
         "READ_MEDIA_IMAGES",
+        "RECORD_AUDIO",
+        "MODIFY_AUDIO_SETTINGS",
         "VIBRATE",
         "POST_NOTIFICATIONS"
       ]

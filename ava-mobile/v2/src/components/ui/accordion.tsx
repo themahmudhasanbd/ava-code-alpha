@@ -14,9 +14,7 @@ import {
 import { ChevronDown } from "lucide-react-native";
 import { COLORS } from "@/theme/colors";
 
-if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
+
 
 interface AccordionContextType {
   value?: string | string[];

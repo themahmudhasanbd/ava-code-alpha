@@ -1,18 +1,22 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  LayoutAnimation,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import * as Clipboard from "expo-clipboard";
 import {
   AlertTriangle,
   Brain,
   Check,
   ChevronDown,
   ChevronRight,
+  ChevronUp,
   Circle,
   CircleDot,
   Copy,
@@ -24,48 +28,30 @@ import {
   Terminal as TerminalSquare,
   Wrench,
   X,
+  type LucideIcon,
 } from "lucide-react-native";
 import { AvaMascot } from "@/components/ui/ava-mascot";
-import { Tool } from "@/components/ai-elements/tool";
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { RichResponse } from "./rich-response";
+import { LiveStepOverviewCard } from "./live-step-card";
+import { getToolIcon } from "./tool-icons";
 import { Surface } from "@/components/kit";
 import type { ChatMessage, MessagePart } from "@/core/types";
 import { COLORS } from "@/theme/colors";
+import { formatDuration as fmtDuration, formatTokens as fmtTokens } from "@/lib/format";
+import { font, FONTS, mono } from "@/theme/fonts";
 
-export function formatDuration(ms?: number) {
-  if (ms == null) return "";
-  if (ms < 1000) return `${ms}ms`;
-  const s = Math.round(ms / 1000);
-  if (s < 60) return `${s} sec`;
-  const m = Math.floor(s / 60);
-  if (m < 60) return `${m} min ${s % 60} sec`;
-  return `${Math.floor(m / 60)} hr ${m % 60} min`;
-}
+export const formatDuration = fmtDuration;
+const formatTokens = fmtTokens;
 
-function ReasoningStep({ part }: { part: MessagePart }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <Surface style={styles.reasoningBox}>
-      <TouchableOpacity
-        style={styles.reasoningHeader}
-        onPress={() => {
-
-          setOpen(!open);
-        }}
-        activeOpacity={0.7}
-      >
-        <Brain size={14} color={COLORS.primary} />
-        <Text style={styles.reasoningTitle}>Thinking process</Text>
-        {open ? (
-          <ChevronDown size={14} color={COLORS.mutedForeground} />
-        ) : (
-          <ChevronRight size={14} color={COLORS.mutedForeground} />
-        )}
-      </TouchableOpacity>
-      {open && <Text style={styles.reasoningContent}>{part.text}</Text>}
-    </Surface>
-  );
+function useElapsed(startedAt?: number, running?: boolean) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!running) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [running]);
+  return startedAt ? now - startedAt : undefined;
 }
 
 function NoticeStep({ part }: { part: MessagePart }) {
@@ -80,10 +66,14 @@ function NoticeStep({ part }: { part: MessagePart }) {
         isErr ? styles.noticeBoxError : styles.noticeBoxInfo,
       ]}
     >
-      <Icon size={14} color={isErr ? COLORS.destructive : COLORS.mutedForeground} />
+      <Icon
+        size={14}
+        color={isErr ? COLORS.destructive : COLORS.mutedForeground}
+      />
       <Text
         style={[
           styles.noticeText,
+          font("regular", part.text),
           isErr ? styles.noticeTextError : styles.noticeTextInfo,
         ]}
       >
@@ -93,46 +83,90 @@ function NoticeStep({ part }: { part: MessagePart }) {
   );
 }
 
+// ---------- assistant turn ------------------------------------------------
+
 function AssistantTurn({
   message,
   live,
+  sessionId,
+  onOpenTimeline,
 }: {
   message: ChatMessage;
   live: boolean;
+  sessionId?: string;
+  onOpenTimeline?: (messageId?: string) => void;
 }) {
+  const elapsed = useElapsed(message.stats?.startedAt, live);
   const steps = message.parts.filter((p) => p.kind === "tool").length;
-  const hasError = message.parts.some(
-    (p) => p.status === "error" || p.meta?.tone === "error"
+  const workflowParts = message.parts.filter((p) => p.kind !== "text");
+  const hasWorkflowSteps = workflowParts.length > 0;
+
+  // Find the final text response intended for the user
+  const textParts = message.parts.filter((p) => p.kind === "text" && p.text && p.text.trim());
+  const finalPart = textParts.length > 0 ? textParts[textParts.length - 1] : null;
+  const finalText = finalPart?.text?.trim() ?? "";
+
+  // Extract questions or errors
+  const questionParts = message.parts.filter((p) => p.kind === "question" || p.meta?.questions);
+  const errorNotices = message.parts.filter(
+    (p) => p.kind === "notice" && (p.meta?.tone === "error" || p.status === "error")
   );
-  const duration = message.stats?.durationMs;
+
+  const [copied, setCopied] = useState(false);
+  const duration = message.stats?.durationMs ?? (live ? elapsed : undefined);
+  const hasError = message.parts.some(
+    (part) => part.status === "error" || part.meta?.tone === "error"
+  );
 
   const activityLabel = hasError
     ? "Needs attention"
     : live
     ? steps > 0
-      ? "Working"
-      : "Thinking"
+      ? `Working${elapsed ? ` · ${formatDuration(elapsed)}` : ""}`
+      : `Thinking${elapsed ? ` · ${formatDuration(elapsed)}` : ""}`
     : "AvA";
 
+  const handleCopy = async () => {
+    if (finalText) {
+      await Clipboard.setStringAsync(finalText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
   return (
-    <View style={styles.assistantTurnContainer}>
+    <View style={styles.assistantContainer}>
       {/* Turn Header */}
       <View style={styles.turnHeader}>
-        <AvaMascot size="sm" state={live ? "working" : hasError ? "error" : "idle"} />
+        <View style={styles.mascotWrapper}>
+          <AvaMascot
+            size="sm"
+            state={live ? "working" : hasError ? "error" : "idle"}
+            gaze={hasError ? "down" : live && steps > 0 ? "right" : "up"}
+          />
+          {live && <View style={styles.streamPulseRing} />}
+        </View>
+
         <View style={styles.turnHeaderTextGroup}>
           <View style={styles.turnLabelRow}>
             {live ? (
-              <Shimmer style={styles.turnLabelText}>{activityLabel}</Shimmer>
+              <Shimmer style={[styles.turnLabelText, font("semibold", activityLabel)]}>
+                {activityLabel}
+              </Shimmer>
             ) : (
-              <Text style={styles.turnLabelText}>{activityLabel}</Text>
+              <Text style={[styles.turnLabelText, font("semibold", activityLabel)]}>
+                {activityLabel}
+              </Text>
             )}
             {live && <View style={styles.pulseDot} />}
           </View>
-          <Text style={styles.turnSubText}>
+          <Text style={[styles.turnSubText, font("regular")]}>
             {hasError
-              ? "Core reported an error"
+              ? "Core reported an issue"
               : live
-              ? `${steps ? `${steps} live step${steps === 1 ? "" : "s"}` : "Preparing steps"} · streaming now`
+              ? hasWorkflowSteps
+                ? `${steps ? `${steps} tool step${steps === 1 ? "" : "s"}` : "Executing steps"} · live`
+                : "Processing prompt · live"
               : duration
               ? `Completed in ${formatDuration(duration)}`
               : "Response complete"}
@@ -140,50 +174,71 @@ function AssistantTurn({
         </View>
       </View>
 
-      {/* Parts List */}
-      <View style={styles.partsContainer}>
-        {message.parts.map((p) => {
-          if (p.kind === "tool") {
-            return (
-              <Tool
-                key={p.id}
-                toolName={p.toolName || "Tool"}
-                state={
-                  p.status === "running"
-                    ? "running"
-                    : p.status === "error"
-                    ? "error"
-                    : "completed"
-                }
-                input={p.input}
-                output={p.output}
-                errorText={p.status === "error" ? p.output : undefined}
-              />
-            );
-          }
-          if (p.kind === "reasoning") {
-            return <ReasoningStep key={p.id} part={p} />;
-          }
-          if (p.kind === "notice") {
-            return <NoticeStep key={p.id} part={p} />;
-          }
-          if (p.text) {
-            return <RichResponse key={p.id} text={p.text} />;
-          }
-          return null;
-        })}
-      </View>
+      {/* Live Agent Step Overview Card (Only shown once at least one workflow step has started) */}
+      {hasWorkflowSteps && (
+        <LiveStepOverviewCard
+          message={message}
+          live={live}
+          sessionId={sessionId}
+          onOpenTimeline={onOpenTimeline}
+        />
+      )}
 
-      {/* Footer Stats */}
-      {!live && duration ? (
+      {/* Error Notices in Session Screen */}
+      {errorNotices.map((p) => (
+        <NoticeStep key={p.id} part={p} />
+      ))}
+
+      {/* Questions from Agent */}
+      {questionParts.map((q) => (
+        <View key={q.id} style={styles.questionCard}>
+          <Text style={[styles.questionTitle, font("semibold", q.text)]}>{q.text}</Text>
+          {q.meta?.questions?.[0]?.options?.map((opt, idx) => (
+            <View key={idx} style={styles.questionOptionPill}>
+              <Text style={[styles.questionOptionText, font("medium", opt)]}>{opt}</Text>
+            </View>
+          ))}
+        </View>
+      ))}
+
+      {/* Clean Final Output Only */}
+      {finalText ? (
+        <View style={styles.finalOutputContainer}>
+          <RichResponse text={finalText} />
+        </View>
+      ) : null}
+
+      {/* Turn Action Footer */}
+      {!live && (finalText || duration) ? (
         <View style={styles.turnFooter}>
-          <Text style={styles.footerStatsText}>
+          {finalText ? (
+            <TouchableOpacity
+              style={styles.copyOutputBtn}
+              onPress={handleCopy}
+              activeOpacity={0.7}
+            >
+              {copied ? (
+                <Check size={12} color={COLORS.success} />
+              ) : (
+                <Copy size={12} color={COLORS.mutedForeground} />
+              )}
+              <Text
+                style={[
+                  styles.copyOutputText,
+                  font("medium"),
+                  copied && styles.copyOutputTextSuccess,
+                ]}
+              >
+                {copied ? "Copied output" : "Copy output"}
+              </Text>
+            </TouchableOpacity>
+          ) : null}
+
+          <Text style={[styles.footerStatsText, mono("regular")]}>
             {[
-              `Worked for ${formatDuration(duration)}`,
+              duration ? `Worked for ${formatDuration(duration)}` : "",
               steps ? `${steps} step${steps > 1 ? "s" : ""}` : "",
-              message.stats?.totalTokens
-                ? `${message.stats.totalTokens} tokens`
-                : "",
+              formatTokens(message.stats?.totalTokens),
             ]
               .filter(Boolean)
               .join(" · ")}
@@ -194,43 +249,115 @@ function AssistantTurn({
   );
 }
 
-export function ChatMessageView({
-  message,
-  live = false,
-}: {
-  message: ChatMessage;
-  live?: boolean;
-}) {
-  if (message.role === "assistant") {
-    return <AssistantTurn message={message} live={live} />;
-  }
+// ---------- user turn -----------------------------------------------------
+
+function UserTurnView({ message }: { message: ChatMessage }) {
+  const fullText = message.parts
+    .filter((p) => p.text)
+    .map((p) => p.text)
+    .join("\n")
+    .trim();
+
+  const [expanded, setExpanded] = useState(false);
+
+  // Breakpoint: > 240 chars or > 5 lines
+  const lines = fullText.split("\n");
+  const isLong = fullText.length > 240 || lines.length > 5;
+
+  const displayText = useMemo(() => {
+    if (!isLong || expanded) return fullText;
+    if (lines.length > 5) {
+      return lines.slice(0, 4).join("\n") + "…";
+    }
+    return fullText.slice(0, 220).trim() + "…";
+  }, [fullText, isLong, expanded, lines]);
+
+  const toggleExpand = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpanded((prev) => !prev);
+  };
 
   return (
     <View style={styles.userBubbleContainer}>
       <View style={styles.userBubble}>
-        {message.parts.map((p) => (
-          <Text key={p.id} style={styles.userText}>
-            {p.text}
-          </Text>
-        ))}
+        <RichResponse text={displayText} />
+        {isLong && (
+          <TouchableOpacity
+            style={styles.seeMoreBtn}
+            onPress={toggleExpand}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.seeMoreText, font("medium")]}>
+              {expanded ? "Show less" : "Show more"}
+            </Text>
+            {expanded ? (
+              <ChevronUp size={12} color={COLORS.mutedForeground} />
+            ) : (
+              <ChevronDown size={12} color={COLORS.mutedForeground} />
+            )}
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
 }
 
+export function ChatMessageView({
+  message,
+  live = false,
+  sessionId,
+  onOpenTimeline,
+}: {
+  message: ChatMessage;
+  live?: boolean;
+  sessionId?: string;
+  onOpenTimeline?: (messageId?: string) => void;
+}) {
+  if (message.role === "assistant") {
+    return (
+      <AssistantTurn
+        message={message}
+        live={live}
+        sessionId={sessionId}
+        onOpenTimeline={onOpenTimeline}
+      />
+    );
+  }
+
+  return <UserTurnView message={message} />;
+}
+
 const styles = StyleSheet.create({
-  assistantTurnContainer: {
-    marginVertical: 6,
-    gap: 8,
+  assistantContainer: {
+    marginVertical: 8,
+    paddingLeft: 0,
+    width: "100%",
   },
   turnHeader: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    marginBottom: 4,
+    marginBottom: 6,
+    paddingLeft: 0,
+  },
+  mascotWrapper: {
+    position: "relative",
+    width: 36,
+    height: 36,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  streamPulseRing: {
+    position: "absolute",
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: "rgba(106, 101, 255, 0.4)",
   },
   turnHeaderTextGroup: {
     justifyContent: "center",
+    flex: 1,
   },
   turnLabelRow: {
     flexDirection: "row",
@@ -253,33 +380,34 @@ const styles = StyleSheet.create({
     color: COLORS.mutedForeground,
     marginTop: 1,
   },
-  partsContainer: {
-    paddingLeft: 42,
+  finalOutputContainer: {
+    marginTop: 4,
+    width: "100%",
+  },
+  questionCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: 12,
+    marginVertical: 6,
     gap: 8,
   },
-  reasoningBox: {
-    borderRadius: 12,
-    padding: 10,
+  questionTitle: {
+    fontSize: 13.5,
+    color: COLORS.foreground,
+  },
+  questionOptionPill: {
     backgroundColor: COLORS.secondary,
-    marginVertical: 3,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
-  reasoningHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  reasoningTitle: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: COLORS.primary,
-    flex: 1,
-  },
-  reasoningContent: {
-    fontSize: 12,
-    color: COLORS.mutedForeground,
-    marginTop: 6,
-    lineHeight: 18,
-    fontStyle: "italic",
+  questionOptionText: {
+    fontSize: 12.5,
+    color: COLORS.foreground,
   },
   noticeBox: {
     flexDirection: "row",
@@ -287,7 +415,7 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 10,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: 10,
     marginVertical: 3,
   },
   noticeBoxInfo: {
@@ -299,7 +427,7 @@ const styles = StyleSheet.create({
   noticeText: {
     fontSize: 12,
     flex: 1,
-    lineHeight: 16,
+    lineHeight: 17,
   },
   noticeTextInfo: {
     color: COLORS.mutedForeground,
@@ -308,8 +436,28 @@ const styles = StyleSheet.create({
     color: COLORS.destructive,
   },
   turnFooter: {
-    paddingLeft: 42,
-    marginTop: 4,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingLeft: 0,
+    marginTop: 8,
+  },
+  copyOutputBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: COLORS.secondary,
+  },
+  copyOutputText: {
+    fontSize: 11,
+    fontWeight: "500",
+    color: COLORS.mutedForeground,
+  },
+  copyOutputTextSuccess: {
+    color: COLORS.success,
   },
   footerStatsText: {
     fontSize: 11,
@@ -317,19 +465,35 @@ const styles = StyleSheet.create({
   },
   userBubbleContainer: {
     alignSelf: "flex-end",
-    maxWidth: "85%",
+    maxWidth: "92%",
     marginVertical: 4,
   },
   userBubble: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 18,
+    backgroundColor: COLORS.secondary,
+    borderRadius: 16,
     borderBottomRightRadius: 4,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: 13,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    flexDirection: "column",
+    alignSelf: "flex-end",
   },
-  userText: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: COLORS.primaryForeground,
+  seeMoreBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    alignSelf: "flex-end",
+    marginTop: 6,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  seeMoreText: {
+    fontSize: 11,
+    color: COLORS.mutedForeground,
   },
 });

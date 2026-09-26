@@ -54,7 +54,12 @@ export function useServerConfig() {
 
 export function useSessions() {
   const { rpc, status } = useAva();
-  return useQuery({ queryKey: keys.sessions, queryFn: () => listSessions(rpc!), enabled: !!rpc && status === "online" });
+  return useQuery({
+    queryKey: keys.sessions,
+    queryFn: () => listSessions(rpc!),
+    enabled: !!rpc && status === "online",
+    refetchInterval: status === "online" ? 3000 : false,
+  });
 }
 
 export function useSessionHistory(id: string | null) {
@@ -63,6 +68,14 @@ export function useSessionHistory(id: string | null) {
     queryKey: keys.session(id ?? ""),
     queryFn: () => readSession(rpc!, id!),
     enabled: !!rpc && !!id && status === "online",
+    refetchInterval: (query) => {
+      if (status !== "online") return false;
+      const data = query.state.data;
+      // Fast polling (1500ms) if turn is running on server to stream progress live
+      if (data?.isTurnRunning) return 1500;
+      // Background sync every 3500ms to stay updated with server turns
+      return 3500;
+    },
   });
 }
 

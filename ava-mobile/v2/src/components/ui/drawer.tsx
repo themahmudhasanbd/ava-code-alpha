@@ -161,11 +161,11 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    backgroundColor: "transparent",
   },
   overlay: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    backgroundColor: "transparent",
   },
   drawerBox: {
     backgroundColor: COLORS.background,

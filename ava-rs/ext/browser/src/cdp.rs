@@ -27,7 +27,7 @@ pub struct CdpRequest {
     pub id: u64,
     pub method: String,
     pub params: Value,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "sessionId", skip_serializing_if = "Option::is_none")]
     pub session_id: Option<String>,
 }
 

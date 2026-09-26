@@ -109,3 +109,24 @@ ava-cli/bin/
 
 .vitepress/.temp/
 .vitepress/dist/
+
+# Secrets and backups
+.ava-token
+*.vault
+*.tar.gz
+*.txr
+check_runs.py
+download_artifact.py
+fast_download.py
+test_browser_tool.py
+verify_live_browser.py
+
+# Vitepress nested caches
+**/.vitepress/.temp/
+**/.vitepress/dist/
+
+# Web build artifacts and submodules
+**/.workspace/
+**/.output/
+**/.wrangler/
+**/.tanstack/

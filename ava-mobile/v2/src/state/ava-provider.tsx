@@ -15,6 +15,8 @@ interface AvaContextValue {
   setActiveSessionId: (id: string | null) => void;
   workingSessionId: string | null;
   setWorkingSessionId: (id: string | null) => void;
+  runningSessions: Record<string, boolean>;
+  setSessionRunning: (id: string, isRunning: boolean) => void;
   modelId: string;
   setModelId: (id: string) => void;
   effort: string;
@@ -44,6 +46,7 @@ export function AvaProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<ConnectionStatus>("offline");
   const [activeSessionId, setActiveSessionIdState] = useState<string | null>(null);
   const [workingSessionId, setWorkingSessionId] = useState<string | null>(null);
+  const [runningSessions, setRunningSessions] = useState<Record<string, boolean>>({});
   const [modelId, setModelIdState] = useState("");
   const [effort, setEffortState] = useState("medium");
   const [sandbox, setSandboxState] = useState("danger-full-access");
@@ -71,6 +74,24 @@ export function AvaProvider({ children }: { children: ReactNode }) {
       storage.set(ACTIVE_SESSION_KEY, id);
     } else {
       storage.remove(ACTIVE_SESSION_KEY);
+    }
+  }, []);
+
+  const setSessionRunning = useCallback((id: string, isRunning: boolean) => {
+    if (!id) return;
+    setRunningSessions((prev) => {
+      if (isRunning) {
+        return { ...prev, [id]: true };
+      } else {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      }
+    });
+    if (isRunning) {
+      setWorkingSessionId(id);
+    } else {
+      setWorkingSessionId((prev) => (prev === id ? null : prev));
     }
   }, []);
 
@@ -122,6 +143,8 @@ export function AvaProvider({ children }: { children: ReactNode }) {
     clearAuth();
     setAuth(null);
     setActiveSessionId(null);
+    setRunningSessions({});
+    setWorkingSessionId(null);
   }, [setActiveSessionId]);
 
   return (
@@ -135,6 +158,8 @@ export function AvaProvider({ children }: { children: ReactNode }) {
         setActiveSessionId,
         workingSessionId,
         setWorkingSessionId,
+        runningSessions,
+        setSessionRunning,
         modelId,
         setModelId,
         effort,

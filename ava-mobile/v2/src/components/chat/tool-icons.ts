@@ -20,8 +20,10 @@ import {
   GitCommit,
   GitPullRequest,
   Globe,
+  HardDrive,
   Image,
   ListChecks,
+  Mail,
   MessageSquare,
   PlayCircle,
   Plug,
@@ -36,7 +38,50 @@ import {
 import type { MessagePart } from "@/core/types";
 
 /**
- * Clean and format backend tool names by stripping internal prefixes (e.g. vps_, mcp_, default_api:).
+ * Checks if a given tool invocation is an MCP (Model Context Protocol) tool.
+ */
+export function isMcpTool(toolName?: string, meta?: MessagePart["meta"]): boolean {
+  if (!toolName && !meta?.server) return false;
+  if (meta?.server && meta.server !== "builtin" && meta.server !== "core" && meta.server !== "terminal") {
+    return true;
+  }
+  const raw = (toolName || "").toLowerCase().trim();
+
+  // Core non-MCP commands
+  if (
+    raw === "exec_command" ||
+    raw === "write_stdin" ||
+    raw === "read_file" ||
+    raw === "apply_patch" ||
+    raw === "view_image" ||
+    raw === "terminal" ||
+    raw === "shell"
+  ) {
+    return false;
+  }
+
+  return (
+    raw.startsWith("mcp_") ||
+    raw.startsWith("mcp-") ||
+    raw.startsWith("mcp:") ||
+    raw.startsWith("default_api:mcp_") ||
+    raw.startsWith("default_api:") ||
+    raw.startsWith("cf_") ||
+    raw.startsWith("cloudflare_") ||
+    raw.startsWith("cpanel_") ||
+    raw.startsWith("github_") ||
+    raw.startsWith("mysql_") ||
+    raw.startsWith("mail_") ||
+    raw.startsWith("memory_") ||
+    raw.startsWith("mem_") ||
+    raw.startsWith("meta_") ||
+    raw.startsWith("puppeteer_") ||
+    raw.includes("mcp")
+  );
+}
+
+/**
+ * Clean and format backend tool names by stripping internal prefixes and formatting server names.
  */
 export function displayToolName(name?: string): string {
   if (!name) return "Tool";
@@ -52,6 +97,9 @@ export function displayToolName(name?: string): string {
   cleaned = cleaned.replace(/^mysql_/i, "mysql: ");
   cleaned = cleaned.replace(/^mail_/i, "mail: ");
   cleaned = cleaned.replace(/^memory_/i, "memory: ");
+  cleaned = cleaned.replace(/^mem_/i, "memory: ");
+  cleaned = cleaned.replace(/^meta_/i, "meta: ");
+  cleaned = cleaned.replace(/^puppeteer_/i, "puppeteer: ");
 
   // Convert snake_case to Title Case words
   if (!cleaned.includes(" ")) {
@@ -62,14 +110,16 @@ export function displayToolName(name?: string): string {
       .join(" ");
   }
 
-  // Handle prefix styling like "Cpanel: List Files" -> "cPanel · List Files"
+  // Handle prefix styling for nice badges
   cleaned = cleaned
     .replace(/^Cpanel:\s*/i, "cPanel · ")
     .replace(/^Cloudflare:\s*/i, "Cloudflare · ")
     .replace(/^Github:\s*/i, "GitHub · ")
     .replace(/^Mysql:\s*/i, "MySQL · ")
     .replace(/^Mail:\s*/i, "Mail · ")
-    .replace(/^Memory:\s*/i, "Memory · ");
+    .replace(/^Memory:\s*/i, "Memory · ")
+    .replace(/^Meta:\s*/i, "Meta · ")
+    .replace(/^Puppeteer:\s*/i, "Puppeteer · ");
 
   if (cleaned.toLowerCase() === "exec command" || cleaned.toLowerCase() === "execute command") {
     return "Terminal Command";
@@ -84,10 +134,24 @@ export function getToolIcon(toolName?: string, meta?: MessagePart["meta"]): Luci
     if (s.includes("mysql") || s.includes("db") || s.includes("postgres")) return Database;
     if (s.includes("git") || s.includes("github")) return GitBranch;
     if (s.includes("cpanel") || s.includes("vps") || s.includes("server")) return Server;
+    if (s.includes("mail") || s.includes("smtp") || s.includes("postfix")) return Mail;
+    if (s.includes("cloudflare") || s.includes("cf") || s.includes("dns")) return Globe;
+    if (s.includes("memory") || s.includes("mem")) return Brain;
+    if (s.includes("puppeteer") || s.includes("browser")) return Globe;
+    return Plug;
   }
 
   if (!toolName) return Wrench;
+  const raw = toolName.toLowerCase().trim();
   const name = displayToolName(toolName).toLowerCase().trim();
+
+  // MCP specific tool checks
+  if (raw.includes("mysql") || name.includes("mysql")) return Database;
+  if (raw.includes("cpanel") || name.includes("cpanel")) return Server;
+  if (raw.includes("mail") || name.includes("mail")) return Mail;
+  if (raw.includes("memory") || name.includes("memory") || raw.includes("mem_")) return Brain;
+  if (raw.includes("cloudflare") || name.includes("cloudflare")) return Globe;
+  if (raw.includes("puppeteer") || name.includes("puppeteer")) return Globe;
 
   // Terminal & command execution
   if (
@@ -211,7 +275,6 @@ export function getToolIcon(toolName?: string, meta?: MessagePart["meta"]): Luci
     name.includes("system") ||
     name.includes("disk") ||
     name.includes("process") ||
-    name.includes("memory") ||
     name.includes("cpu")
   ) {
     return Cpu;

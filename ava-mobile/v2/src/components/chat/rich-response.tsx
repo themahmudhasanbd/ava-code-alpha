@@ -72,7 +72,7 @@ interface InlineToken {
 function parseInlineFormatting(rawText: string): InlineToken[] {
   const tokens: InlineToken[] = [];
   const regex =
-    /(\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)|\*\*\*([\s\S]+?)\*\*\*|\*\*([\s\S]+?)\*\*|__([\s\S]+?)__|(?<!\*)\*([^\*\n]+?)\*(?!\*)|(?<!_)_([^\_\n]+?)_(?!_)|~~([\s\S]+?)~~|`([^`\n]+)`|\$([^\$\n]+)\$)/g;
+    /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)|\*\*\*([^*]+)\*\*\*|___([^_]+)___|\*\*([^*]+)\*\*|__([^_]+)__|\*([^\*\n]+)\*|_([^\_\n]+)_|~~([^~]+)~~|`([^`\n]+)`|\$([^\$\n]+)\$/g;
 
   let lastIndex = 0;
   let match: RegExpExecArray | null;
@@ -85,10 +85,10 @@ function parseInlineFormatting(rawText: string): InlineToken[] {
       });
     }
 
-    if (match[2] && match[3]) {
-      tokens.push({ type: "link", content: match[2], url: match[3] });
-    } else if (match[4]) {
-      tokens.push({ type: "boldItalic", content: match[4] });
+    if (match[1] && match[2]) {
+      tokens.push({ type: "link", content: match[1], url: match[2] });
+    } else if (match[3] || match[4]) {
+      tokens.push({ type: "boldItalic", content: match[3] || match[4] });
     } else if (match[5] || match[6]) {
       tokens.push({ type: "bold", content: match[5] || match[6] });
     } else if (match[7] || match[8]) {
@@ -1725,64 +1725,68 @@ export const RichResponse = memo(
       if (line.startsWith("# ")) {
         const headingText = line.slice(2);
         elements.push(
-          <Text
-            key={`h1-${currentKey++}`}
-            style={[
-              styles.heading1,
-              font("bold", headingText),
-              isUser && styles.headingUser,
-            ]}
-          >
-            {headingText}
-          </Text>
+          <View key={`h1-${currentKey++}`} style={styles.headingBlock}>
+            <InlineText
+              text={headingText}
+              style={[
+                styles.heading1,
+                font("bold", headingText),
+                isUser && styles.headingUser,
+              ]}
+              isUser={isUser}
+            />
+          </View>
         );
         continue;
       }
       if (line.startsWith("## ")) {
         const headingText = line.slice(3);
         elements.push(
-          <Text
-            key={`h2-${currentKey++}`}
-            style={[
-              styles.heading2,
-              font("bold", headingText),
-              isUser && styles.headingUser,
-            ]}
-          >
-            {headingText}
-          </Text>
+          <View key={`h2-${currentKey++}`} style={styles.headingBlock}>
+            <InlineText
+              text={headingText}
+              style={[
+                styles.heading2,
+                font("bold", headingText),
+                isUser && styles.headingUser,
+              ]}
+              isUser={isUser}
+            />
+          </View>
         );
         continue;
       }
       if (line.startsWith("### ")) {
         const headingText = line.slice(4);
         elements.push(
-          <Text
-            key={`h3-${currentKey++}`}
-            style={[
-              styles.heading3,
-              font("semibold", headingText),
-              isUser && styles.headingUser,
-            ]}
-          >
-            {headingText}
-          </Text>
+          <View key={`h3-${currentKey++}`} style={styles.headingBlock}>
+            <InlineText
+              text={headingText}
+              style={[
+                styles.heading3,
+                font("semibold", headingText),
+                isUser && styles.headingUser,
+              ]}
+              isUser={isUser}
+            />
+          </View>
         );
         continue;
       }
       if (line.startsWith("#### ")) {
         const headingText = line.slice(5);
         elements.push(
-          <Text
-            key={`h4-${currentKey++}`}
-            style={[
-              styles.heading4,
-              font("semibold", headingText),
-              isUser && styles.headingUser,
-            ]}
-          >
-            {headingText}
-          </Text>
+          <View key={`h4-${currentKey++}`} style={styles.headingBlock}>
+            <InlineText
+              text={headingText}
+              style={[
+                styles.heading4,
+                font("semibold", headingText),
+                isUser && styles.headingUser,
+              ]}
+              isUser={isUser}
+            />
+          </View>
         );
         continue;
       }
@@ -2044,6 +2048,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.foreground,
     paddingHorizontal: 2,
+  },
+  headingBlock: {
+    marginVertical: 2,
   },
   heading1: {
     fontSize: 18,

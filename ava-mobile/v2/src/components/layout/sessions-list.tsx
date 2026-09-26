@@ -47,7 +47,7 @@ export function SessionsList({
 }: {
   onPick?: (sessionId: string | null) => void;
 }) {
-  const { activeSessionId, setActiveSessionId, workingSessionId, status } =
+  const { activeSessionId, setActiveSessionId, runningSessions, workingSessionId, status } =
     useAva();
   const { data: sessions = [], isLoading, error } = useSessions();
   const del = useDeleteSession();
@@ -240,6 +240,7 @@ export function SessionsList({
                       session.active ||
                       session.status === "active" ||
                       session.status === "inProgress" ||
+                      !!runningSessions?.[session.id] ||
                       workingSessionId === session.id;
 
                     return (

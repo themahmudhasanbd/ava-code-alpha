@@ -47,7 +47,7 @@ import { Shimmer } from "@/components/ai-elements/shimmer";
 import { formatDuration } from "@/components/chat/message-parts";
 import type { ChatMessage, MessagePart, PlanStep } from "@/core/types";
 import { font, mono } from "@/theme/fonts";
-import { displayToolName, getToolIcon } from "@/components/chat/tool-icons";
+import { displayToolName, getToolIcon, isMcpTool } from "@/components/chat/tool-icons";
 import { COLORS } from "@/theme/colors";
 
 interface Props {
@@ -454,10 +454,18 @@ export function TimelineScreen({ route, navigation }: Props) {
                   badgeLabel = "Decision";
                   headerTitle = "Strategic Decision";
                 } else if (part.nodeType === "tool") {
-                  NodeIcon = getToolIcon(part.toolName, part.meta);
-                  iconBg = COLORS.primary;
-                  badgeLabel = "Tool";
-                  headerTitle = displayToolName(part.toolName || "execute_command");
+                  const isMcp = isMcpTool(part.toolName, part.meta);
+                  if (isMcp) {
+                    NodeIcon = Plug;
+                    iconBg = "#059669";
+                    badgeLabel = "MCP";
+                    headerTitle = displayToolName(part.toolName || "MCP Tool");
+                  } else {
+                    NodeIcon = getToolIcon(part.toolName, part.meta);
+                    iconBg = COLORS.primary;
+                    badgeLabel = "Tool";
+                    headerTitle = displayToolName(part.toolName || "execute_command");
+                  }
                 } else if (part.nodeType === "plan") {
                   NodeIcon = ListChecks;
                   iconBg = "#059669"; // Green for plan
@@ -507,7 +515,12 @@ export function TimelineScreen({ route, navigation }: Props) {
                           <View
                             style={[
                               styles.typePill,
-                              { backgroundColor: "rgba(66, 64, 225, 0.08)" },
+                              {
+                                backgroundColor:
+                                  badgeLabel === "MCP"
+                                    ? "rgba(5, 150, 105, 0.12)"
+                                    : "rgba(66, 64, 225, 0.08)",
+                              },
                             ]}
                           >
                             <Text
@@ -1139,12 +1152,12 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     padding: 8,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: COLORS.codeBorder,
     maxHeight: 220,
   },
   outputText: {
     fontSize: 11,
-    color: COLORS.foreground,
+    color: COLORS.codeForeground,
     lineHeight: 16,
   },
   planStepsBox: {

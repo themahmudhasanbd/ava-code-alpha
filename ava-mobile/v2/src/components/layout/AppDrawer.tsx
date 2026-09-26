@@ -52,7 +52,7 @@ function groupByProject(sessions: Session[]) {
 export function AppDrawer(props: DrawerContentComponentProps) {
   const { navigation, state } = props;
   const insets = useSafeAreaInsets();
-  const { auth, status, signOut, activeSessionId, setActiveSessionId, workingCwd, setWorkingCwd } =
+  const { auth, status, signOut, activeSessionId, setActiveSessionId, runningSessions, workingSessionId, workingCwd, setWorkingCwd } =
     useAva();
   const { data: sessions = [], isLoading } = useSessions();
   const deleteSession = useDeleteSession();
@@ -486,7 +486,9 @@ export function AppDrawer(props: DrawerContentComponentProps) {
                               const isRunning =
                                 s.active ||
                                 s.status === "active" ||
-                                s.status === "inProgress";
+                                s.status === "inProgress" ||
+                                !!runningSessions?.[s.id] ||
+                                workingSessionId === s.id;
                               return (
                                 <View key={s.id} style={styles.sessionRow}>
                                   <TouchableOpacity

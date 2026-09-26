@@ -18,6 +18,7 @@ export function useChat(explicitSessionId?: string | null) {
     activeSessionId,
     setActiveSessionId,
     setWorkingSessionId,
+    setSessionRunning,
     modelId,
     effort,
     sandbox,
@@ -73,6 +74,7 @@ export function useChat(explicitSessionId?: string | null) {
         isStreamingRef.current = true;
         statusRef.current = "streaming";
         setStatus("streaming");
+        setSessionRunning(threadId, true);
         patchAssistant(aid, (parts) => {
           const i = parts.findIndex(
             (x) => x.id === p.id || (p.kind === "text" && x.id === "stream_text")
@@ -91,6 +93,7 @@ export function useChat(explicitSessionId?: string | null) {
         isStreamingRef.current = true;
         statusRef.current = "streaming";
         setStatus("streaming");
+        setSessionRunning(threadId, true);
         patchAssistant(aid, (parts) => {
           const effectiveId =
             itemId || (kind === "output" ? "terminal_out" : "stream_text");
@@ -166,6 +169,7 @@ export function useChat(explicitSessionId?: string | null) {
         isStreamingRef.current = false;
         statusRef.current = err ? "error" : "ready";
         activeAidRef.current = null;
+        setSessionRunning(threadId, false);
 
         patchAssistant(aid, (parts) => {
           const next = parts.map((p) =>
@@ -202,14 +206,13 @@ export function useChat(explicitSessionId?: string | null) {
         );
 
         setStatus(err ? "error" : "ready");
-        setWorkingSessionId(null);
         qc.invalidateQueries({ queryKey: keys.sessions });
         if (threadId) {
           qc.invalidateQueries({ queryKey: keys.session(threadId) });
         }
       },
     }),
-    [patchAssistant, qc, setWorkingSessionId]
+    [patchAssistant, qc, setSessionRunning]
   );
 
   // Handle session change, background history synchronization, and attaching to running turns
@@ -240,7 +243,7 @@ export function useChat(explicitSessionId?: string | null) {
         isStreamingRef.current = true;
         statusRef.current = "streaming";
         setStatus("streaming");
-        setWorkingSessionId(currentSessionId);
+        setSessionRunning(currentSessionId, true);
 
         const lastAssMsg = [...historyMessages].reverse().find((m) => m.role === "assistant");
         const aid = activeTurnId
@@ -253,6 +256,9 @@ export function useChat(explicitSessionId?: string | null) {
         statusRef.current = "ready";
         setStatus("ready");
         activeAidRef.current = null;
+        if (currentSessionId) {
+          setSessionRunning(currentSessionId, false);
+        }
       }
       return;
     }
@@ -263,7 +269,7 @@ export function useChat(explicitSessionId?: string | null) {
         isStreamingRef.current = true;
         statusRef.current = "streaming";
         setStatus("streaming");
-        setWorkingSessionId(currentSessionId);
+        setSessionRunning(currentSessionId, true);
 
         const lastAssMsg = [...historyMessages].reverse().find((m) => m.role === "assistant");
         const aid = activeTurnId
@@ -278,7 +284,7 @@ export function useChat(explicitSessionId?: string | null) {
         setMessages(historyMessages.slice(-visibleCount));
       }
     }
-  }, [history.data, currentSessionId, visibleCount, rpc, createHandlers, setWorkingSessionId]);
+  }, [history.data, currentSessionId, visibleCount, rpc, createHandlers, setSessionRunning]);
 
   const loadOlder = useCallback(() => {
     setVisibleCount((current) => {
@@ -325,7 +331,7 @@ export function useChat(explicitSessionId?: string | null) {
         }
       }
 
-      setWorkingSessionId(threadId);
+      setSessionRunning(threadId, true);
       if (threadId !== activeSessionId) {
         setActiveSessionId(threadId);
       }
@@ -363,7 +369,7 @@ export function useChat(explicitSessionId?: string | null) {
       defaultCwd,
       activeSessionId,
       setActiveSessionId,
-      setWorkingSessionId,
+      setSessionRunning,
       createHandlers,
     ]
   );
@@ -382,8 +388,10 @@ export function useChat(explicitSessionId?: string | null) {
     statusRef.current = "ready";
     activeAidRef.current = null;
     setStatus("ready");
-    setWorkingSessionId(null);
-  }, [rpc, currentSessionId, setWorkingSessionId]);
+    if (currentSessionId) {
+      setSessionRunning(currentSessionId, false);
+    }
+  }, [rpc, currentSessionId, setSessionRunning]);
 
   const clear = useCallback(() => setMessages([]), []);
 

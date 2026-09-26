@@ -18,7 +18,7 @@
       }
     },
     "android": {
-      "package": "pro.mahmudhasan.ava",
+      "package": "com.avacode.mobile",
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
@@ -35,7 +35,8 @@
         "MODIFY_AUDIO_SETTINGS",
         "VIBRATE",
         "POST_NOTIFICATIONS"
-      ]
+      ],
+      "googleServicesFile": "./google-services.json"
     },
     "plugins": [
       [

@@ -32,7 +32,7 @@ import {
 } from "lucide-react-native";
 import { AvaMascot } from "@/components/ui/ava-mascot";
 import { Shimmer } from "@/components/ai-elements/shimmer";
-import { RichResponse } from "./rich-response";
+import { InlineText, RichResponse } from "./rich-response";
 import { LiveStepOverviewCard } from "./live-step-card";
 import { getToolIcon } from "./tool-icons";
 import { Surface } from "@/components/kit";
@@ -70,15 +70,15 @@ function NoticeStep({ part }: { part: MessagePart }) {
         size={14}
         color={isErr ? COLORS.destructive : COLORS.mutedForeground}
       />
-      <Text
-        style={[
-          styles.noticeText,
-          font("regular", part.text),
-          isErr ? styles.noticeTextError : styles.noticeTextInfo,
-        ]}
-      >
-        {part.text}
-      </Text>
+      <View style={{ flex: 1 }}>
+        <InlineText
+          text={part.text}
+          style={[
+            styles.noticeText,
+            isErr ? styles.noticeTextError : styles.noticeTextInfo,
+          ]}
+        />
+      </View>
     </View>
   );
 }
@@ -280,7 +280,7 @@ function UserTurnView({ message }: { message: ChatMessage }) {
   return (
     <View style={styles.userBubbleContainer}>
       <View style={styles.userBubble}>
-        <RichResponse text={displayText} />
+        <RichResponse text={displayText} isUser />
         {isLong && (
           <TouchableOpacity
             style={styles.seeMoreBtn}

@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  BackHandler,
   Alert,
   Platform,
   ScrollView,
@@ -239,12 +240,61 @@ function FileEditor({
   );
 }
 
-export function FilesScreen() {
+interface FilesScreenProps {
+  route?: {
+    params?: {
+      initialPath?: string;
+      openFile?: string;
+    };
+  };
+}
+
+export function FilesScreen({ route }: FilesScreenProps = {}) {
   const navigation = useNavigation<any>();
-  const [root, setRoot] = useState<string>(APP.defaultCwd);
+  const initialPath = route?.params?.initialPath;
+  const initialOpenFile = route?.params?.openFile;
+
+  const [root, setRoot] = useState<string>(initialPath || APP.defaultCwd);
   const [query, setQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
-  const [openFile, setOpenFile] = useState<string | null>(null);
+  const [openFile, setOpenFile] = useState<string | null>(initialOpenFile || null);
+
+  useEffect(() => {
+    if (initialPath) {
+      setRoot(initialPath);
+    }
+  }, [initialPath]);
+
+  useEffect(() => {
+    if (initialOpenFile) {
+      setOpenFile(initialOpenFile);
+      const parent = parentPath(initialOpenFile);
+      if (parent) setRoot(parent);
+    }
+  }, [initialOpenFile]);
+
+  const handleBack = useCallback(() => {
+    if (openFile) {
+      setOpenFile(null);
+      return true;
+    }
+    if (root !== APP.defaultCwd && root !== "/") {
+      setRoot(parentPath(root));
+      return true;
+    }
+    if (navigation?.canGoBack()) {
+      navigation.goBack();
+      return true;
+    }
+    return false;
+  }, [openFile, root, navigation]);
+
+  useEffect(() => {
+    const onBackPress = () => handleBack();
+    const sub = BackHandler.addEventListener("hardwareBackPress", onBackPress);
+    return () => sub.remove();
+  }, [handleBack]);
+
   const { refetch, isFetching, error } = useDirectory(root);
 
   const crumbs = useMemo(() => pathCrumbs(root), [root]);
@@ -280,6 +330,13 @@ export function FilesScreen() {
       ) : (
         <>
           <View style={styles.headerLeft}>
+            {navigation.canGoBack() && (
+              <GlassIconButton
+                icon={ChevronLeft}
+                size={18}
+                onPress={() => navigation.goBack()}
+              />
+            )}
             <GlassIconButton
               icon={Menu}
               size={18}

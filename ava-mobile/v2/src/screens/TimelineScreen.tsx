@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  BackHandler,
   LayoutAnimation,
   Platform,
   ScrollView,
@@ -42,7 +43,7 @@ import * as Clipboard from "expo-clipboard";
 import { useChat } from "@/state/use-chat";
 import { useAva } from "@/state/ava-provider";
 import { CodeBlock } from "@/components/ai-elements/code-block";
-import { RichResponse } from "@/components/chat/rich-response";
+import { InlineText, RichResponse } from "@/components/chat/rich-response";
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { formatDuration } from "@/components/chat/message-parts";
 import type { ChatMessage, MessagePart, PlanStep } from "@/core/types";
@@ -76,6 +77,9 @@ export function TimelineScreen({ route, navigation }: Props) {
   );
 
   const [selectedTurnId, setSelectedTurnId] = useState<string | undefined>(targetMessageId);
+
+
+
 
   // Synchronize when route messageId parameter updates
   useEffect(() => {
@@ -130,6 +134,28 @@ export function TimelineScreen({ route, navigation }: Props) {
     }
     return null;
   }, [messages, targetMessage]);
+
+  const handleBack = () => {
+    if (sessionId) {
+      navigation?.navigate("Session", {
+        sessionId,
+        scrollToMessageId: targetMessage?.id || targetMessageId,
+      });
+    } else if (navigation?.canGoBack()) {
+      navigation?.goBack();
+    } else {
+      navigation?.navigate("Chat");
+    }
+  };
+
+  useEffect(() => {
+    const onBackPress = () => {
+      handleBack();
+      return true;
+    };
+    const sub = BackHandler.addEventListener("hardwareBackPress", onBackPress);
+    return () => sub.remove();
+  }, [sessionId, targetMessage?.id, targetMessageId]);
 
   const toggleNode = (id: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -226,16 +252,7 @@ export function TimelineScreen({ route, navigation }: Props) {
       <View style={styles.navHeader}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => {
-            if (sessionId) {
-              navigation?.navigate("Session", {
-                sessionId,
-                scrollToMessageId: targetMessage?.id || targetMessageId,
-              });
-            } else {
-              navigation?.goBack();
-            }
-          }}
+          onPress={handleBack}
           activeOpacity={0.7}
         >
           <ArrowLeft size={19} color={COLORS.foreground} />
@@ -455,13 +472,12 @@ export function TimelineScreen({ route, navigation }: Props) {
                   headerTitle = "Strategic Decision";
                 } else if (part.nodeType === "tool") {
                   const isMcp = isMcpTool(part.toolName, part.meta);
+                  NodeIcon = getToolIcon(part.toolName, part.meta);
                   if (isMcp) {
-                    NodeIcon = Plug;
                     iconBg = "#059669";
                     badgeLabel = "MCP";
                     headerTitle = displayToolName(part.toolName || "MCP Tool");
                   } else {
-                    NodeIcon = getToolIcon(part.toolName, part.meta);
                     iconBg = COLORS.primary;
                     badgeLabel = "Tool";
                     headerTitle = displayToolName(part.toolName || "execute_command");
@@ -643,13 +659,15 @@ export function TimelineScreen({ route, navigation }: Props) {
                                   </Text>
                                 </TouchableOpacity>
                               </View>
-                              <View style={styles.outputBox}>
-                                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                                  <Text style={[styles.outputText, mono("regular")]}>
-                                    {part.output.trim()}
-                                  </Text>
-                                </ScrollView>
-                              </View>
+                              <CodeBlock
+                                code={part.output.trim()}
+                                language={
+                                  part.output.trim().startsWith("{") || part.output.trim().startsWith("[")
+                                    ? "json"
+                                    : "text"
+                                }
+                                showLineNumbers={part.output.split("\n").length > 2}
+                              />
                             </View>
                           ) : null}
 
@@ -665,15 +683,15 @@ export function TimelineScreen({ route, navigation }: Props) {
                                   ) : (
                                     <View style={styles.planStepDot} />
                                   )}
-                                  <Text
-                                    style={[
-                                      styles.planStepText,
-                                      font("regular"),
-                                      st.status === "done" && styles.planStepDoneText,
-                                    ]}
-                                  >
-                                    {st.text}
-                                  </Text>
+                                  <View style={{ flex: 1 }}>
+                                    <InlineText
+                                      text={st.text}
+                                      style={[
+                                        styles.planStepText,
+                                        st.status === "done" && styles.planStepDoneText,
+                                      ]}
+                                    />
+                                  </View>
                                 </View>
                               ))}
                             </View>

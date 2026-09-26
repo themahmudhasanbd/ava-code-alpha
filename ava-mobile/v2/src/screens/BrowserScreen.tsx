@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
+  BackHandler,
   Platform,
   StyleSheet,
   Text,
@@ -12,6 +13,7 @@ import { useNavigation, DrawerActions } from "@react-navigation/native";
 import {
   AlertCircle,
   ArrowRight,
+  ChevronLeft,
   Globe,
   Menu,
   RotateCw,
@@ -56,11 +58,49 @@ function normalize(input: string) {
   return `https://www.google.com/search?q=${encodeURIComponent(t)}`;
 }
 
-export function BrowserScreen() {
+interface BrowserScreenProps {
+  route?: {
+    params?: {
+      initialUrl?: string;
+    };
+  };
+}
+
+export function BrowserScreen({ route }: BrowserScreenProps = {}) {
   const navigation = useNavigation<any>();
-  const [address, setAddress] = useState<string>(APP.defaultBrowserUrl);
-  const [url, setUrl] = useState<string>(APP.defaultBrowserUrl);
+  const initialUrl = route?.params?.initialUrl;
+  const startUrl = initialUrl ? normalize(initialUrl) : APP.defaultBrowserUrl;
+  const [address, setAddress] = useState<string>(startUrl);
+  const [url, setUrl] = useState<string>(startUrl);
+  const [canGoBackWebView, setCanGoBackWebView] = useState(false);
+  const webViewRef = useRef<any>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  useEffect(() => {
+    if (initialUrl) {
+      const next = normalize(initialUrl);
+      setAddress(next);
+      setUrl(next);
+      setReloadKey((k) => k + 1);
+    }
+  }, [initialUrl]);
+
+  const handleBack = useCallback(() => {
+    if (canGoBackWebView && webViewRef.current) {
+      webViewRef.current.goBack();
+      return true;
+    }
+    if (navigation?.canGoBack()) {
+      navigation.goBack();
+      return true;
+    }
+    return false;
+  }, [canGoBackWebView, navigation]);
+
+  useEffect(() => {
+    const onBackPress = () => handleBack();
+    const sub = BackHandler.addEventListener("hardwareBackPress", onBackPress);
+    return () => sub.remove();
+  }, [handleBack]);
 
   const handleGo = () => {
     const next = normalize(address);
@@ -82,6 +122,13 @@ export function BrowserScreen() {
   const customBrowserHeader = (
     <Surface style={styles.customHeaderSurface}>
       <View style={styles.headerLeft}>
+        {(canGoBackWebView || navigation.canGoBack()) && (
+          <GlassIconButton
+            icon={ChevronLeft}
+            size={18}
+            onPress={handleBack}
+          />
+        )}
         <GlassIconButton
           icon={Menu}
           size={18}
@@ -126,8 +173,10 @@ export function BrowserScreen() {
       <View style={styles.container}>
         <Surface style={styles.webviewContainer}>
           <WebView
+            ref={webViewRef}
             key={reloadKey}
             source={{ uri: url }}
+            onNavigationStateChange={(navState) => setCanGoBackWebView(navState.canGoBack)}
             style={styles.webview}
             javaScriptEnabled
             domStorageEnabled

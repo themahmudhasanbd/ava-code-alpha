@@ -15,6 +15,8 @@ export function AppShell({
   actions,
   customHeader,
   hideHeader = false,
+  showBack = false,
+  onBack,
   chatMessages,
   onCompactSession,
   onNewSession,
@@ -24,6 +26,8 @@ export function AppShell({
   actions?: ReactNode;
   customHeader?: ReactNode;
   hideHeader?: boolean;
+  showBack?: boolean;
+  onBack?: () => void;
   chatMessages?: ChatMessage[];
   onCompactSession?: () => Promise<void>;
   onNewSession?: () => void;
@@ -46,6 +50,8 @@ export function AppShell({
             <AppHeader
               activeSessionTitle={title}
               chatMessages={chatMessages}
+              showBack={showBack}
+              onBack={onBack}
               onCompactSession={onCompactSession}
               onNewSession={onNewSession}
             />

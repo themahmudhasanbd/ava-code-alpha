@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
+  BackHandler,
   FlatList,
   KeyboardAvoidingView,
   PanResponder,
@@ -27,6 +28,7 @@ export function SessionScreen({
     params?: {
       sessionId?: string;
       initialPrompt?: string;
+      scrollToMessageId?: string;
     };
   };
   navigation?: any;
@@ -34,6 +36,7 @@ export function SessionScreen({
   const { activeSessionId, setActiveSessionId } = useAva();
   const sessionId = route?.params?.sessionId || activeSessionId || "";
   const initialPrompt = route?.params?.initialPrompt;
+  const scrollToMessageId = route?.params?.scrollToMessageId;
   const { data: sessions } = useSessions();
 
   const {
@@ -49,24 +52,72 @@ export function SessionScreen({
   } = useChat(sessionId);
 
   const [draft, setDraft] = useState("");
+  const flatListRef = useRef<FlatList>(null);
+  const sentPromptKeyRef = useRef<string | null>(null);
+  const lastScrolledIdRef = useRef<string | null>(null);
 
+  const handleBack = useCallback(() => {
+    if (navigation?.canGoBack()) {
+      navigation.goBack();
+    } else {
+      navigation?.navigate("Chat");
+    }
+  }, [navigation]);
+
+  // Hardware back button handler for Android
+  useEffect(() => {
+    const onBackPress = () => {
+      handleBack();
+      return true;
+    };
+    const sub = BackHandler.addEventListener("hardwareBackPress", onBackPress);
+    return () => sub.remove();
+  }, [handleBack]);
+
+  // Handle scrolling to a targeted message (e.g. returning from Timeline)
+  useEffect(() => {
+    if (
+      scrollToMessageId &&
+      messages.length > 0 &&
+      lastScrolledIdRef.current !== scrollToMessageId
+    ) {
+      const idx = messages.findIndex((m) => m.id === scrollToMessageId);
+      if (idx !== -1) {
+        lastScrolledIdRef.current = scrollToMessageId;
+        const timer = setTimeout(() => {
+          flatListRef.current?.scrollToIndex({
+            index: idx,
+            animated: true,
+            viewPosition: 0.3,
+          });
+        }, 250);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [scrollToMessageId, messages]);
+
+  // Refined directional pan responder: only intentional horizontal gestures
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, gestureState) => {
         return (
-          Math.abs(gestureState.dx) > 30 &&
-          Math.abs(gestureState.dx) > Math.abs(gestureState.dy) * 2.0
+          Math.abs(gestureState.dx) > 60 &&
+          Math.abs(gestureState.dx) > Math.abs(gestureState.dy) * 2.5 &&
+          Math.abs(gestureState.vx) > 0.35
         );
       },
       onPanResponderRelease: (_, gestureState) => {
-        if (gestureState.dx > 40 || gestureState.dx < -40) {
+        // Swipe left -> open Timeline workflow
+        if (gestureState.dx < -70 && gestureState.vx < -0.3) {
           navigation?.navigate("Timeline", { sessionId });
+        }
+        // Swipe right -> go back
+        else if (gestureState.dx > 70 && gestureState.vx > 0.3) {
+          handleBack();
         }
       },
     })
   ).current;
-  const flatListRef = useRef<FlatList>(null);
-  const sentPromptKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (sessionId) {
@@ -110,6 +161,8 @@ export function SessionScreen({
   return (
     <AppShell
       title={title}
+      showBack={true}
+      onBack={handleBack}
       chatMessages={messages}
       onNewSession={() => {
         setActiveSessionId(null);
@@ -117,72 +170,85 @@ export function SessionScreen({
       }}
     >
       <View style={{ flex: 1 }} {...panResponder.panHandlers}>
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
-      >
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          keyExtractor={(item) => item.id}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-          renderItem={({ item, index }) => (
-            <ChatMessageView
-              message={item}
-              sessionId={sessionId}
-              onOpenTimeline={(msgId) =>
-                navigation?.navigate("Timeline", {
-                  sessionId,
-                  messageId: msgId,
-                })
-              }
-              live={
-                (status === "submitted" || status === "streaming") &&
-                index === messages.length - 1 &&
-                item.role === "assistant"
-              }
-            />
-          )}
-          contentContainerStyle={styles.listContent}
-          ListHeaderComponent={
-            loadingHistory ? (
-              <View style={styles.historyLoader}>
-                <Shimmer style={styles.historyLoaderText}>Loading session…</Shimmer>
-              </View>
-            ) : hasOlder ? (
-              <TouchableOpacity
-                style={styles.loadOlderBtn}
-                onPress={loadOlder}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.loadOlderText}>Load earlier messages</Text>
-              </TouchableOpacity>
-            ) : null
-          }
-        />
-
-        {error ? (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorBannerText}>{error}</Text>
-          </View>
-        ) : null}
-
-        <View style={styles.composerWrapper}>
-          <Composer
-            value={draft}
-            onChange={setDraft}
-            onSubmit={handleSubmit}
-            onStop={stop}
-            onClear={clear}
-            status={status}
+        <KeyboardAvoidingView
+          style={styles.container}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
+        >
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            keyExtractor={(item) => item.id}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            onScrollToIndexFailed={(info) => {
+              setTimeout(() => {
+                flatListRef.current?.scrollToIndex({
+                  index: info.index,
+                  animated: true,
+                  viewPosition: 0.3,
+                });
+              }, 300);
+            }}
+            renderItem={({ item, index }) => (
+              <ChatMessageView
+                message={item}
+                sessionId={sessionId}
+                onOpenTimeline={(msgId) =>
+                  navigation?.navigate("Timeline", {
+                    sessionId,
+                    messageId: msgId,
+                  })
+                }
+                live={
+                  (status === "submitted" || status === "streaming") &&
+                  index === messages.length - 1 &&
+                  item.role === "assistant"
+                }
+              />
+            )}
+            contentContainerStyle={styles.listContent}
+            ListHeaderComponent={
+              loadingHistory ? (
+                <View style={styles.historyLoader}>
+                  <Shimmer style={styles.historyLoaderText}>
+                    Loading session…
+                  </Shimmer>
+                </View>
+              ) : hasOlder ? (
+                <TouchableOpacity
+                  style={styles.loadOlderBtn}
+                  onPress={loadOlder}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.loadOlderText}>
+                    Load earlier messages
+                  </Text>
+                </TouchableOpacity>
+              ) : null
+            }
           />
-          <Text style={styles.disclaimerText}>
-            {APP.name} can make mistakes. Review generated code before using it.
-          </Text>
-        </View>
-      </KeyboardAvoidingView>
+
+          {error ? (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorBannerText}>{error}</Text>
+            </View>
+          ) : null}
+
+          <View style={styles.composerWrapper}>
+            <Composer
+              value={draft}
+              onChange={setDraft}
+              onSubmit={handleSubmit}
+              onStop={stop}
+              onClear={clear}
+              status={status}
+            />
+            <Text style={styles.disclaimerText}>
+              {APP.name} can make mistakes. Review generated code before using it.
+            </Text>
+          </View>
+        </KeyboardAvoidingView>
       </View>
     </AppShell>
   );

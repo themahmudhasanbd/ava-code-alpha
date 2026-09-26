@@ -8,7 +8,7 @@ import {
   View,
 } from "react-native";
 import { useNavigation, DrawerActions } from "@react-navigation/native";
-import { ChevronDown, Menu, Zap } from "lucide-react-native";
+import { ChevronDown, ChevronLeft, Menu, Zap } from "lucide-react-native";
 import { WorkspacePreferenceModal } from "@/components/modals/WorkspacePreferenceModal";
 import { ContextWindowModal } from "@/components/modals/ContextWindowModal";
 import { useAva } from "@/state/ava-provider";
@@ -21,6 +21,8 @@ interface Props {
   activeSessionTitle?: string;
   activeSessionId?: string | null;
   chatMessages?: ChatMessage[];
+  showBack?: boolean;
+  onBack?: () => void;
   onCompactSession?: () => Promise<void>;
   onNewSession?: () => void;
   onOpenDrawer?: () => void;
@@ -30,6 +32,8 @@ export function AppHeader({
   activeSessionTitle,
   activeSessionId,
   chatMessages = [],
+  showBack = false,
+  onBack,
   onCompactSession,
   onNewSession,
   onOpenDrawer,
@@ -58,6 +62,20 @@ export function AppHeader({
     }
   };
 
+  const handleLeftAction = () => {
+    if (showBack) {
+      if (onBack) {
+        onBack();
+      } else if (navigation.canGoBack()) {
+        navigation.goBack();
+      } else {
+        navigation.navigate("Chat");
+      }
+    } else {
+      handleOpenDrawer();
+    }
+  };
+
   const handleNewSession = () => {
     if (onNewSession) {
       onNewSession();
@@ -78,13 +96,17 @@ export function AppHeader({
   return (
     <>
       <View style={styles.headerContainer}>
-        {/* ── Left Circle Action Button (Drawer Toggle with Menu icon) ── */}
+        {/* ── Left Circle Action Button (Back or Drawer Toggle) ── */}
         <TouchableOpacity
           style={styles.glossyCircleBtn}
-          onPress={handleOpenDrawer}
+          onPress={handleLeftAction}
           activeOpacity={0.75}
         >
-          <Menu size={19} color={COLORS.foreground} />
+          {showBack ? (
+            <ChevronLeft size={21} color={COLORS.foreground} />
+          ) : (
+            <Menu size={19} color={COLORS.foreground} />
+          )}
         </TouchableOpacity>
 
         {/* ── Center Pill Button (Session Title + Chevron Down for Workspace Preference Modal) ── */}
@@ -189,14 +211,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    paddingHorizontal: 16,
+    borderRadius: 22,
     backgroundColor: COLORS.card,
     borderWidth: 1,
     borderTopColor: "rgba(255, 255, 255, 0.95)",
     borderBottomColor: "rgba(0, 0, 0, 0.08)",
     borderLeftColor: "rgba(255, 255, 255, 0.65)",
     borderRightColor: "rgba(255, 255, 255, 0.65)",
-    borderRadius: 26,
-    paddingHorizontal: 18,
     gap: 6,
     ...Platform.select({
       ios: {
@@ -212,19 +234,17 @@ const styles = StyleSheet.create({
   },
   sessionTitleText: {
     fontSize: 14,
-    fontWeight: "600",
     color: COLORS.foreground,
-    maxWidth: 160,
-    letterSpacing: -0.2,
+    maxWidth: 170,
   },
   headerStatusDot: {
     position: "absolute",
-    top: 9,
+    bottom: 9,
     right: 9,
     width: 7,
     height: 7,
     borderRadius: 3.5,
     borderWidth: 1.5,
-    borderColor: COLORS.card,
+    borderColor: "#FFFFFF",
   },
 });

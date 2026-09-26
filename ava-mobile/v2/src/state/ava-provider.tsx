@@ -99,10 +99,38 @@ export function AvaProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!rpc) return;
-    const off = rpc.onStatus(setStatus);
+    const offStatus = rpc.onStatus(setStatus);
+    
+    // Global notification listener to accurately track running turns across any session/thread
+    const offEvents = rpc.on(({ method, params }) => {
+      const threadId = params?.threadId ?? params?.thread_id ?? params?.thread?.id;
+      if (!threadId) return;
+
+      if (
+        method === "turn/started" ||
+        method === "turn/start" ||
+        method === "item/started" ||
+        method === "item/agentMessage/delta" ||
+        method === "item/reasoning/textDelta" ||
+        method === "item/reasoning/summaryTextDelta" ||
+        method === "item/commandExecution/outputDelta" ||
+        method === "command/exec/outputDelta"
+      ) {
+        setRunningSessions((prev) => (prev[threadId] ? prev : { ...prev, [threadId]: true }));
+      } else if (method === "turn/completed") {
+        setRunningSessions((prev) => {
+          if (!prev[threadId]) return prev;
+          const next = { ...prev };
+          delete next[threadId];
+          return next;
+        });
+      }
+    });
+
     rpc.connect().catch(() => {});
     return () => {
-      off();
+      offStatus();
+      offEvents();
       rpc.close();
     };
   }, [rpc]);

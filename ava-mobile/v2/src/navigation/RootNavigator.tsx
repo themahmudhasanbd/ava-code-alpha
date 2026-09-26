@@ -27,6 +27,7 @@ function MainDrawerNavigator() {
   return (
     <Drawer.Navigator
       defaultStatus="closed"
+      backBehavior="history"
       drawerContent={(props) => <AppDrawer {...props} />}
       screenOptions={{
         headerShown: false,

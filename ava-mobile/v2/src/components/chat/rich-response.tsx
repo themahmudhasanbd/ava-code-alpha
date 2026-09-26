@@ -69,7 +69,7 @@ interface InlineToken {
   url?: string;
 }
 
-function parseInlineFormatting(rawText: string): InlineToken[] {
+export function parseInlineFormatting(rawText: string): InlineToken[] {
   const tokens: InlineToken[] = [];
   const regex =
     /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)|\*\*\*([^*]+)\*\*\*|___([^_]+)___|\*\*([^*]+)\*\*|__([^_]+)__|\*([^\*\n]+)\*|_([^\_\n]+)_|~~([^~]+)~~|`([^`\n]+)`|\$([^\$\n]+)\$/g;
@@ -111,7 +111,7 @@ function parseInlineFormatting(rawText: string): InlineToken[] {
   return tokens;
 }
 
-function InlineText({
+export function InlineText({
   text,
   style,
   isUser = false,

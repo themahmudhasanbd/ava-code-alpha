@@ -1,6 +1,7 @@
-import React, { useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  BackHandler,
   FlatList,
   KeyboardAvoidingView,
   Platform,
@@ -19,6 +20,7 @@ import {
   Loader2,
   Menu,
   Terminal as TerminalSquare,
+  ChevronLeft,
 } from "lucide-react-native";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button, GlassIconButton, StatusDot, Surface } from "@/components/kit";
@@ -36,14 +38,50 @@ interface Entry {
   exitCode: number;
 }
 
-export function TerminalScreen() {
+interface TerminalScreenProps {
+  route?: {
+    params?: {
+      initialCwd?: string;
+      initialCommand?: string;
+    };
+  };
+}
+
+export function TerminalScreen({ route }: TerminalScreenProps = {}) {
   const navigation = useNavigation<any>();
   const { status } = useAva();
-  const [cwd, setCwd] = useState<string>(APP.defaultCwd);
+  const initialCwd = route?.params?.initialCwd;
+  const initialCommand = route?.params?.initialCommand;
+  const [cwd, setCwd] = useState<string>(initialCwd || APP.defaultCwd);
   const [command, setCommand] = useState("");
   const [log, setLog] = useState<Entry[]>([]);
   const run = useRunCommand();
   const flatListRef = useRef<FlatList>(null);
+  useEffect(() => {
+    if (initialCwd) {
+      setCwd(initialCwd);
+    }
+  }, [initialCwd]);
+
+  useEffect(() => {
+    if (initialCommand) {
+      setCommand(initialCommand);
+    }
+  }, [initialCommand]);
+
+  const handleBack = useCallback(() => {
+    if (navigation?.canGoBack()) {
+      navigation.goBack();
+      return true;
+    }
+    return false;
+  }, [navigation]);
+
+  useEffect(() => {
+    const onBackPress = () => handleBack();
+    const sub = BackHandler.addEventListener("hardwareBackPress", onBackPress);
+    return () => sub.remove();
+  }, [handleBack]);
 
   const exec = async (cmd: string) => {
     const trimmed = cmd.trim();
@@ -78,6 +116,13 @@ export function TerminalScreen() {
   const customTerminalHeader = (
     <Surface style={styles.customHeaderSurface}>
       <View style={styles.headerLeft}>
+        {navigation.canGoBack() && (
+          <GlassIconButton
+            icon={ChevronLeft}
+            size={18}
+            onPress={() => navigation.goBack()}
+          />
+        )}
         <GlassIconButton
           icon={Menu}
           size={18}

@@ -20,7 +20,7 @@ import { Shimmer } from "@/components/ai-elements/shimmer";
 import { formatDuration } from "@/lib/format";
 import type { ChatMessage, MessagePart } from "@/core/types";
 import { COLORS } from "@/theme/colors";
-import { displayToolName, getToolIcon } from "./tool-icons";
+import { displayToolName, getToolIcon, isMcpTool } from "./tool-icons";
 import { font, mono } from "@/theme/fonts";
 
 interface Props {
@@ -59,7 +59,8 @@ export function LiveStepOverviewCard({
       currentTitle = isRunning ? "Thinking…" : "Thought process";
       serverName = "reasoning";
     } else if (latestPart.kind === "tool") {
-      serverName = latestPart.meta?.server ? latestPart.meta.server : "tool";
+      const isMcp = isMcpTool(latestPart.toolName, latestPart.meta);
+      serverName = isMcp ? "mcp" : latestPart.meta?.server ? latestPart.meta.server : "tool";
       currentTitle = displayToolName(latestPart.toolName || latestPart.meta?.command || "execute_command");
     } else if (latestPart.kind === "plan") {
       serverName = "plan";
@@ -103,7 +104,7 @@ export function LiveStepOverviewCard({
     >
       <View style={styles.cardHeader}>
         {/* Step Icon */}
-        <View style={[styles.iconWrapper, isRunning && styles.iconWrapperRunning]}>
+        <View style={[styles.iconWrapper, isRunning && styles.iconWrapperRunning, serverName === "mcp" && { backgroundColor: "#059669" }]}>
           <IconComponent
             size={14}
             color={COLORS.primaryForeground}
@@ -114,7 +115,7 @@ export function LiveStepOverviewCard({
         {/* Step info */}
         <View style={styles.centerInfo}>
           <View style={styles.titleRow}>
-            <Text style={[styles.serverTag, mono("bold")]}>{serverName}</Text>
+            <Text style={[styles.serverTag, mono("bold"), serverName === "mcp" && { color: "#059669" }]}>{serverName}</Text>
             {isRunning ? (
               <Shimmer style={[styles.stepTitleLive, mono("bold")]}>
                 {currentTitle}

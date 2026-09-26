@@ -61,6 +61,11 @@ impl WorldStateSection for PlanState {
             .iter()
             .filter(|item| matches!(item.status, StepStatus::Completed))
             .count();
+        let resolved = plan
+            .plan
+            .iter()
+            .filter(|item| matches!(item.status, StepStatus::Completed | StepStatus::Cancelled))
+            .count();
         let in_progress = plan
             .plan
             .iter()
@@ -71,8 +76,8 @@ impl WorldStateSection for PlanState {
             .filter(|item| matches!(item.status, StepStatus::Pending))
             .collect();
 
-        // If all steps are completed or no step is active/pending, do NOT inject into context
-        if completed == total || (in_progress.is_none() && pending.is_empty()) {
+        // If all steps are completed/cancelled or no step is active/pending, do NOT inject into context
+        if resolved == total || (in_progress.is_none() && pending.is_empty()) {
             return None;
         }
 
@@ -88,6 +93,7 @@ impl WorldStateSection for PlanState {
                     lines.push(format!("→ [{num}. IN_PROGRESS] {}", item.step))
                 }
                 StepStatus::Pending => lines.push(format!("○ [{num}. PENDING] {}", item.step)),
+                StepStatus::Cancelled => lines.push(format!("✗ [{num}. CANCELLED] {}", item.step)),
             }
         }
         if let Some(active) = in_progress {

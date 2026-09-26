@@ -78,9 +78,6 @@ async function scanAva(
 ): Promise<ModelConfigImportDraft[]> {
   const candidates = [
     path.join(home, ".ava-code", "config.toml"),
-    path.join(home, ".ava", "config.toml"),
-    path.join(home, ".config", "ava-code", "config.toml"),
-    path.join(home, ".config", "ava", "config.toml"),
   ];
   const results: ModelConfigImportDraft[] = [];
 
@@ -97,7 +94,7 @@ async function scanAva(
   }
 
   // Also check AvA profile variants without inspecting another agent's home.
-  for (const dir of [path.join(home, ".ava-code"), path.join(home, ".ava")]) {
+  for (const dir of [path.join(home, ".ava-code")]) {
     try {
       const files = await fs.readdir(dir);
       for (const f of files) {

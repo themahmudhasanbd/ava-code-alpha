@@ -13,7 +13,6 @@ import type {
 import { importedSessionId, toIso, truncateTitle } from "./types";
 
 const AVA_CODE_SESSIONS_DIR = path.join(os.homedir(), ".ava-code", "sessions");
-const SESSIONS_DIR = path.join(os.homedir(), ".ava", "sessions");
 
 function readLfJsonl(
   stream: Readable,
@@ -181,9 +180,7 @@ async function listSessionFiles(
     }
   };
   await walk(dir, 0);
-  if (dir === AVA_CODE_SESSIONS_DIR && out.length < maxFiles) {
-    await walk(SESSIONS_DIR, 0);
-  }
+
   return { files: out, truncated };
 }
 

@@ -12,7 +12,6 @@ use std::path::PathBuf;
 pub fn find_codex_home() -> std::io::Result<AbsolutePathBuf> {
     let home_env = std::env::var("AVA_CODE_HOME")
         .or_else(|_| std::env::var("AVA_HOME"))
-        .or_else(|_| std::env::var("CODEX_HOME"))
         .ok()
         .filter(|val| !val.is_empty());
     find_codex_home_from_env(home_env.as_deref())
@@ -81,15 +80,15 @@ mod tests {
     #[test]
     fn find_codex_home_env_missing_path_is_fatal() {
         let temp_home = TempDir::new().expect("temp home");
-        let missing = temp_home.path().join("missing-codex-home");
+        let missing = temp_home.path().join("missing-ava-home");
         let missing_str = missing
             .to_str()
-            .expect("missing codex home path should be valid utf-8");
+            .expect("missing ava home path should be valid utf-8");
 
-        let err = find_codex_home_from_env(Some(missing_str)).expect_err("missing CODEX_HOME");
+        let err = find_codex_home_from_env(Some(missing_str)).expect_err("missing AVA_CODE_HOME");
         assert_eq!(err.kind(), ErrorKind::NotFound);
         assert!(
-            err.to_string().contains("CODEX_HOME"),
+            err.to_string().contains("does not exist"),
             "unexpected error: {err}"
         );
     }
@@ -97,13 +96,13 @@ mod tests {
     #[test]
     fn find_codex_home_env_file_path_is_fatal() {
         let temp_home = TempDir::new().expect("temp home");
-        let file_path = temp_home.path().join("codex-home.txt");
+        let file_path = temp_home.path().join("ava-home.txt");
         fs::write(&file_path, "not a directory").expect("write temp file");
         let file_str = file_path
             .to_str()
-            .expect("file codex home path should be valid utf-8");
+            .expect("file ava home path should be valid utf-8");
 
-        let err = find_codex_home_from_env(Some(file_str)).expect_err("file CODEX_HOME");
+        let err = find_codex_home_from_env(Some(file_str)).expect_err("file AVA_CODE_HOME");
         assert_eq!(err.kind(), ErrorKind::InvalidInput);
         assert!(
             err.to_string().contains("not a directory"),
@@ -117,9 +116,9 @@ mod tests {
         let temp_str = temp_home
             .path()
             .to_str()
-            .expect("temp codex home path should be valid utf-8");
+            .expect("temp ava home path should be valid utf-8");
 
-        let resolved = find_codex_home_from_env(Some(temp_str)).expect("valid CODEX_HOME");
+        let resolved = find_codex_home_from_env(Some(temp_str)).expect("valid AVA_CODE_HOME");
         let expected = temp_home
             .path()
             .canonicalize()
@@ -130,7 +129,7 @@ mod tests {
 
     #[test]
     fn find_codex_home_without_env_uses_default_home_dir() {
-        let resolved = find_codex_home_from_env(/*codex_home_env*/ None).expect("default AVA_HOME");
+        let resolved = find_codex_home_from_env(/*home_env*/ None).expect("default AVA_HOME");
         let mut expected = home_dir().expect("home dir");
         expected.push(".ava-code");
         let expected = AbsolutePathBuf::from_absolute_path(expected).expect("absolute home");

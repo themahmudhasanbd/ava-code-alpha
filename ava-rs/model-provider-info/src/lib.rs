@@ -176,9 +176,16 @@ pub struct ModelProviderInfo {
     /// Idle timeout (in milliseconds) to wait for activity on a streaming response before treating
     /// the connection as lost.
     pub stream_idle_timeout_ms: Option<u64>,
+    /// Connection timeout (in milliseconds).
+    pub connect_timeout_ms: Option<u64>,
+    /// Request timeout (in milliseconds).
+    pub request_timeout_ms: Option<u64>,
     /// Maximum time (in milliseconds) to wait for a websocket connection attempt before treating
     /// it as failed.
     pub websocket_connect_timeout_ms: Option<u64>,
+    /// Models configured under this provider.
+    #[serde(default)]
+    pub models: Option<HashMap<String, serde_json::Value>>,
     /// Does this provider require an OpenAI API Key or ChatGPT login token? If true,
     /// user is presented with login screen on first run, and login preference and token/key
     /// are stored in auth.json. If false (which is the default), login screen is skipped,
@@ -270,6 +277,9 @@ impl ModelProviderInfo {
             auth: None,
             aws: None,
             http_headers: None,
+            connect_timeout_ms: None,
+            request_timeout_ms: None,
+            models: None,
             ..self.clone()
         };
         if unsupported_fields != Self::default() {
@@ -492,16 +502,13 @@ other non-default provider fields are not supported"
     fn find_token_in_auth_storage(env_key: &str) -> Option<String> {
         let mut candidate_paths = Vec::new();
 
-        if let Ok(home_env) = std::env::var("AVA_CODE_HOME")
-            .or_else(|_| std::env::var("AVA_HOME"))
-            .or_else(|_| std::env::var("CODEX_HOME"))
+        if let Ok(home_env) = std::env::var("AVA_CODE_HOME").or_else(|_| std::env::var("AVA_HOME"))
         {
             candidate_paths.push(std::path::PathBuf::from(home_env).join("auth.json"));
         }
 
         if let Some(home) = dirs::home_dir() {
             candidate_paths.push(home.join(".ava-code").join("auth.json"));
-            candidate_paths.push(home.join(".config").join("ava").join("auth.json"));
         }
 
         for path in candidate_paths {
@@ -618,7 +625,10 @@ other non-default provider fields are not supported"
             request_max_retries: None,
             stream_max_retries: None,
             stream_idle_timeout_ms: None,
+            connect_timeout_ms: None,
+            request_timeout_ms: None,
             websocket_connect_timeout_ms: None,
+            models: None,
             requires_openai_auth: true,
             supports_websockets: true,
             supports_standalone_web_search: true,
@@ -656,7 +666,10 @@ other non-default provider fields are not supported"
             request_max_retries: None,
             stream_max_retries: None,
             stream_idle_timeout_ms: None,
+            connect_timeout_ms: None,
+            request_timeout_ms: None,
             websocket_connect_timeout_ms: None,
+            models: None,
             requires_openai_auth: false,
             supports_websockets: false,
             supports_standalone_web_search: false,
@@ -904,7 +917,10 @@ pub fn create_antigravity_provider() -> ModelProviderInfo {
         request_max_retries: Some(5),
         stream_max_retries: Some(5),
         stream_idle_timeout_ms: None,
+        connect_timeout_ms: None,
+        request_timeout_ms: None,
         websocket_connect_timeout_ms: None,
+        models: None,
         requires_openai_auth: false,
         supports_websockets: false,
         supports_standalone_web_search: true,
@@ -934,7 +950,10 @@ pub fn create_custom_provider(
         request_max_retries: Some(5),
         stream_max_retries: Some(5),
         stream_idle_timeout_ms: None,
+        connect_timeout_ms: None,
+        request_timeout_ms: None,
         websocket_connect_timeout_ms: None,
+        models: None,
         requires_openai_auth: false,
         supports_websockets: false,
         supports_standalone_web_search: true,
@@ -978,7 +997,10 @@ pub fn create_oss_provider_with_base_url(base_url: &str, wire_api: WireApi) -> M
         request_max_retries: None,
         stream_max_retries: None,
         stream_idle_timeout_ms: None,
+        connect_timeout_ms: None,
+        request_timeout_ms: None,
         websocket_connect_timeout_ms: None,
+        models: None,
         requires_openai_auth: false,
         supports_websockets: false,
         supports_standalone_web_search: false,

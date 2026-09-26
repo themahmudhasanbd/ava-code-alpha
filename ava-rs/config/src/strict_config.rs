@@ -206,10 +206,18 @@ pub(crate) fn ignored_config_warning(
     config: &ConfigLayerStack,
     requirements: &[RequirementsLayerEntry],
 ) -> Option<String> {
+    let effective = config.effective_config();
+    if effective
+        .get("suppress_unrecognized_config_warning")
+        .and_then(TomlValue::as_bool)
+        == Some(true)
+    {
+        return None;
+    }
+
     let mut fields = BTreeSet::new();
     // Validate the merged config so incomplete layer fragments (e.g. a provider
     // override) do not hide diagnostics.
-    let effective = config.effective_config();
     let unknown_features = unknown_feature_toml_value_path(&effective);
     for path in ignored_toml_value_fields::<ConfigToml>(effective)
         .into_iter()

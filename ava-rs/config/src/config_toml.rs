@@ -503,6 +503,16 @@ pub struct ConfigToml {
     /// Suppress warnings about unstable (under development) features.
     pub suppress_unstable_features_warning: Option<bool>,
 
+    /// Suppress warnings about unrecognized configuration settings.
+    pub suppress_unrecognized_config_warning: Option<bool>,
+
+    /// Whether the model supports reasoning summaries.
+    pub model_supports_reasoning_summaries: Option<bool>,
+
+    /// User-defined models configuration.
+    #[serde(default)]
+    pub models: Option<HashMap<String, JsonValue>>,
+
     /// Compatibility-only settings retained so legacy `ghost_snapshot`
     /// config still loads.
     #[serde(default)]

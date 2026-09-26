@@ -76,7 +76,10 @@ base_url = "http://localhost:11434/v1"
         request_max_retries: None,
         stream_max_retries: None,
         stream_idle_timeout_ms: None,
+        connect_timeout_ms: None,
+        request_timeout_ms: None,
         websocket_connect_timeout_ms: None,
+        models: None,
         requires_openai_auth: false,
         supports_websockets: false,
         supports_standalone_web_search: false,
@@ -113,7 +116,10 @@ query_params = { api-version = "2025-04-01-preview" }
         request_max_retries: None,
         stream_max_retries: None,
         stream_idle_timeout_ms: None,
+        connect_timeout_ms: None,
+        request_timeout_ms: None,
         websocket_connect_timeout_ms: None,
+        models: None,
         requires_openai_auth: false,
         supports_websockets: false,
         supports_standalone_web_search: false,
@@ -154,7 +160,10 @@ supports_standalone_web_search = true
         request_max_retries: None,
         stream_max_retries: None,
         stream_idle_timeout_ms: None,
+        connect_timeout_ms: None,
+        request_timeout_ms: None,
         websocket_connect_timeout_ms: None,
+        models: None,
         requires_openai_auth: false,
         supports_websockets: false,
         supports_standalone_web_search: true,
@@ -342,7 +351,10 @@ fn test_create_amazon_bedrock_provider() {
             request_max_retries: None,
             stream_max_retries: None,
             stream_idle_timeout_ms: None,
+            connect_timeout_ms: None,
+            request_timeout_ms: None,
             websocket_connect_timeout_ms: None,
+            models: None,
             requires_openai_auth: false,
             supports_websockets: false,
             supports_standalone_web_search: false,
@@ -461,15 +473,15 @@ fn test_built_in_model_providers_include_amazon_bedrock_runtime() {
 #[test]
 fn test_merge_configured_model_providers_adds_custom_provider() {
     let custom_provider = ModelProviderInfo {
-        name: "Custom".to_string(),
+        name: "My Custom".to_string(),
         base_url: Some("https://example.com/v1".to_string()),
         ..ModelProviderInfo::default()
     };
     let configured_model_providers =
-        std::collections::HashMap::from([("custom".to_string(), custom_provider.clone())]);
+        std::collections::HashMap::from([("my-custom".to_string(), custom_provider.clone())]);
 
     let mut expected = built_in_model_providers(/*openai_base_url*/ None);
-    expected.insert("custom".to_string(), custom_provider);
+    expected.insert("my-custom".to_string(), custom_provider);
 
     assert_eq!(
         merge_configured_model_providers(

@@ -30,10 +30,13 @@ function mcpResultText(result: Raw): string {
 
 export function toPlanSteps(list: Raw[]): PlanStep[] {
   return (list ?? []).map((s) => {
-    const st = str(s.status);
+    const st = str(s.status).toLowerCase();
+    const isDone = s.completed || st === "completed" || st === "done";
+    const isActive = st === "inprogress" || st === "in_progress" || st === "active";
+    const isCancelled = st === "cancelled" || st === "canceled" || st === "abandoned";
     return {
-      text: str(s.step ?? s.text ?? s.title),
-      status: s.completed || st === "completed" ? "done" : st === "inProgress" || st === "in_progress" ? "active" : "pending",
+      text: str(s.step ?? s.content ?? s.text ?? s.title),
+      status: isDone ? "done" : isActive ? "active" : isCancelled ? "cancelled" : "pending",
     } as PlanStep;
   }).filter((s) => s.text);
 }

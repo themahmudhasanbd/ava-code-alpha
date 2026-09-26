@@ -115,6 +115,10 @@ ava-cli/bin/
 *.vault
 *.tar.gz
 *.txr
+.ava-code.BACKUP_*
+memory_instructions.txt
+run_memory_test.py
+test_memory_flow.py
 check_runs.py
 download_artifact.py
 fast_download.py

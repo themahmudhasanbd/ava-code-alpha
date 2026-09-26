@@ -587,6 +587,7 @@ pub enum TurnPlanStepStatus {
     Pending,
     InProgress,
     Completed,
+    Cancelled,
 }
 
 impl From<CorePlanItemArg> for TurnPlanStep {
@@ -604,6 +605,7 @@ impl From<CorePlanStepStatus> for TurnPlanStepStatus {
             CorePlanStepStatus::Pending => Self::Pending,
             CorePlanStepStatus::InProgress => Self::InProgress,
             CorePlanStepStatus::Completed => Self::Completed,
+            CorePlanStepStatus::Cancelled => Self::Cancelled,
         }
     }
 }

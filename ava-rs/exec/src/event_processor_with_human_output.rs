@@ -365,6 +365,13 @@ impl EventProcessor for EventProcessorWithHumanOutput {
                                 step.step.style(self.dimmed)
                             );
                         }
+                        codex_app_server_protocol::TurnPlanStepStatus::Cancelled => {
+                            eprintln!(
+                                "  {} {}",
+                                "✗".style(self.dimmed),
+                                step.step.style(self.dimmed)
+                            );
+                        }
                     }
                 }
                 CodexStatus::Running

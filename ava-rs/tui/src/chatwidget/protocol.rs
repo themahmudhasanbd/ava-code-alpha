@@ -172,6 +172,7 @@ impl ChatWidget {
                                 TurnPlanStepStatus::Pending => UpdatePlanItemStatus::Pending,
                                 TurnPlanStepStatus::InProgress => UpdatePlanItemStatus::InProgress,
                                 TurnPlanStepStatus::Completed => UpdatePlanItemStatus::Completed,
+                                TurnPlanStepStatus::Cancelled => UpdatePlanItemStatus::Cancelled,
                             },
                         })
                         .collect(),

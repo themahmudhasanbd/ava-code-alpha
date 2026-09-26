@@ -533,7 +533,7 @@ impl ChatWidget {
             .plan
             .iter()
             .filter(|item| match &item.status {
-                StepStatus::Completed => true,
+                StepStatus::Completed | StepStatus::Cancelled => true,
                 StepStatus::Pending | StepStatus::InProgress => false,
             })
             .count();

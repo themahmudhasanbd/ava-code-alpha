@@ -20,9 +20,13 @@ You have access to a unified **`memory`** tool combining SQLite FTS5 persistent 
 - **`session_save`**: Index or store a session message.
 
 ### Scopes:
-- **`project`** (default): Stored locally in workspace `.ava-code/memory/ (or .ava-code/memory/ (or .ava/memory/))` (or `{{ base_path }}`).
+- **`project`** (default): Stored locally in workspace `.ava-code/memory/ (or .ava/memory/)` (or `{{ base_path }}`).
 - **`global`**: Stored in developer global store (`~/.local/share/ava-code/`).
 - **`all`**: Cross-scope query searching or resetting both project and global stores.
+
+### Proactive Extraction & Recall Protocol:
+- **Implicit Preference / Hardware Extraction**: When the user mentions personal info, user devices (e.g. Vivo Z9x, iPhone), OS, or environment constraints implicitly (without saying "save"), proactively execute `action: "save"` with category `"preference"`.
+- **Proactive Recall on Context Queries**: When the user asks a question in a new session about fixing their phone, configuring tools, or prior tasks, proactively execute `action: "search"` or `action: "session_search"` first to recall their specific setup before answering.
 
 ### Decision Boundary:
 - Use `action: "session_search"` or `action: "session_list"` when the user asks about previous conversations, past fixes, or prior sessions.

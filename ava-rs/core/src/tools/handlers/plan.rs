@@ -145,10 +145,10 @@ impl PlanHandler {
 
         let args = parse_plan_arguments(&arguments)?;
         let total = args.plan.len();
-        let completed = args
+        let resolved = args
             .plan
             .iter()
-            .filter(|p| matches!(p.status, StepStatus::Completed))
+            .filter(|p| matches!(p.status, StepStatus::Completed | StepStatus::Cancelled))
             .count();
         let in_progress = args
             .plan
@@ -166,7 +166,7 @@ impl PlanHandler {
             .await;
 
         let message = format!(
-            "Successfully updated plan ({completed}/{total} completed). Current active step: {in_progress}"
+            "Successfully updated plan ({resolved}/{total} resolved). Current active step: {in_progress}"
         );
 
         Ok(boxed_tool_output(PlanToolOutput { message }))
@@ -201,6 +201,7 @@ fn parse_plan_arguments(arguments: &str) -> Result<UpdatePlanArgs, FunctionCallE
         let status = match status_str.as_str() {
             "completed" | "done" => StepStatus::Completed,
             "in_progress" | "in-progress" | "active" => StepStatus::InProgress,
+            "cancelled" | "canceled" | "abandoned" => StepStatus::Cancelled,
             _ => StepStatus::Pending,
         };
         plan.push(PlanItemArg { step: text, status });

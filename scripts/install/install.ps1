@@ -919,10 +919,12 @@ switch ($architecture) {
     }
 }
 
-$codexHome = if ([string]::IsNullOrWhiteSpace($env:CODEX_HOME)) {
-    Join-Path $env:USERPROFILE ".codex"
+$codexHome = if (![string]::IsNullOrWhiteSpace($env:AVA_CODE_HOME)) {
+    $env:AVA_CODE_HOME
+} elseif (![string]::IsNullOrWhiteSpace($env:AVA_HOME)) {
+    $env:AVA_HOME
 } else {
-    $env:CODEX_HOME
+    Join-Path $env:USERPROFILE ".ava-code"
 }
 $daemonOnly = $env:CODEX_INSTALL_DAEMON_ONLY -eq "1"
 $standaloneRoot = Join-Path $codexHome $(if ($daemonOnly) { "packages\app-server-daemon" } else { "packages\standalone" })

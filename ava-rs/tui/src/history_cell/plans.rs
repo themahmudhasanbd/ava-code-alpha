@@ -226,12 +226,14 @@ impl HistoryCell for PlanUpdateCell {
             StepStatus::InProgress => 0,
             StepStatus::Pending => 1,
             StepStatus::Completed => 2,
+            StepStatus::Cancelled => 3,
         });
         for (index, item) in steps.into_iter().take(DETAIL_PREVIEW_LINES).enumerate() {
             let (marker, style) = match item.status {
                 StepStatus::Completed => ("✔ ", Style::default().crossed_out().dim()),
                 StepStatus::InProgress => ("□ ", Style::default().fg(accent_color()).bold()),
                 StepStatus::Pending => ("□ ", Style::default().dim()),
+                StepStatus::Cancelled => ("✗ ", Style::default().crossed_out().dim()),
             };
             let step = item.step.split_whitespace().collect::<Vec<_>>().join(" ");
             lines.push(clipped_line(
@@ -271,6 +273,7 @@ impl HistoryCell for PlanUpdateCell {
                 StepStatus::Completed => ("✔ ", Style::default().crossed_out().dim()),
                 StepStatus::InProgress => ("□ ", Style::default().fg(accent_color()).bold()),
                 StepStatus::Pending => ("□ ", Style::default().dim()),
+                StepStatus::Cancelled => ("✗ ", Style::default().crossed_out().dim()),
             };
 
             let opts = RtOptions::new(width.saturating_sub(4).max(1) as usize)

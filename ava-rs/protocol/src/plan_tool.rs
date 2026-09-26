@@ -10,6 +10,7 @@ pub enum StepStatus {
     Pending,
     InProgress,
     Completed,
+    Cancelled,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema, TS)]

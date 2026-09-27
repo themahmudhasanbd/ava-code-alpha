@@ -10,14 +10,18 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  UIManager,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { PanGestureHandler, type PanGestureHandlerGestureEvent } from "react-native-gesture-handler";
+import { PanGestureHandler } from "react-native-gesture-handler";
 import Animated from "react-native-reanimated";
 import {
-  AlertTriangle,
+  AlertCircle,
+  AlignLeft,
+  ArrowDown,
   ArrowLeft,
+  ArrowUpDown,
   Brain,
   Check,
   CheckCircle2,
@@ -32,8 +36,9 @@ import {
   Info,
   Layers,
   ListChecks,
-  Sparkles,
+  MessageSquare,
   Terminal,
+  User,
   Wrench,
   X,
   type LucideIcon,
@@ -44,12 +49,17 @@ import { useAva } from "@/state/ava-provider";
 import { CodeBlock } from "@/components/ai-elements/code-block";
 import { InlineText, RichResponse } from "@/components/chat/rich-response";
 import { Shimmer } from "@/components/ai-elements/shimmer";
+import { RuntimeDottedIndicator } from "@/components/ai-elements/dotted-indicator";
+import { TypewriterText, TypingBlinker } from "@/components/ai-elements/typewriter-text";
 import { formatDuration } from "@/components/chat/message-parts";
 import type { ChatMessage, MessagePart, PlanStep } from "@/core/types";
 import { font, mono } from "@/theme/fonts";
 import { displayToolName, getToolIcon, isMcpTool } from "@/components/chat/tool-icons";
 import { COLORS, useTheme } from "@/theme/colors";
-import { Tabs, TabsList, TabsTrigger } from "@/components/kit";
+
+if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 interface Props {
   route?: {
@@ -61,58 +71,6 @@ interface Props {
   navigation?: any;
 }
 
-/** Tree branch connector for sub-items inside expanded timeline nodes. */
-function SubTree({ label, isLast, children }: { label?: string; isLast?: boolean; children: React.ReactNode }) {
-  return (
-    <View style={subTreeStyles.row}>
-      <View style={subTreeStyles.lineCol}>
-        <Text style={[subTreeStyles.prefix, mono("regular")]}>{isLast ? "└─" : "├─"}</Text>
-      </View>
-      <View style={subTreeStyles.body}>
-        {label ? (
-          <View style={subTreeStyles.labelRow}>
-            <Text style={[subTreeStyles.label, mono("bold")]}>{label}</Text>
-          </View>
-        ) : null}
-        {children}
-      </View>
-    </View>
-  );
-}
-
-const subTreeStyles = StyleSheet.create({
-  row: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-  },
-  lineCol: {
-    width: 22,
-    paddingTop: 1,
-    alignItems: "flex-end",
-    paddingRight: 4,
-  },
-  prefix: {
-    fontSize: 11,
-    color: COLORS.mutedForeground,
-    opacity: 0.45,
-    lineHeight: 16,
-  },
-  body: {
-    flex: 1,
-  },
-  labelRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 4,
-  },
-  label: {
-    fontSize: 10,
-    color: COLORS.mutedForeground,
-    letterSpacing: 0.5,
-  },
-});
-
 export function TimelineScreen({ route, navigation }: Props) {
   const { isDark } = useTheme();
   const { activeSessionId } = useAva();
@@ -120,9 +78,13 @@ export function TimelineScreen({ route, navigation }: Props) {
   const targetMessageId = route?.params?.messageId;
 
   const { messages, status } = useChat(sessionId);
-  const [activeTab, setActiveTab] = useState<"timeline" | "changes">("timeline");
+  const [activeTab, setActiveTab] = useState<"trace" | "files">("trace");
   const [expandedNodes, setExpandedNodes] = useState<Record<string, boolean>>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const isNearBottomRef = useRef(true);
+  const [showScrollBottomBtn, setShowScrollBottomBtn] = useState(false);
+  const [isReversed, setIsReversed] = useState(false);
 
   const assistantMsgs = useMemo(
     () => messages.filter((m) => m.role === "assistant"),
@@ -131,26 +93,20 @@ export function TimelineScreen({ route, navigation }: Props) {
 
   const [selectedTurnId, setSelectedTurnId] = useState<string | undefined>(targetMessageId);
 
-
-
-
-  // Synchronize when route messageId parameter updates
   useEffect(() => {
     if (targetMessageId) {
       setSelectedTurnId(targetMessageId);
     }
   }, [targetMessageId]);
 
-  // Robust Turn Resolution: matches exact assistant message, stripped prefix, live id, or latest assistant turn
+  // Turn resolution: exact assistant message, stripped prefix, live id, or latest assistant turn
   const targetMessage: ChatMessage | undefined = useMemo(() => {
     const candidateId = selectedTurnId || targetMessageId;
 
     if (candidateId) {
-      // 1. Direct match
       const direct = messages.find((m) => m.id === candidateId);
       if (direct) {
         if (direct.role === "assistant") return direct;
-        // If clicked on user message, find the subsequent assistant turn
         const uIdx = messages.findIndex((m) => m.id === candidateId);
         if (uIdx !== -1) {
           const nextAss = messages.slice(uIdx + 1).find((m) => m.role === "assistant");
@@ -158,22 +114,19 @@ export function TimelineScreen({ route, navigation }: Props) {
         }
       }
 
-      // 2. Match with or without "a_" prefix (e.g. a_102 <-> 102)
       const altId = candidateId.startsWith("a_") ? candidateId.slice(2) : `a_${candidateId}`;
       const altMatch = messages.find((m) => m.id === altId);
       if (altMatch?.role === "assistant") return altMatch;
 
-      // 3. If candidateId is a live ID (e.g. live_...), match the latest assistant turn
       if (candidateId.startsWith("live_") && assistantMsgs.length > 0) {
         return assistantMsgs[assistantMsgs.length - 1];
       }
     }
 
-    // Default to the latest assistant message
     return assistantMsgs[assistantMsgs.length - 1];
   }, [messages, selectedTurnId, targetMessageId, assistantMsgs]);
 
-  // Associated user prompt for the active turn
+  // Prompt that triggered this turn
   const userPromptText = useMemo(() => {
     if (!targetMessage) return null;
     const idx = messages.findIndex((m) => m.id === targetMessage.id);
@@ -188,7 +141,7 @@ export function TimelineScreen({ route, navigation }: Props) {
     return null;
   }, [messages, targetMessage]);
 
-  const handleBack = () => {
+  const handleBack = useCallback(() => {
     if (sessionId) {
       navigation?.navigate("Session", {
         sessionId,
@@ -199,7 +152,7 @@ export function TimelineScreen({ route, navigation }: Props) {
     } else {
       navigation?.navigate("Chat");
     }
-  };
+  }, [sessionId, targetMessage?.id, targetMessageId, navigation]);
 
   useEffect(() => {
     const onBackPress = () => {
@@ -208,7 +161,35 @@ export function TimelineScreen({ route, navigation }: Props) {
     };
     const sub = BackHandler.addEventListener("hardwareBackPress", onBackPress);
     return () => sub.remove();
-  }, [sessionId, targetMessage?.id, targetMessageId]);
+  }, [handleBack]);
+
+
+
+  const handleScroll = useCallback((event: any) => {
+    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+    const padding = 100;
+    const isAtEnd =
+      layoutMeasurement.height + contentOffset.y >= contentSize.height - padding;
+    const isAtTop = contentOffset.y <= 60;
+
+    if (isReversed) {
+      isNearBottomRef.current = isAtTop;
+      setShowScrollBottomBtn(!isAtTop && contentOffset.y > 150);
+    } else {
+      isNearBottomRef.current = isAtEnd;
+      setShowScrollBottomBtn(!isAtEnd && contentOffset.y > 150);
+    }
+  }, [isReversed]);
+
+  const scrollToLatest = useCallback(() => {
+    isNearBottomRef.current = true;
+    if (isReversed) {
+      scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+    } else {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }
+    setShowScrollBottomBtn(false);
+  }, [isReversed]);
 
   const toggleNode = (id: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -221,9 +202,13 @@ export function TimelineScreen({ route, navigation }: Props) {
     setTimeout(() => setCopiedId(null), 1800);
   };
 
-  // Aggregate all steps across ONLY the target turn (never mix turns!)
+  // Structured events for this turn
   const { allParts, finalOutputText, totalDuration, totalTokens, changedFiles } = useMemo(() => {
-    const parts: (MessagePart & { turnId: string; nodeType: "thought" | "decision" | "tool" | "plan" | "notice" | "text" })[] = [];
+    const parts: (MessagePart & {
+      turnId: string;
+      nodeType: "thought" | "decision" | "tool" | "plan" | "notice" | "text";
+      hasExpandableContent: boolean;
+    })[] = [];
     let dur = 0;
     let tokens = 0;
     let finalOutput = "";
@@ -240,7 +225,8 @@ export function TimelineScreen({ route, navigation }: Props) {
       );
       const lastTextPart = textParts.length > 0 ? textParts[textParts.length - 1] : null;
 
-      for (const part of msg.parts) {
+      for (let pIdx = 0; pIdx < msg.parts.length; pIdx++) {
+        const part = msg.parts[pIdx]!;
         if (part.kind === "text") {
           const rawText = part.text || "";
           if (rawText.trim()) {
@@ -250,12 +236,12 @@ export function TimelineScreen({ route, navigation }: Props) {
           const isLastText = part === lastTextPart;
           const isStreaming = part.status === "running" || status === "submitted" || status === "streaming";
 
-          // Intermediate text parts or live streaming text parts are rendered directly in the timeline steps
           if (!isLastText || isStreaming) {
             parts.push({
               ...part,
               turnId: msg.id,
               nodeType: "text",
+              hasExpandableContent: false, // directly shown, no collapse
             });
           }
           continue;
@@ -263,23 +249,36 @@ export function TimelineScreen({ route, navigation }: Props) {
 
         if (part.kind === "reasoning") {
           const rawText = part.text || "";
-          // Distinguish between pure reasoning thoughts vs decisions
           const isDecision =
             rawText.toLowerCase().includes("decision:") ||
             rawText.toLowerCase().includes("i will ") ||
             rawText.toLowerCase().includes("selected strategy") ||
             rawText.toLowerCase().includes("approach:");
 
+          const hasLongReasoning = rawText.length > 120 || rawText.includes("\n");
+
           parts.push({
             ...part,
             turnId: msg.id,
             nodeType: isDecision ? "decision" : "thought",
+            hasExpandableContent: hasLongReasoning,
           });
           continue;
         }
 
         if (part.kind === "tool") {
-          parts.push({ ...part, turnId: msg.id, nodeType: "tool" });
+          const hasInput = !!(part.input || part.meta?.command);
+          const hasOutput = !!part.output;
+          const hasMedia = !!part.meta?.media?.length;
+          const hasExpandable = hasInput || hasOutput || hasMedia;
+
+          parts.push({
+            ...part,
+            turnId: msg.id,
+            nodeType: "tool",
+            hasExpandableContent: hasExpandable,
+          });
+
           if (part.meta?.files) {
             for (const f of part.meta.files) {
               filesMap.set(f.path, { path: f.path, kind: f.kind, tool: part.toolName });
@@ -289,12 +288,23 @@ export function TimelineScreen({ route, navigation }: Props) {
         }
 
         if (part.kind === "plan") {
-          parts.push({ ...part, turnId: msg.id, nodeType: "plan" });
+          const hasSteps = (part.meta?.steps?.length ?? 0) > 0;
+          parts.push({
+            ...part,
+            turnId: msg.id,
+            nodeType: "plan",
+            hasExpandableContent: hasSteps,
+          });
           continue;
         }
 
         if (part.kind === "notice") {
-          parts.push({ ...part, turnId: msg.id, nodeType: "notice" });
+          parts.push({
+            ...part,
+            turnId: msg.id,
+            nodeType: "notice",
+            hasExpandableContent: false,
+          });
           continue;
         }
       }
@@ -307,7 +317,7 @@ export function TimelineScreen({ route, navigation }: Props) {
       totalTokens: tokens,
       changedFiles: Array.from(filesMap.values()),
     };
-  }, [targetMessage, assistantMsgs]);
+  }, [targetMessage, assistantMsgs, status]);
 
   const isLive = status === "submitted" || status === "streaming";
   const durationText = formatDuration(totalDuration);
@@ -315,15 +325,42 @@ export function TimelineScreen({ route, navigation }: Props) {
   const activeCount = allParts.filter((part) => part.status === "running").length;
   const errorCount = allParts.filter((part) => part.status === "error").length;
 
-  // Swipe left → navigate back to session
-  const onHandlerStateChange = useCallback((e: any) => {
-    if (e.nativeEvent.state === 5) { // ENDED
-      const { translationX, velocityX } = e.nativeEvent;
-      if (translationX < -80 && Math.abs(velocityX) > 200) {
-        handleBack();
-      }
+  const activeRunningPart = useMemo(() => {
+    return (
+      allParts.find((p) => p.status === "running") ||
+      (isLive && allParts.length > 0 ? allParts[allParts.length - 1] : null)
+    );
+  }, [allParts, isLive]);
+
+  // Auto-scroll when live steps stream in
+  useEffect(() => {
+    if (isNearBottomRef.current) {
+      requestAnimationFrame(() => {
+        if (isReversed) {
+          scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+        } else {
+          scrollViewRef.current?.scrollToEnd({ animated: true });
+        }
+      });
     }
-  }, [handleBack]);
+  }, [allParts.length, isLive, isReversed]);
+
+  // Swipe Left to Right (swiping rightwards) -> Back to Session/Chat screen
+  const onHandlerStateChange = useCallback(
+    (e: any) => {
+      if (e.nativeEvent.state === 5) {
+        const { translationX, velocityX, translationY } = e.nativeEvent;
+        if (
+          translationX > 70 &&
+          (velocityX > 150 || translationX > 110) &&
+          Math.abs(translationY) < 75
+        ) {
+          handleBack();
+        }
+      }
+    },
+    [handleBack]
+  );
 
   return (
     <SafeAreaView style={styles.screen} edges={["top", "bottom"]}>
@@ -332,621 +369,667 @@ export function TimelineScreen({ route, navigation }: Props) {
       <PanGestureHandler onHandlerStateChange={onHandlerStateChange} activeOffsetX={[-20, 20]}>
         <Animated.View style={{ flex: 1 }}>
 
-      {/* ── Top Navigation Header ── */}
-      <View style={styles.navHeader}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={handleBack}
-          activeOpacity={0.7}
-        >
-          <ArrowLeft size={19} color={COLORS.foreground} />
-        </TouchableOpacity>
+          {/* ── Minimal Header Bar ── */}
+          <View style={styles.headerBar}>
+            <TouchableOpacity
+              style={styles.headerBackBtn}
+              onPress={handleBack}
+              activeOpacity={0.7}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <ArrowLeft size={18} color={COLORS.foreground} />
+            </TouchableOpacity>
 
-        {/* Reusable Tabs */}
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "timeline" | "changes")}>
-          <TabsList>
-            <TabsTrigger value="timeline">
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
-                <Layers size={13} color={activeTab === "timeline" ? COLORS.foreground : COLORS.mutedForeground} />
-                <Text style={[styles.segmentTabText, activeTab === "timeline" && styles.segmentTabTextActive]}>Steps</Text>
-              </View>
-            </TabsTrigger>
-            <TabsTrigger value="changes">
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
-                <FileDiff size={13} color={activeTab === "changes" ? COLORS.foreground : COLORS.mutedForeground} />
-                <Text style={[styles.segmentTabText, activeTab === "changes" && styles.segmentTabTextActive]}>Changes</Text>
-                {changedFiles.length > 0 && (
-                  <View style={styles.badgeCount}>
-                    <Text style={[styles.badgeCountText, mono("bold")]}>{changedFiles.length}</Text>
+            {/* Segment Toggle */}
+            <View style={styles.segmentContainer}>
+              <TouchableOpacity
+                style={[styles.segmentBtn, activeTab === "trace" && styles.segmentBtnActive]}
+                onPress={() => setActiveTab("trace")}
+                activeOpacity={0.7}
+              >
+                <Layers size={13} color={activeTab === "trace" ? COLORS.foreground : COLORS.mutedForeground} />
+                <Text style={[styles.segmentText, activeTab === "trace" && styles.segmentTextActive]}>
+                  Timeline
+                </Text>
+                {allParts.length > 0 && (
+                  <View style={[styles.pillBadge, activeTab === "trace" && styles.pillBadgeActive]}>
+                    <Text style={[styles.pillBadgeText, mono("medium")]}>{allParts.length}</Text>
                   </View>
                 )}
-              </View>
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+              </TouchableOpacity>
 
-        <View style={{ width: 36 }} />
-      </View>
-
-      {/* ── Subtitle Status Bar ── */}
-      <View style={styles.subStatusBar}>
-        <View style={styles.subStatusItem}>
-          <Clock size={13} color={COLORS.mutedForeground} />
-          <Text style={[styles.subStatusText, font("regular")]}>
-            {isLive ? "Streaming live execution…" : totalDuration ? `Execution time: ${durationText}` : "Ready"}
-          </Text>
-        </View>
-
-        <View style={styles.subStatusItem}>
-          <Coins size={13} color={COLORS.mutedForeground} />
-          <Text style={[styles.subStatusText, font("regular")]}>
-            {totalTokens > 0
-              ? `${(totalTokens / 1000).toFixed(1)}k tokens`
-              : `${allParts.length} steps logged`}
-          </Text>
-        </View>
-      </View>
-
-      {/* ── Turn Switcher Bar (when session has multiple turns) ── */}
-      {assistantMsgs.length > 1 && (
-        <View style={styles.turnSwitcherBar}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.turnSwitcherContent}
-          >
-            {assistantMsgs.map((assMsg, idx) => {
-              const isSelected = targetMessage?.id === assMsg.id;
-              const turnDur = assMsg.stats?.durationMs ? formatDuration(assMsg.stats.durationMs) : null;
-              return (
-                <TouchableOpacity
-                  key={assMsg.id}
-                  style={[styles.turnPill, isSelected && styles.turnPillActive]}
-                  onPress={() => setSelectedTurnId(assMsg.id)}
-                  activeOpacity={0.75}
-                >
-                  <Text
-                    style={[
-                      styles.turnPillText,
-                      mono("bold"),
-                      isSelected && styles.turnPillTextActive,
-                    ]}
-                  >
-                    {`Turn ${idx + 1}`}
-                  </Text>
-                  {turnDur && (
-                    <Text
-                      style={[
-                        styles.turnPillDur,
-                        mono("regular"),
-                        isSelected && styles.turnPillDurActive,
-                      ]}
-                    >
-                      {turnDur}
-                    </Text>
-                  )}
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </View>
-      )}
-
-      {/* ── Main Scroll Area ── */}
-      {activeTab === "timeline" ? (
-        <ScrollView
-          style={styles.timelineScroll}
-          contentContainerStyle={styles.timelineContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* User Prompt Context Card */}
-          {userPromptText ? (
-            <View style={styles.userPromptCard}>
-              <Text style={[styles.userPromptLabel, mono("bold")]}>USER PROMPT</Text>
-              <Text style={[styles.userPromptText, font("regular")]} numberOfLines={3}>
-                {userPromptText}
-              </Text>
+              <TouchableOpacity
+                style={[styles.segmentBtn, activeTab === "files" && styles.segmentBtnActive]}
+                onPress={() => setActiveTab("files")}
+                activeOpacity={0.7}
+              >
+                <FileDiff size={13} color={activeTab === "files" ? COLORS.foreground : COLORS.mutedForeground} />
+                <Text style={[styles.segmentText, activeTab === "files" && styles.segmentTextActive]}>
+                  Changes
+                </Text>
+                {changedFiles.length > 0 && (
+                  <View style={[styles.pillBadge, activeTab === "files" && styles.pillBadgeActive]}>
+                    <Text style={[styles.pillBadgeText, mono("medium")]}>{changedFiles.length}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
             </View>
-          ) : null}
 
-          {/* Progress Overview Card */}
-          {allParts.length > 0 && (
-            <View style={styles.overview}>
-              <View style={styles.overviewTop}>
-                <View>
-                  <Text style={[styles.overviewLabel, mono("bold")]}>AGENT EXECUTION TRACE</Text>
-                  <Text style={[styles.overviewTitle, font("semibold")]}>
-                    {isLive ? "Turn active & executing" : errorCount ? "Execution encountered errors" : "Turn completed successfully"}
-                  </Text>
-                </View>
-                <Text style={[styles.overviewCount, mono("bold")]}>
-                  {doneCount}/{allParts.length}
+            <View style={{ width: 32 }} />
+          </View>
+
+          {/* ── Multi-Turn Switcher (Minimal horizontal pills) ── */}
+          {assistantMsgs.length > 1 && (
+            <View style={styles.turnBar}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.turnScrollContent}
+              >
+                {assistantMsgs.map((assMsg, idx) => {
+                  const isSelected = targetMessage?.id === assMsg.id;
+                  const turnDur = assMsg.stats?.durationMs ? formatDuration(assMsg.stats.durationMs) : null;
+                  return (
+                    <TouchableOpacity
+                      key={`turn_${assMsg.id}_${idx}`}
+                      style={[styles.turnCapsule, isSelected && styles.turnCapsuleActive]}
+                      onPress={() => setSelectedTurnId(assMsg.id)}
+                      activeOpacity={0.7}
+                    >
+                      <Text
+                        style={[
+                          styles.turnCapsuleText,
+                          font("medium"),
+                          isSelected && styles.turnCapsuleTextActive,
+                        ]}
+                      >
+                        {`Turn ${idx + 1}`}
+                      </Text>
+                      {turnDur && (
+                        <Text
+                          style={[
+                            styles.turnCapsuleMeta,
+                            mono("regular"),
+                            isSelected && styles.turnCapsuleMetaActive,
+                          ]}
+                        >
+                          {turnDur}
+                        </Text>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          )}
+
+          {/* ── Stats Strip (Worked for / tokens) ── */}
+          {activeTab === "trace" && allParts.length > 0 && (
+            <View style={styles.statsStrip}>
+              <View style={styles.statItem}>
+                <Clock size={13} color={COLORS.mutedForeground} />
+                <Text style={[styles.statValue, font("regular")]}>
+                  {isLive ? "Working…" : `Worked for ${durationText || "0s"}`}
+                </Text>
+              </View>
+              <View style={styles.statItem}>
+                <Coins size={13} color={COLORS.mutedForeground} />
+                <Text style={[styles.statValue, font("regular")]}>
+                  {totalTokens > 0
+                    ? `${(totalTokens / 1000).toFixed(2)}k tokens used`
+                    : `${allParts.length} events`}
+                </Text>
+              </View>
+              <View style={{ flex: 1 }} />
+              <View style={styles.statItem}>
+                <CheckCircle2
+                  size={13}
+                  color={errorCount > 0 ? COLORS.destructive : COLORS.success}
+                />
+                <Text
+                  style={[
+                    styles.statValue,
+                    font("medium"),
+                    { color: errorCount > 0 ? COLORS.destructive : COLORS.success },
+                  ]}
+                >
+                  {isLive ? "Running" : errorCount > 0 ? `${errorCount} failed` : "Completed"}
                 </Text>
               </View>
 
-              <View style={styles.overviewTrack}>
-                <View
-                  style={[
-                    styles.overviewFill,
-                    {
-                      width: `${Math.max(
-                        4,
-                        Math.round((doneCount / Math.max(1, allParts.length)) * 100)
-                      )}%`,
-                    },
-                  ]}
-                />
-              </View>
-
-              <View style={styles.overviewStats}>
-                <Text style={[styles.overviewStat, font("regular")]}>{doneCount} complete</Text>
-                {activeCount > 0 && (
-                  <Text style={[styles.overviewStatActive, font("medium")]}>
-                    {activeCount} active
-                  </Text>
-                )}
-                {errorCount > 0 && (
-                  <Text style={[styles.overviewError, font("medium")]}>
-                    {errorCount} failed
-                  </Text>
-                )}
-                <Text style={[styles.overviewStat, font("regular")]}>{allParts.length} total events</Text>
-              </View>
+              <TouchableOpacity
+                style={[styles.sortToggleBtn, isReversed && styles.sortToggleBtnActive]}
+                onPress={() => {
+                  if (Platform.OS !== "web") {
+                    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                  }
+                  setIsReversed((prev) => !prev);
+                }}
+                activeOpacity={0.7}
+              >
+                <ArrowUpDown size={11} color={isReversed ? COLORS.primary : COLORS.mutedForeground} />
+                <Text style={[styles.sortToggleText, mono("medium"), isReversed && { color: COLORS.primary }]}>
+                  {isReversed ? "Newest" : "Oldest"}
+                </Text>
+              </TouchableOpacity>
             </View>
           )}
 
-          {allParts.length === 0 && !finalOutputText ? (
-            <View style={styles.emptyWrap}>
-              {isLive ? (
-                <>
-                  <ActivityIndicator size="large" color={COLORS.primary} style={{ marginBottom: 14 }} />
-                  <Text style={[styles.emptyTitle, font("semibold")]}>Agent is processing…</Text>
-                  <Text style={[styles.emptySubtitle, font("regular")]}>
-                    Reasoning steps, live text, and tool executions will stream here in real time.
+          {/* ── Main Scroll Area ── */}
+          {activeTab === "trace" ? (
+            <View style={{ flex: 1 }}>
+              <ScrollView
+                ref={scrollViewRef}
+                style={styles.mainScroll}
+                contentContainerStyle={styles.mainScrollContent}
+                showsVerticalScrollIndicator={false}
+                onScroll={handleScroll}
+                scrollEventThrottle={32}
+              >
+              {/* ── Active Running State with Dotted Indicator ── */}
+              {isLive && (
+                <View style={styles.liveBannerContainer}>
+                  <RuntimeDottedIndicator
+                    variant="block"
+                    label={
+                      activeRunningPart?.toolName
+                        ? `RUNNING: ${displayToolName(activeRunningPart.toolName)}`
+                        : activeRunningPart?.nodeType === "thought"
+                        ? "AGENT REASONING & PLANNING"
+                        : "AGENT RUNTIME ACTIVE"
+                    }
+                    subLabel={
+                      activeRunningPart?.meta?.command
+                        ? activeRunningPart.meta.command
+                        : activeRunningPart?.text
+                        ? activeRunningPart.text
+                        : "Streaming tool operations, bash commands, and reasoning in real time…"
+                    }
+                  />
+                </View>
+              )}
+
+              {/* User Prompt Context Box */}
+              {userPromptText ? (
+                <View style={styles.promptCard}>
+                  <View style={styles.promptHeader}>
+                    <User size={11} color={COLORS.mutedForeground} />
+                    <Text style={[styles.promptLabel, mono("medium")]}>USER PROMPT</Text>
+                  </View>
+                  <Text style={[styles.promptBody, font("regular")]} numberOfLines={3}>
+                    {userPromptText}
                   </Text>
-                </>
+                </View>
+              ) : null}
+
+              {allParts.length === 0 && !finalOutputText ? (
+                <View style={styles.emptyState}>
+                  {isLive ? (
+                    <>
+                      <ActivityIndicator size="small" color={COLORS.primary} style={{ marginBottom: 10 }} />
+                      <Text style={[styles.emptyTitle, font("medium")]}>Agent is processing…</Text>
+                      <Text style={[styles.emptySub, font("regular")]}>
+                        Actions, commands, and thoughts will stream here in real time.
+                      </Text>
+                    </>
+                  ) : (
+                    <>
+                      <Brain size={28} color={COLORS.mutedForeground} />
+                      <Text style={[styles.emptyTitle, font("medium")]}>No trace events</Text>
+                      <Text style={[styles.emptySub, font("regular")]}>
+                        Workflow steps for this turn will be displayed here.
+                      </Text>
+                    </>
+                  )}
+                </View>
               ) : (
                 <>
-                  <Brain size={38} color={COLORS.primary} />
-                  <Text style={[styles.emptyTitle, font("semibold")]}>No workflow steps yet</Text>
-                  <Text style={[styles.emptySubtitle, font("regular")]}>
-                    Agent reasoning, decisions, commands, and tools for this turn will appear here in chronological order.
-                  </Text>
+                  {/* Timeline Spine & Nodes (Only for trace steps, spine ends before output) */}
+                  {allParts.length > 0 && (
+                    <View style={styles.timelineWrapper}>
+                      <View style={styles.timelineSpine} />
+
+                      {(isReversed ? [...allParts].reverse() : allParts).map((part, index) => {
+                        const isRunning = part.status === "running";
+                        // Auto-expand while running; collapse when complete unless user manually toggled
+                        const isExpanded = expandedNodes[part.id] !== undefined
+                          ? !!expandedNodes[part.id]
+                          : isRunning;
+                        const isError =
+                          part.status === "error" ||
+                          (part.meta?.exitCode != null && part.meta.exitCode !== 0);
+
+                        let NodeIcon: LucideIcon = Wrench;
+                        let iconColor: string = COLORS.mutedForeground;
+                        let nodeCategory = "TOOL";
+                        let title = "";
+
+                        if (part.nodeType === "thought") {
+                          NodeIcon = Brain;
+                          iconColor = "#8B5CF6";
+                          nodeCategory = "THOUGHT";
+                          title = isRunning
+                            ? "Thinking…"
+                            : part.meta?.durationMs
+                            ? `Thought for ${formatDuration(part.meta.durationMs)}`
+                            : "Thought";
+                        } else if (part.nodeType === "decision") {
+                          NodeIcon = Compass;
+                          iconColor = "#0EA5E9";
+                          nodeCategory = "DECISION";
+                          title = "Strategy Selection";
+                        } else if (part.nodeType === "tool") {
+                          const isMcp = isMcpTool(part.toolName, part.meta);
+                          NodeIcon = getToolIcon(part.toolName, part.meta);
+                          if (isMcp) {
+                            iconColor = "#10B981";
+                            nodeCategory = "MCP";
+                            title = displayToolName(part.toolName || "MCP Tool");
+                          } else {
+                            iconColor = COLORS.primary;
+                            nodeCategory = "TOOL";
+                            title = displayToolName(part.toolName || "command");
+                          }
+                        } else if (part.nodeType === "plan") {
+                          NodeIcon = ListChecks;
+                          iconColor = "#059669";
+                          nodeCategory = "PLAN";
+                          title = part.text || "Execution Plan";
+                        } else if (part.nodeType === "notice") {
+                          NodeIcon = isError ? AlertCircle : Info;
+                          iconColor = isError ? COLORS.destructive : "#F59E0B";
+                          nodeCategory = "NOTICE";
+                          title = part.text || "System Notice";
+                        } else if (part.nodeType === "text") {
+                          NodeIcon = AlignLeft; // Clean light icon, no sloppy stars
+                          iconColor = COLORS.mutedForeground;
+                          nodeCategory = "RESPONSE";
+                          title = isRunning ? "Streaming…" : "Response";
+                        }
+
+                        const commandString =
+                          part.meta?.command ||
+                          (typeof part.input === "string"
+                            ? part.input
+                            : part.input
+                            ? JSON.stringify(part.input, null, 2)
+                            : "");
+
+                        const compositeKey = `${part.id || "part"}_${index}`;
+
+                        // Directly render text nodes without accordion/collapse
+                        if (part.nodeType === "text") {
+                          return (
+                            <View key={compositeKey} style={styles.nodeRow}>
+                              <View style={styles.nodeSpineCol}>
+                                <View style={[styles.nodeBullet, { borderColor: isRunning ? COLORS.primary : COLORS.border }]}>
+                                  <NodeIcon size={11} color={isRunning ? COLORS.primary : COLORS.mutedForeground} />
+                                </View>
+                              </View>
+                              <View style={styles.nodeBodyCol}>
+                                <View style={styles.textDirectCard}>
+                                  <View style={styles.textDirectHeader}>
+                                    <Text style={[styles.textDirectLabel, mono("medium")]}>
+                                      {isRunning ? "STREAMING RESPONSE" : "RESPONSE"}
+                                    </Text>
+                                    {part.text ? (
+                                      <TouchableOpacity
+                                        onPress={() => handleCopy(part.id + "-text", part.text || "")}
+                                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                      >
+                                        <Text style={[styles.blockCopy, mono("medium")]}>
+                                          {copiedId === part.id + "-text" ? "Copied" : "Copy"}
+                                        </Text>
+                                      </TouchableOpacity>
+                                    ) : null}
+                                  </View>
+                                  {part.text ? (
+                                    isRunning ? (
+                                      <TypewriterText text={part.text} isStreaming={true} />
+                                    ) : (
+                                      <RichResponse text={part.text} />
+                                    )
+                                  ) : isRunning ? (
+                                    <Shimmer style={[styles.streamingTextPlaceholder, font("regular")]}>
+                                      Generating response…
+                                    </Shimmer>
+                                  ) : null}
+                                </View>
+                              </View>
+                            </View>
+                          );
+                        }
+
+                        // Non-expandable simple events (e.g. notices, 1-line thoughts)
+                        if (!part.hasExpandableContent) {
+                          return (
+                            <View key={compositeKey} style={styles.nodeRow}>
+                              <View style={styles.nodeSpineCol}>
+                                <View style={[styles.nodeBullet, { borderColor: isRunning ? iconColor : COLORS.border }]}>
+                                  <NodeIcon size={11} color={iconColor} />
+                                </View>
+                              </View>
+                              <View style={styles.nodeBodyCol}>
+                                <View style={styles.nodeHeaderSimple}>
+                                  <View style={styles.nodeHeaderMain}>
+                                    <Text style={[styles.nodeCategory, mono("bold"), { color: iconColor }]}>
+                                      {nodeCategory}
+                                    </Text>
+                                    <Text style={[styles.nodeTitle, font("regular")]} numberOfLines={2}>
+                                      {part.text || title}
+                                    </Text>
+                                  </View>
+                                </View>
+                              </View>
+                            </View>
+                          );
+                        }
+
+                        // Expandable events (tools, complex thoughts, plans) with smooth layout toggle
+                        return (
+                          <View key={compositeKey} style={styles.nodeRow}>
+                            <View style={styles.nodeSpineCol}>
+                              <View style={[styles.nodeBullet, { borderColor: isRunning ? iconColor : COLORS.border }]}>
+                                <NodeIcon size={11} color={iconColor} />
+                              </View>
+                            </View>
+
+                            <View style={styles.nodeBodyCol}>
+                              <TouchableOpacity
+                                style={[styles.nodeHeader, isExpanded && styles.nodeHeaderExpanded]}
+                                onPress={() => toggleNode(part.id)}
+                                activeOpacity={0.7}
+                              >
+                                <View style={styles.nodeHeaderMain}>
+                                  <Text style={[styles.nodeCategory, mono("bold"), { color: iconColor }]}>
+                                    {nodeCategory}
+                                  </Text>
+                                  {part.nodeType === "tool" ? (
+                                    <View style={styles.toolChip}>
+                                      <Text style={[styles.toolChipText, mono("medium")]} numberOfLines={1}>
+                                        {title}
+                                      </Text>
+                                    </View>
+                                  ) : (
+                                    <Text style={[styles.nodeTitle, font("medium")]} numberOfLines={1}>
+                                      {title}
+                                    </Text>
+                                  )}
+                                </View>
+
+                                <View style={styles.nodeHeaderMeta}>
+                                  {part.meta?.durationMs != null && (
+                                    <Text style={[styles.nodeDurText, mono("regular")]}>
+                                      {formatDuration(part.meta.durationMs)}
+                                    </Text>
+                                  )}
+                                  <ChevronRight
+                                    size={13}
+                                    color={COLORS.mutedForeground}
+                                    style={{ transform: [{ rotate: isExpanded ? "90deg" : "0deg" }] }}
+                                  />
+                                </View>
+                              </TouchableOpacity>
+
+                              {/* Expanded Content with Smooth Layout Animation */}
+                              {isExpanded && (
+                                <View style={styles.nodeContent}>
+                                  {/* Reasoning Text */}
+                                  {part.nodeType === "thought" || part.nodeType === "decision" ? (
+                                    <View style={styles.textWrapper}>
+                                      <RichResponse text={part.text || ""} />
+                                    </View>
+                                  ) : null}
+
+                                  {/* Command / Input */}
+                                  {part.nodeType === "tool" && commandString ? (
+                                    <View style={styles.blockContainer}>
+                                      <View style={styles.blockHeader}>
+                                        <Text style={[styles.blockLabel, mono("medium")]}>
+                                          {part.toolName || "input"}
+                                        </Text>
+                                        <TouchableOpacity
+                                          onPress={() => handleCopy(part.id + "-cmd", commandString)}
+                                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                        >
+                                          <Text style={[styles.blockCopy, mono("medium")]}>
+                                            {copiedId === part.id + "-cmd" ? "Copied" : "Copy"}
+                                          </Text>
+                                        </TouchableOpacity>
+                                      </View>
+                                      <CodeBlock
+                                        code={commandString}
+                                        language={
+                                          commandString.trim().startsWith("{") || commandString.trim().startsWith("[")
+                                            ? "json"
+                                            : "bash"
+                                        }
+                                        showLineNumbers={commandString.split("\n").length > 3}
+                                      />
+                                    </View>
+                                  ) : null}
+
+                                  {/* Working Directory */}
+                                  {part.meta?.cwd ? (
+                                    <View style={styles.cwdBox}>
+                                      <Text style={[styles.cwdText, mono("regular")]} numberOfLines={1}>
+                                        cwd: {part.meta.cwd}
+                                      </Text>
+                                    </View>
+                                  ) : null}
+
+                                  {/* Media Previews */}
+                                  {part.nodeType === "tool" && part.meta?.media?.length ? (
+                                    <View style={styles.blockContainer}>
+                                      {part.meta.media
+                                        .filter((m) => m.type === "image")
+                                        .map((m, mIdx) => (
+                                          <Image
+                                            key={`media_${mIdx}`}
+                                            source={{ uri: m.url }}
+                                            style={styles.previewImage}
+                                            resizeMode="contain"
+                                          />
+                                        ))}
+                                    </View>
+                                  ) : null}
+
+                                  {/* Tool Output */}
+                                  {part.nodeType === "tool" && part.output ? (
+                                    <View style={styles.blockContainer}>
+                                      <View style={styles.blockHeader}>
+                                        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                                          <Text style={[styles.blockLabel, mono("medium")]}>output</Text>
+                                          {part.meta?.exitCode != null && (
+                                            <Text
+                                              style={[
+                                                styles.exitTag,
+                                                mono("medium"),
+                                                {
+                                                  color:
+                                                    part.meta.exitCode === 0 ? COLORS.success : COLORS.destructive,
+                                                },
+                                              ]}
+                                            >
+                                              (exit {part.meta.exitCode})
+                                            </Text>
+                                          )}
+                                        </View>
+                                        <TouchableOpacity
+                                          onPress={() => handleCopy(part.id + "-out", part.output || "")}
+                                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                        >
+                                          <Text style={[styles.blockCopy, mono("medium")]}>
+                                            {copiedId === part.id + "-out" ? "Copied" : "Copy"}
+                                          </Text>
+                                        </TouchableOpacity>
+                                      </View>
+                                      <CodeBlock
+                                        code={part.output.trim()}
+                                        language={
+                                          part.output.trim().startsWith("{") || part.output.trim().startsWith("[")
+                                            ? "json"
+                                            : "text"
+                                        }
+                                        showLineNumbers={part.output.split("\n").length > 2}
+                                      />
+                                    </View>
+                                  ) : null}
+
+                                  {/* Plan Steps */}
+                                  {part.nodeType === "plan" && (
+                                    <View style={styles.planBox}>
+                                      {(part.meta?.steps ?? []).map((st: PlanStep, sIdx: number) => (
+                                        <View key={`step_${sIdx}`} style={styles.planRow}>
+                                          {st.status === "done" ? (
+                                            <Check size={11} color={COLORS.success} />
+                                          ) : st.status === "active" ? (
+                                            <ActivityIndicator size={9} color={COLORS.primary} />
+                                          ) : st.status === "cancelled" ? (
+                                            <X size={11} color={COLORS.mutedForeground} />
+                                          ) : (
+                                            <View style={styles.planDot} />
+                                          )}
+                                          <View style={{ flex: 1 }}>
+                                            <InlineText
+                                              text={st.text}
+                                              style={[
+                                                styles.planText,
+                                                (st.status === "done" || st.status === "cancelled") && styles.planTextDone,
+                                              ]}
+                                            />
+                                          </View>
+                                        </View>
+                                      ))}
+                                    </View>
+                                  )}
+                                </View>
+                              )}
+                            </View>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  )}
+
+                  {/* ── Direct Output Card (Outside Spine, Clean, No Tree Line, No "FINAL" level tag) ── */}
+                  {finalOutputText ? (
+                    <View style={styles.outputBox}>
+                      <View style={styles.outputHeader}>
+                        <View style={styles.outputTitleRow}>
+                          <MessageSquare size={13} color={COLORS.mutedForeground} />
+                          <Text style={[styles.outputTitle, font("medium")]}>Response</Text>
+                        </View>
+                        <TouchableOpacity
+                          onPress={() => handleCopy("final_output", finalOutputText)}
+                          style={styles.outputCopyBtn}
+                          activeOpacity={0.7}
+                        >
+                          {copiedId === "final_output" ? (
+                            <Check size={11} color={COLORS.success} />
+                          ) : (
+                            <Copy size={11} color={COLORS.mutedForeground} />
+                          )}
+                          <Text style={[styles.outputCopyText, mono("medium")]}>
+                            {copiedId === "final_output" ? "Copied" : "Copy"}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                      <View style={styles.outputCard}>
+                        <RichResponse text={finalOutputText} />
+                      </View>
+                    </View>
+                  ) : null}
                 </>
+              )}
+              </ScrollView>
+
+              {showScrollBottomBtn && (
+                <TouchableOpacity
+                  style={styles.floatingScrollBtn}
+                  onPress={scrollToLatest}
+                  activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Scroll to latest event"
+                >
+                  <ArrowDown size={14} color="#FFF" />
+                  <Text style={[styles.floatingScrollText, mono("bold")]}>
+                    {isReversed ? "Top" : "Latest"}
+                  </Text>
+                </TouchableOpacity>
               )}
             </View>
           ) : (
-            <View style={styles.treeContainer}>
-              {/* Single continuous spine line */}
-              <View style={styles.treeSpine} />
+            /* ── Files Tab ── */
+            <ScrollView
+              style={styles.mainScroll}
+              contentContainerStyle={styles.mainScrollContent}
+              showsVerticalScrollIndicator={false}
+            >
+              {changedFiles.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <FileCode size={28} color={COLORS.mutedForeground} />
+                  <Text style={[styles.emptyTitle, font("medium")]}>No modified files</Text>
+                  <Text style={[styles.emptySub, font("regular")]}>
+                    Files created or modified during this turn will appear here.
+                  </Text>
+                </View>
+              ) : (
+                <View style={styles.filesList}>
+                  <Text style={[styles.filesCountLabel, mono("medium")]}>
+                    {changedFiles.length} FILE{changedFiles.length === 1 ? "" : "S"} TOUCHED
+                  </Text>
 
-              {allParts.map((part) => {
-                const isRunning = part.status === "running";
-                const isExpanded = expandedNodes[part.id] ?? isRunning;
-                const isError =
-                  part.status === "error" ||
-                  (part.meta?.exitCode != null && part.meta.exitCode !== 0);
-
-                // Determine Icon and Style per node type
-                let NodeIcon: LucideIcon = Wrench;
-                let iconColor: string = COLORS.mutedForeground;
-                let badgeLabel = "";
-                let headerTitle = "";
-
-                if (part.nodeType === "thought") {
-                  NodeIcon = Brain;
-                  iconColor = "#7C3AED";
-                  badgeLabel = "Thought";
-                  headerTitle = isRunning
-                    ? "Thinking in progress…"
-                    : part.meta?.durationMs
-                    ? `Thought (${formatDuration(part.meta.durationMs)})`
-                    : "Thought process";
-                } else if (part.nodeType === "decision") {
-                  NodeIcon = Compass;
-                  iconColor = "#0284C7";
-                  badgeLabel = "Decision";
-                  headerTitle = "Strategic Decision";
-                } else if (part.nodeType === "tool") {
-                  const isMcp = isMcpTool(part.toolName, part.meta);
-                  NodeIcon = getToolIcon(part.toolName, part.meta);
-                  if (isMcp) {
-                    iconColor = "#059669";
-                    badgeLabel = "MCP";
-                    headerTitle = displayToolName(part.toolName || "MCP Tool");
-                  } else {
-                    iconColor = COLORS.primary;
-                    badgeLabel = "Tool";
-                    headerTitle = displayToolName(part.toolName || "execute_command");
-                  }
-                } else if (part.nodeType === "plan") {
-                  NodeIcon = ListChecks;
-                  iconColor = "#059669";
-                  badgeLabel = "Plan";
-                  headerTitle = part.text || "Execution Plan";
-                } else if (part.nodeType === "notice") {
-                  NodeIcon = Info;
-                  iconColor = isError ? COLORS.destructive : "#D97706";
-                  badgeLabel = "Notice";
-                  headerTitle = part.text || "System Notice";
-                } else if (part.nodeType === "text") {
-                  NodeIcon = Sparkles;
-                  iconColor = COLORS.primary;
-                  badgeLabel = isRunning ? "Live" : "Text";
-                  headerTitle = isRunning
-                    ? "Streaming response…"
-                    : part.text?.split("\n")[0]?.slice(0, 42) || "Text Response";
-                }
-
-                const commandString =
-                  part.meta?.command ||
-                  (typeof part.input === "string"
-                    ? part.input
-                    : part.input
-                    ? JSON.stringify(part.input, null, 2)
-                    : "");
-
-                return (
-                  <View key={part.id} style={styles.treeNodeRow}>
-                    {/* ── Single Icon Column directly on Spine ── */}
-                    <View style={styles.singleIconColumn}>
+                  {changedFiles.map((file, fIdx) => (
+                    <View key={`file_${file.path}_${fIdx}`} style={styles.fileItemCard}>
                       <View
                         style={[
-                          styles.unifiedIconBox,
-                          isRunning && styles.unifiedIconBoxRunning,
+                          styles.fileTag,
+                          file.kind === "create"
+                            ? styles.fileTagCreate
+                            : file.kind === "delete"
+                            ? styles.fileTagDelete
+                            : styles.fileTagEdit,
                         ]}
                       >
-                        <NodeIcon size={14} color={iconColor} strokeWidth={2} />
+                        <Text
+                          style={[
+                            styles.fileTagText,
+                            mono("bold"),
+                            {
+                              color:
+                                file.kind === "create"
+                                  ? COLORS.success
+                                  : file.kind === "delete"
+                                  ? COLORS.destructive
+                                  : COLORS.primary,
+                            },
+                          ]}
+                        >
+                          {file.kind === "create" ? "NEW" : file.kind === "delete" ? "DEL" : "MOD"}
+                        </Text>
                       </View>
-                    </View>
 
-                    {/* ── Content Column (Collapsed by default) ── */}
-                    <View style={styles.nodeContentCol}>
-                      <TouchableOpacity
-                        style={[
-                          styles.nodeHeaderBox,
-                          isExpanded && styles.nodeHeaderBoxExpanded,
-                        ]}
-                        onPress={() => toggleNode(part.id)}
-                        activeOpacity={0.75}
-                      >
-                        <View style={styles.nodeHeaderLeft}>
-                          <View
-                            style={[
-                              styles.typePill,
-                              {
-                                backgroundColor: `${iconColor}12`,
-                              },
-                            ]}
-                          >
-                            <Text
-                              style={[
-                                styles.typePillText,
-                                mono("bold"),
-                                { color: iconColor },
-                              ]}
-                            >
-                              {badgeLabel}
-                            </Text>
-                          </View>
-
-                          <Text
-                            style={[
-                              styles.nodeHeaderTitle,
-                              part.nodeType === "tool" ? mono("bold") : font("semibold"),
-                            ]}
-                            numberOfLines={1}
-                          >
-                            {headerTitle}
-                          </Text>
-                        </View>
-
-                        <View style={styles.nodeHeaderRight}>
-                          {!!part.meta?.durationMs && (
-                            <Text style={[styles.stepDurationText, mono("regular")]}>
-                              {formatDuration(part.meta.durationMs)}
-                            </Text>
-                          )}
-
-                          {isRunning ? (
-                            <ActivityIndicator size="small" color={COLORS.primary} />
-                          ) : isError ? (
-                            <View
-                              style={[
-                                styles.statusDotSmall,
-                                { backgroundColor: COLORS.destructive },
-                              ]}
-                            >
-                              <X size={9} color="#FFFFFF" />
-                            </View>
-                          ) : (
-                            <View
-                              style={[
-                                styles.statusDotSmall,
-                                { backgroundColor: COLORS.success },
-                              ]}
-                            >
-                              <Check size={9} color="#FFFFFF" />
-                            </View>
-                          )}
-
-                          <ChevronRight
-                            size={14}
-                            color={COLORS.mutedForeground}
-                            style={{
-                              transform: [{ rotate: isExpanded ? "90deg" : "0deg" }],
-                            }}
-                          />
-                        </View>
-                      </TouchableOpacity>
-
-                      {/* ── Collapsible Body ── */}
-                      {isExpanded && (
-                        <View style={styles.nodeExpandedCard}>
-                          {/* Thought & Decision: Render Rich Markdown */}
-                          {(part.nodeType === "thought" || part.nodeType === "decision") && (
-                            <SubTree label={part.nodeType === "decision" ? "DECISION" : "THOUGHT"}>
-                              <View style={styles.markdownWrapper}>
-                                <RichResponse text={part.text || "No details provided."} />
-                              </View>
-                            </SubTree>
-                          )}
-
-                          {/* Intermediate & Streaming Text Part: Render Rich Markdown */}
-                          {part.nodeType === "text" && (
-                            <SubTree label="RESPONSE" isLast>
-                              <View style={styles.markdownWrapper}>
-                                <RichResponse text={part.text || (isRunning ? "Streaming output…" : "")} />
-                                {!!part.text && (
-                                  <View style={{ alignItems: "flex-end", marginTop: 6 }}>
-                                    <TouchableOpacity
-                                      onPress={() => handleCopy(part.id, part.text || "")}
-                                      style={styles.directCopyBtn}
-                                      activeOpacity={0.7}
-                                    >
-                                      {copiedId === part.id ? (
-                                        <Check size={11} color={COLORS.success} />
-                                      ) : (
-                                        <Copy size={11} color={COLORS.mutedForeground} />
-                                      )}
-                                      <Text style={[styles.directCopyBtnText, font("medium")]}>
-                                        {copiedId === part.id ? "Copied" : "Copy"}
-                                      </Text>
-                                    </TouchableOpacity>
-                                  </View>
-                                )}
-                              </View>
-                            </SubTree>
-                          )}
-
-                          {/* Tool Input / Parameters */}
-                          {part.nodeType === "tool" && commandString ? (
-                            <SubTree label="INPUT / COMMAND">
-                              <View style={styles.expandedSection}>
-                                <View style={styles.expandedSectionHeader}>
-                                  <View />
-                                  <TouchableOpacity
-                                    onPress={() => handleCopy(part.id + "-in", commandString)}
-                                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                                  >
-                                    <Text style={[styles.copyBtnText, mono("medium")]}>
-                                      {copiedId === part.id + "-in" ? "Copied" : "Copy"}
-                                    </Text>
-                                  </TouchableOpacity>
-                                </View>
-                                <CodeBlock
-                                  code={commandString}
-                                  language={part.meta?.command ? "bash" : "json"}
-                                />
-                              </View>
-                            </SubTree>
-                          ) : null}
-
-                          {/* Working Directory */}
-                          {part.meta?.cwd ? (
-                            <SubTree label="cwd">
-                              <View style={styles.cwdRow}>
-                                <Text style={[styles.cwdPath, mono("regular")]} numberOfLines={1}>
-                                  {part.meta.cwd}
-                                </Text>
-                              </View>
-                            </SubTree>
-                          ) : null}
-
-                          {/* Media / Images */}
-                          {part.nodeType === "tool" && part.meta?.media?.length ? (
-                            <SubTree label="MEDIA">
-                              <View style={styles.expandedSection}>
-                                {part.meta.media.filter((m) => m.type === "image").map((m, idx) => (
-                                  <Image
-                                    key={idx}
-                                    source={{ uri: m.url }}
-                                    style={styles.mediaImage}
-                                    resizeMode="contain"
-                                  />
-                                ))}
-                              </View>
-                            </SubTree>
-                          ) : null}
-
-                          {/* Tool Output / Result */}
-                          {part.nodeType === "tool" && part.output ? (
-                            <SubTree label={`OUTPUT ${part.meta?.exitCode != null ? `(exit ${part.meta.exitCode})` : ""}`} isLast>
-                              <View style={styles.expandedSection}>
-                                <View style={styles.expandedSectionHeader}>
-                                  <View />
-                                  <TouchableOpacity
-                                    onPress={() => handleCopy(part.id + "-out", part.output || "")}
-                                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                                  >
-                                    <Text style={[styles.copyBtnText, mono("medium")]}>
-                                      {copiedId === part.id + "-out" ? "Copied" : "Copy"}
-                                    </Text>
-                                  </TouchableOpacity>
-                                </View>
-                                <CodeBlock
-                                  code={part.output.trim()}
-                                  language={
-                                    part.output.trim().startsWith("{") || part.output.trim().startsWith("[")
-                                      ? "json"
-                                      : "text"
-                                  }
-                                  showLineNumbers={part.output.split("\n").length > 2}
-                                />
-                              </View>
-                            </SubTree>
-                          ) : null}
-
-                          {/* Plan Checklist */}
-                          {part.nodeType === "plan" && (
-                            <SubTree label="PLAN STEPS" isLast>
-                              <View style={styles.planStepsBox}>
-                                {(part.meta?.steps ?? []).map((st: PlanStep, idx: number) => (
-                                  <View key={idx} style={styles.planStepItem}>
-                                    {st.status === "done" ? (
-                                      <Check size={12} color={COLORS.success} />
-                                    ) : st.status === "active" ? (
-                                      <ActivityIndicator size="small" color={COLORS.primary} />
-                                    ) : st.status === "cancelled" ? (
-                                      <X size={12} color={COLORS.mutedForeground} />
-                                    ) : (
-                                      <View style={styles.planStepDot} />
-                                    )}
-                                    <View style={{ flex: 1 }}>
-                                      <InlineText
-                                        text={st.text}
-                                        style={[
-                                          styles.planStepText,
-                                          (st.status === "done" || st.status === "cancelled") && styles.planStepDoneText,
-                                        ]}
-                                      />
-                                    </View>
-                                  </View>
-                                ))}
-                              </View>
-                            </SubTree>
-                          )}
-                        </View>
-                      )}
-                    </View>
-                  </View>
-                );
-              })}
-
-              {/* ── Direct Clean Output (No "Final Agent Response" label/box) ── */}
-              {finalOutputText ? (
-                <View style={styles.directOutputSection}>
-                  <View style={styles.directOutputHeader}>
-                    <View style={styles.directOutputBadge}>
-                      <Sparkles size={12} color={COLORS.primary} />
-                      <Text style={[styles.directOutputBadgeText, mono("bold")]}>
-                        OUTPUT
+                      <Text style={[styles.filePathLabel, mono("regular")]} numberOfLines={1}>
+                        {file.path}
                       </Text>
                     </View>
-                    <TouchableOpacity
-                      onPress={() => handleCopy("final_output", finalOutputText)}
-                      style={styles.directCopyBtn}
-                      activeOpacity={0.7}
-                    >
-                      {copiedId === "final_output" ? (
-                        <Check size={11} color={COLORS.success} />
-                      ) : (
-                        <Copy size={11} color={COLORS.mutedForeground} />
-                      )}
-                      <Text style={[styles.directCopyBtnText, font("medium")]}>
-                        {copiedId === "final_output" ? "Copied" : "Copy"}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                  <View style={styles.directOutputCard}>
-                    <RichResponse text={finalOutputText} />
-                  </View>
+                  ))}
                 </View>
-              ) : null}
+              )}
+            </ScrollView>
+          )}
+
+          {/* ── Minimal Bottom Live Status Bar ── */}
+          {isLive && (
+            <View style={styles.liveFooter}>
+              <View style={styles.liveFooterDot} />
+              <Shimmer style={[styles.liveFooterText, mono("medium")]}>
+                Agent execution in progress…
+              </Shimmer>
+              <ActivityIndicator size="small" color={COLORS.primary} style={{ marginLeft: "auto" }} />
             </View>
           )}
-        </ScrollView>
-      ) : (
-        /* ── Changes Tab Content ── */
-        <ScrollView
-          style={styles.changesScroll}
-          contentContainerStyle={styles.changesContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {changedFiles.length === 0 ? (
-            <View style={styles.emptyWrap}>
-              <FileCode size={36} color={COLORS.primary} />
-              <Text style={[styles.emptyTitle, font("semibold")]}>No file changes in this turn</Text>
-              <Text style={[styles.emptySubtitle, font("regular")]}>
-                Files created, modified, or deleted by the agent will be listed here.
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.changesList}>
-              <Text style={[styles.changesSummaryText, font("semibold")]}>
-                {changedFiles.length} file{changedFiles.length === 1 ? "" : "s"} modified
-              </Text>
-
-              {changedFiles.map((file, i) => (
-                <View key={file.path + i} style={styles.fileCard}>
-                  <View style={styles.fileCardHeader}>
-                    <View
-                      style={[
-                        styles.fileKindBadge,
-                        file.kind === "create"
-                          ? styles.fileKindCreate
-                          : file.kind === "delete"
-                          ? styles.fileKindDelete
-                          : styles.fileKindEdit,
-                      ]}
-                    >
-                      <Text style={[styles.fileKindText, mono("bold")]}>
-                        {file.kind || "edit"}
-                      </Text>
-                    </View>
-
-                    <Text style={[styles.filePathText, mono("medium")]} numberOfLines={1}>
-                      {file.path}
-                    </Text>
-                  </View>
-                </View>
-              ))}
-            </View>
-          )}
-        </ScrollView>
-      )}
-
-      {/* ── Bottom Sticky Live Indicator ── */}
-      <View
-        style={[
-          styles.bottomLiveBar,
-          isLive ? styles.bottomLiveBarActive : styles.bottomLiveBarIdle,
-        ]}
-      >
-        <View style={styles.liveBarLeft}>
-          <View
-            style={[
-              styles.liveStatusDot,
-              isLive ? styles.liveStatusDotActive : styles.liveStatusDotIdle,
-            ]}
-          />
-          {isLive ? (
-            <Shimmer style={[styles.liveStatusText, mono("bold")]}>
-              AGENT TURN IN PROGRESS · STREAMING
-            </Shimmer>
-          ) : (
-            <Text style={[styles.idleStatusText, mono("medium")]}>
-              {allParts.length > 0 ? "TURN COMPLETED" : "AGENT IDLE"}
-            </Text>
-          )}
-        </View>
-
-        {isLive ? (
-          <ActivityIndicator size="small" color={COLORS.primary} />
-        ) : (
-          <CheckCircle2 size={15} color={COLORS.success} />
-        )}
-      </View>
 
         </Animated.View>
       </PanGestureHandler>
@@ -959,520 +1042,578 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  navHeader: {
+  headerBar: {
+    height: 48,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: COLORS.border,
   },
-  backButton: {
+  headerBackBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: COLORS.secondary,
     alignItems: "center",
     justifyContent: "center",
-  },
-  segmentTabText: {
-    fontSize: 12.5,
-    color: COLORS.mutedForeground,
-    fontWeight: "500",
-  },
-  segmentTabTextActive: {
-    color: COLORS.foreground,
-    fontWeight: "600",
-  },
-  badgeCount: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    borderRadius: 10,
-    marginLeft: 2,
-  },
-  badgeCountText: {
-    color: COLORS.primaryForeground,
-    fontSize: 9.5,
-  },
-  subStatusBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 18,
-    paddingVertical: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: COLORS.border,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     backgroundColor: COLORS.card,
   },
-  subStatusItem: {
+  segmentContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.card,
+    borderRadius: 22,
+    padding: 3,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  segmentBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 18,
   },
-  subStatusText: {
-    fontSize: 11.5,
+  segmentBtnActive: {
+    backgroundColor: COLORS.secondary,
+  },
+  segmentText: {
+    fontSize: 13,
     color: COLORS.mutedForeground,
   },
-  turnSwitcherBar: {
-    backgroundColor: COLORS.card,
+  segmentTextActive: {
+    color: COLORS.foreground,
+    fontWeight: "600",
+  },
+  pillBadge: {
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 4,
+    backgroundColor: COLORS.muted,
+  },
+  pillBadgeActive: {
+    backgroundColor: COLORS.border,
+  },
+  pillBadgeText: {
+    fontSize: 9.5,
+    color: COLORS.foreground,
+  },
+  turnBar: {
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: COLORS.border,
-    paddingVertical: 7,
+    backgroundColor: COLORS.card,
+    paddingVertical: 6,
   },
-  turnSwitcherContent: {
-    paddingHorizontal: 16,
-    gap: 8,
-    alignItems: "center",
+  turnScrollContent: {
+    paddingHorizontal: 14,
+    gap: 6,
   },
-  turnPill: {
+  turnCapsule: {
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    borderRadius: 8,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 6,
     backgroundColor: COLORS.secondary,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  turnPillActive: {
-    backgroundColor: "rgba(66, 64, 225, 0.1)",
+  turnCapsuleActive: {
     borderColor: COLORS.primary,
+    backgroundColor: "rgba(99, 102, 241, 0.08)",
   },
-  turnPillText: {
+  turnCapsuleText: {
     fontSize: 11.5,
     color: COLORS.mutedForeground,
   },
-  turnPillTextActive: {
+  turnCapsuleTextActive: {
     color: COLORS.primary,
+    fontWeight: "600",
   },
-  turnPillDur: {
-    fontSize: 10.5,
+  turnCapsuleMeta: {
+    fontSize: 10,
     color: COLORS.mutedForeground,
   },
-  turnPillDurActive: {
+  turnCapsuleMetaActive: {
     color: COLORS.primary,
   },
-  userPromptCard: {
-    backgroundColor: COLORS.secondary,
-    borderRadius: 10,
+  mainScroll: {
+    flex: 1,
+  },
+  mainScrollContent: {
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    paddingBottom: 40,
+  },
+  liveBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "rgba(99, 102, 241, 0.08)",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "rgba(99, 102, 241, 0.25)",
+    padding: 10,
+    marginBottom: 10,
+  },
+  liveBannerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flex: 1,
+  },
+  livePulseDotOuter: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: "rgba(99, 102, 241, 0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  livePulseDotInner: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: COLORS.primary,
+  },
+  liveBannerTitle: {
+    fontSize: 10,
+    color: COLORS.primary,
+    letterSpacing: 0.6,
+  },
+  liveTag: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 3,
+  },
+  liveTagText: {
+    fontSize: 8,
+    color: "#FFFFFF",
+  },
+  liveBannerSub: {
+    fontSize: 11.5,
+    color: COLORS.foreground,
+  },
+  liveTimerBox: {
+    marginLeft: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  promptCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: COLORS.border,
     padding: 10,
-    marginBottom: 12,
+    marginBottom: 10,
     gap: 4,
   },
-  userPromptLabel: {
+  promptHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  promptLabel: {
     fontSize: 9.5,
-    color: COLORS.primary,
+    color: COLORS.mutedForeground,
     letterSpacing: 0.5,
   },
-  userPromptText: {
+  promptBody: {
     fontSize: 12.5,
     color: COLORS.foreground,
-    lineHeight: 18,
+    lineHeight: 17,
   },
-  timelineScroll: {
-    flex: 1,
+  statsStrip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: COLORS.border,
   },
-  timelineContent: {
-    paddingVertical: 14,
-    paddingHorizontal: 14,
-    paddingBottom: 50,
+  statItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
   },
-  overview: {
-    marginBottom: 14,
-    padding: 12,
-    backgroundColor: COLORS.card,
-    borderColor: COLORS.border,
-    borderWidth: 1,
-    borderRadius: 12,
+  statValue: {
+    fontSize: 11,
+    color: COLORS.foreground,
+  },
+  statDivider: {
+    width: 1,
+    height: 12,
+    backgroundColor: COLORS.border,
+    marginHorizontal: 10,
+  },
+  emptyState: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 50,
     gap: 8,
   },
-  overviewTop: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  overviewLabel: {
-    color: COLORS.primary,
-    fontSize: 10,
-    letterSpacing: 0.5,
-  },
-  overviewTitle: {
+  emptyTitle: {
+    fontSize: 14,
     color: COLORS.foreground,
-    fontSize: 14,
-    marginTop: 2,
   },
-  overviewCount: {
-    color: COLORS.primary,
-    fontSize: 14,
-  },
-  overviewTrack: {
-    height: 4,
-    borderRadius: 2,
-    overflow: "hidden",
-    backgroundColor: COLORS.muted,
-  },
-  overviewFill: {
-    height: 4,
-    backgroundColor: COLORS.primary,
-  },
-  overviewStats: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
-  },
-  overviewStat: {
-    fontSize: 11,
+  emptySub: {
+    fontSize: 12,
     color: COLORS.mutedForeground,
+    textAlign: "center",
+    paddingHorizontal: 24,
   },
-  overviewStatActive: {
-    fontSize: 11,
-    color: COLORS.primary,
-  },
-  overviewError: {
-    fontSize: 11,
-    color: COLORS.destructive,
-  },
-  treeContainer: {
+  timelineWrapper: {
     position: "relative",
-  },
-  treeSpine: {
-    position: "absolute",
-    top: 8,
-    bottom: 20,
-    left: 14,
-    width: 2,
-    backgroundColor: COLORS.border,
-  },
-  treeNodeRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
     marginBottom: 12,
   },
-  singleIconColumn: {
-    width: 30,
+  timelineSpine: {
+    position: "absolute",
+    top: 6,
+    bottom: 6,
+    left: 10,
+    width: 1.5,
+    backgroundColor: COLORS.border,
+  },
+  nodeRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 8,
+  },
+  nodeSpineCol: {
+    width: 22,
     alignItems: "center",
-    justifyContent: "center",
-    paddingTop: 4,
+    paddingTop: 5,
     zIndex: 2,
   },
-  unifiedIconBox: {
-    width: 26,
-    height: 26,
-    borderRadius: 7,
+  nodeBullet: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: COLORS.secondary,
+    backgroundColor: "transparent", // Clean outline, no background color
     borderWidth: 1,
-    borderColor: COLORS.border,
   },
-  unifiedIconBoxRunning: {
-    borderColor: COLORS.primary,
-    backgroundColor: "rgba(66, 64, 225, 0.06)",
-  },
-  nodeContentCol: {
+  nodeBodyCol: {
     flex: 1,
     paddingLeft: 8,
   },
-  nodeHeaderBox: {
+  nodeHeaderSimple: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.card,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
+  nodeHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     backgroundColor: COLORS.card,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: COLORS.border,
-    borderRadius: 10,
-    paddingVertical: 7,
     paddingHorizontal: 10,
+    paddingVertical: 7,
   },
-  nodeHeaderBoxExpanded: {
+  nodeHeaderExpanded: {
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
     borderBottomColor: "transparent",
   },
-  nodeHeaderLeft: {
+  nodeHeaderMain: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
     flex: 1,
   },
-  typePill: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  typePillText: {
-    fontSize: 9.5,
-    textTransform: "uppercase",
-  },
-  nodeHeaderTitle: {
-    fontSize: 12.5,
-    color: COLORS.foreground,
-    flex: 1,
-  },
-  nodeHeaderRight: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  stepDurationText: {
-    fontSize: 10.5,
-    color: COLORS.mutedForeground,
-  },
-  statusDotSmall: {
-    width: 13,
-    height: 13,
-    borderRadius: 6.5,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  nodeExpandedCard: {
-    backgroundColor: COLORS.card,
-    borderBottomLeftRadius: 10,
-    borderBottomRightRadius: 10,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderTopWidth: 0,
-    paddingTop: 8,
-    paddingBottom: 10,
-    paddingHorizontal: 8,
-    gap: 4,
-    borderLeftWidth: 2,
-    borderLeftColor: COLORS.border,
-  },
-  markdownWrapper: {
-    paddingVertical: 2,
-  },
-  expandedSection: {
-    gap: 4,
-  },
-  expandedSectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  sectionHeadingText: {
-    fontSize: 10,
-    color: COLORS.mutedForeground,
+  nodeCategory: {
+    fontSize: 9,
     letterSpacing: 0.5,
   },
-  copyBtnText: {
-    fontSize: 10.5,
-    color: COLORS.primary,
-  },
-  cwdRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  cwdLabel: {
-    fontSize: 10,
-    color: COLORS.mutedForeground,
-  },
-  cwdPath: {
-    fontSize: 11,
-    color: COLORS.mutedForeground,
-    flex: 1,
-  },
-  outputBox: {
-    backgroundColor: COLORS.codeBg,
-    borderRadius: 6,
-    padding: 8,
-    borderWidth: 1,
-    borderColor: COLORS.codeBorder,
-    maxHeight: 220,
-  },
-  outputText: {
-    fontSize: 11,
-    color: COLORS.codeForeground,
-    lineHeight: 16,
-  },
-  planStepsBox: {
-    backgroundColor: COLORS.secondary,
-    borderRadius: 8,
-    padding: 8,
-    gap: 6,
-  },
-  planStepItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  planStepDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: COLORS.mutedForeground,
-  },
-  planStepText: {
+  nodeTitle: {
     fontSize: 12,
     color: COLORS.foreground,
     flex: 1,
   },
-  planStepDoneText: {
-    color: COLORS.mutedForeground,
-    textDecorationLine: "line-through",
+  toolChip: {
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 7,
+    backgroundColor: COLORS.card,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    alignSelf: "flex-start",
   },
-  mediaImage: {
-    width: "100%",
-    height: 200,
-    borderRadius: 8,
-    backgroundColor: COLORS.secondary,
+  toolChipText: {
+    fontSize: 12.5,
+    color: COLORS.foreground,
   },
-  directOutputSection: {
-    marginTop: 16,
-    paddingTop: 12,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: COLORS.border,
-    gap: 8,
-  },
-  directOutputHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 2,
-  },
-  directOutputBadge: {
+  nodeHeaderMeta: {
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
-    backgroundColor: "rgba(66, 64, 225, 0.08)",
-    paddingHorizontal: 7,
-    paddingVertical: 2.5,
-    borderRadius: 6,
   },
-  directOutputBadgeText: {
-    fontSize: 10,
-    color: COLORS.primary,
+  nodeDurText: {
+    fontSize: 9.5,
+    color: COLORS.mutedForeground,
+  },
+  nodeContent: {
+    backgroundColor: COLORS.card,
+    borderBottomLeftRadius: 8,
+    borderBottomRightRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderTopWidth: 0,
+    padding: 8,
+    gap: 6,
+  },
+  textDirectCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: 10,
+    gap: 6,
+  },
+  textDirectHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: COLORS.border,
+    paddingBottom: 4,
+  },
+  textDirectLabel: {
+    fontSize: 9,
+    color: COLORS.mutedForeground,
     letterSpacing: 0.5,
   },
-  directCopyBtn: {
+  streamingTextPlaceholder: {
+    fontSize: 12,
+    color: COLORS.mutedForeground,
+    paddingVertical: 4,
+  },
+  textWrapper: {
+    paddingVertical: 2,
+  },
+  blockContainer: {
+    gap: 4,
+  },
+  blockHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  blockLabel: {
+    fontSize: 9.5,
+    color: COLORS.mutedForeground,
+  },
+  exitTag: {
+    fontSize: 9.5,
+  },
+  blockCopy: {
+    fontSize: 10,
+    color: COLORS.primary,
+  },
+  cwdBox: {
+    paddingVertical: 2,
+  },
+  cwdText: {
+    fontSize: 10,
+    color: COLORS.mutedForeground,
+  },
+  previewImage: {
+    width: "100%",
+    height: 180,
+    borderRadius: 6,
+    backgroundColor: COLORS.secondary,
+  },
+  planBox: {
+    backgroundColor: COLORS.secondary,
+    borderRadius: 6,
+    padding: 8,
+    gap: 5,
+  },
+  planRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  planDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: COLORS.mutedForeground,
+  },
+  planText: {
+    fontSize: 11.5,
+    color: COLORS.foreground,
+    flex: 1,
+  },
+  planTextDone: {
+    color: COLORS.mutedForeground,
+    textDecorationLine: "line-through",
+  },
+  outputBox: {
+    marginTop: 4,
+    backgroundColor: COLORS.card,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: 12,
+    gap: 8,
+  },
+  outputHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: COLORS.border,
+    paddingBottom: 6,
+  },
+  outputTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  outputTitle: {
+    fontSize: 12,
+    color: COLORS.foreground,
+  },
+  outputCopyBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    backgroundColor: COLORS.secondary,
+  },
+  outputCopyText: {
+    fontSize: 10,
+    color: COLORS.mutedForeground,
+  },
+  outputCard: {
+    paddingVertical: 2,
+  },
+  filesList: {
+    gap: 6,
+  },
+  filesCountLabel: {
+    fontSize: 10,
+    color: COLORS.mutedForeground,
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  fileItemCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: COLORS.card,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
+  fileTag: {
+    paddingHorizontal: 5,
+    paddingVertical: 1.5,
+    borderRadius: 4,
+  },
+  fileTagEdit: {
+    backgroundColor: "rgba(99, 102, 241, 0.1)",
+  },
+  fileTagCreate: {
+    backgroundColor: "rgba(34, 197, 94, 0.1)",
+  },
+  fileTagDelete: {
+    backgroundColor: "rgba(239, 68, 68, 0.1)",
+  },
+  fileTagText: {
+    fontSize: 8.5,
+  },
+  filePathLabel: {
+    fontSize: 11.5,
+    color: COLORS.foreground,
+    flex: 1,
+  },
+  liveFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: COLORS.border,
+    backgroundColor: COLORS.card,
+  },
+  liveFooterDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: COLORS.primary,
+  },
+  liveFooterText: {
+    fontSize: 11,
+    color: COLORS.primary,
+    letterSpacing: 0.4,
+  },
+  liveBannerContainer: {
+    marginHorizontal: 16,
+    marginBottom: 12,
+  },
+  sortToggleBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
     paddingHorizontal: 8,
-    paddingVertical: 3.5,
-    borderRadius: 6,
-    backgroundColor: "rgba(255, 255, 255, 0.04)",
-  },
-  directCopyBtnText: {
-    fontSize: 11,
-    color: COLORS.mutedForeground,
-  },
-  directOutputCard: {
-    paddingVertical: 2,
-  },
-  bottomLiveBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-  },
-  bottomLiveBarActive: {
-    backgroundColor: "rgba(66, 64, 225, 0.08)",
-  },
-  bottomLiveBarIdle: {
-    backgroundColor: COLORS.card,
-  },
-  liveBarLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  liveStatusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  liveStatusDotActive: {
-    backgroundColor: COLORS.primary,
-  },
-  liveStatusDotIdle: {
-    backgroundColor: COLORS.success,
-  },
-  liveStatusText: {
-    fontSize: 11,
-    color: COLORS.primary,
-    letterSpacing: 0.5,
-  },
-  idleStatusText: {
-    fontSize: 11,
-    color: COLORS.mutedForeground,
-    letterSpacing: 0.4,
-  },
-  changesScroll: {
-    flex: 1,
-  },
-  changesContent: {
-    padding: 16,
-    paddingBottom: 40,
-  },
-  changesList: {
-    gap: 10,
-  },
-  changesSummaryText: {
-    fontSize: 13.5,
-    color: COLORS.foreground,
-    marginBottom: 4,
-  },
-  fileCard: {
-    backgroundColor: COLORS.card,
-    borderRadius: 10,
+    paddingVertical: 3,
+    borderRadius: 8,
+    backgroundColor: COLORS.secondary,
     borderWidth: 1,
     borderColor: COLORS.border,
-    padding: 10,
   },
-  fileCardHeader: {
+  sortToggleBtnActive: {
+    borderColor: COLORS.primary,
+    backgroundColor: "rgba(66, 64, 225, 0.08)",
+  },
+  sortToggleText: {
+    fontSize: 10.5,
+    color: COLORS.mutedForeground,
+  },
+  floatingScrollBtn: {
+    position: "absolute",
+    bottom: 14,
+    right: 16,
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 4,
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 4,
+    zIndex: 99,
   },
-  fileKindBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  fileKindEdit: {
-    backgroundColor: COLORS.accent,
-  },
-  fileKindCreate: {
-    backgroundColor: COLORS.secondary,
-  },
-  fileKindDelete: {
-    backgroundColor: COLORS.muted,
-  },
-  fileKindText: {
-    fontSize: 10,
-    color: COLORS.foreground,
-    textTransform: "uppercase",
-  },
-  filePathText: {
-    fontSize: 12,
-    color: COLORS.foreground,
-    flex: 1,
-  },
-  emptyWrap: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 60,
-    paddingHorizontal: 30,
-    gap: 12,
-  },
-  emptyTitle: {
-    fontSize: 15,
-    color: COLORS.foreground,
-  },
-  emptySubtitle: {
-    fontSize: 12.5,
-    color: COLORS.mutedForeground,
-    textAlign: "center",
-    lineHeight: 18,
+  floatingScrollText: {
+    fontSize: 11.5,
+    fontWeight: "600",
+    color: "#FFF",
   },
 });

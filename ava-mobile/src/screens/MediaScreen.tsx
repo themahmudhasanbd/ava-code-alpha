@@ -14,7 +14,8 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
-import { useNavigation, DrawerActions } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
+import { openAppDrawer } from "@/navigation/drawer";
 import * as Clipboard from "expo-clipboard";
 import * as Sharing from "expo-sharing";
 import { File, Paths } from "expo-file-system";
@@ -243,7 +244,7 @@ export function MediaScreen() {
         <GlassIconButton
           icon={Menu}
           size={18}
-          onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+          onPress={() => openAppDrawer(navigation)}
         />
         <View style={styles.headerTextGroup}>
           <Text style={styles.headerTitleText}>Shared Media</Text>

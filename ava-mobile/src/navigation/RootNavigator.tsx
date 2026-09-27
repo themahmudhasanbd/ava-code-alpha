@@ -41,7 +41,8 @@ function MainDrawerNavigator() {
         headerShown: false,
         drawerType: "front",
         overlayColor: "rgba(0, 0, 0, 0.40)",
-        swipeEnabled: false,
+        swipeEnabled: true,
+        swipeEdgeWidth: 100,
         drawerHideStatusBarOnOpen: false,
         drawerStyle: {
           width: "82%",
@@ -51,6 +52,7 @@ function MainDrawerNavigator() {
       }}
     >
       <Drawer.Screen name="Chat" component={ChatScreen} />
+      <Drawer.Screen name="Session" component={SessionScreen} />
       <Drawer.Screen name="Files" component={FilesScreen} />
       <Drawer.Screen name="Terminal" component={TerminalScreen} />
       <Drawer.Screen name="Browser" component={BrowserScreen} />
@@ -84,11 +86,6 @@ export function RootNavigator() {
       ) : (
         <>
           <Stack.Screen name="Main" component={MainDrawerNavigator} />
-          <Stack.Screen
-            name="Session"
-            component={SessionScreen}
-            options={{ animation: "slide_from_right" }}
-          />
           <Stack.Screen
             name="Timeline"
             component={TimelineScreen}

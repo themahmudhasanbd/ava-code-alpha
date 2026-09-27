@@ -1,6 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
+  LayoutAnimation,
+  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -9,6 +11,7 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import {
   Brain,
+  ChevronDown,
   ChevronRight,
   CheckCircle2,
   ListChecks,
@@ -17,6 +20,7 @@ import {
   type LucideIcon,
 } from "lucide-react-native";
 import { Shimmer } from "@/components/ai-elements/shimmer";
+import { RuntimeDottedIndicator } from "@/components/ai-elements/dotted-indicator";
 import { formatDuration } from "@/lib/format";
 import type { ChatMessage, MessagePart } from "@/core/types";
 import { COLORS } from "@/theme/colors";
@@ -50,6 +54,17 @@ export function LiveStepOverviewCard({
   const latestPart: MessagePart | undefined = workflowParts[workflowParts.length - 1];
   const isRunning = live && (latestPart?.status === "running" || latestPart == null);
 
+  // Auto-expanded while running; collapsed when complete (user can toggle)
+  const [userExpanded, setUserExpanded] = useState<boolean | null>(null);
+  const isExpanded = userExpanded !== null ? userExpanded : isRunning;
+
+  const toggleExpand = () => {
+    if (Platform.OS !== "web") {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    }
+    setUserExpanded((prev) => (prev === null ? !isRunning : !prev));
+  };
+
   // Derive step title and icon
   let currentTitle = "Analyzing request…";
   let StepIcon: LucideIcon = Zap;
@@ -78,7 +93,7 @@ export function LiveStepOverviewCard({
   const donePlanSteps = planSteps.filter((s) => s.status === "done").length;
   const progressPercent = Math.round((completedCount / Math.max(1, workflowParts.length)) * 100);
 
-  const handlePress = () => {
+  const handleOpenTimeline = () => {
     if (onOpenTimeline) {
       onOpenTimeline(message.id);
     } else {
@@ -94,19 +109,21 @@ export function LiveStepOverviewCard({
   const isFailed = !isRunning && hasError;
 
   return (
-    <TouchableOpacity
+    <View
       style={[
         styles.container,
         isRunning && styles.containerRunning,
         isComplete && styles.containerComplete,
         isFailed && styles.containerFailed,
       ]}
-      onPress={handlePress}
-      activeOpacity={0.8}
     >
       {/* Top row: Icon + Info + Action */}
-      <View style={styles.cardHeader}>
-        {/* Step Icon — clean, no background */}
+      <TouchableOpacity
+        style={styles.cardHeader}
+        onPress={toggleExpand}
+        activeOpacity={0.7}
+      >
+        {/* Step Icon */}
         <View style={styles.iconWrapper}>
           <StepIcon
             size={16}
@@ -153,16 +170,21 @@ export function LiveStepOverviewCard({
           {isRunning ? (
             <ActivityIndicator size="small" color={COLORS.primary} />
           ) : isFailed ? (
-            <AlertTriangle size={16} color={COLORS.destructive} />
+            <AlertTriangle size={15} color={COLORS.destructive} />
           ) : isComplete ? (
-            <CheckCircle2 size={16} color={COLORS.success} />
+            <CheckCircle2 size={15} color={COLORS.success} />
           ) : null}
-          <View style={styles.pillButton}>
+
+          <TouchableOpacity
+            style={styles.pillButton}
+            onPress={handleOpenTimeline}
+            activeOpacity={0.7}
+          >
             <Text style={[styles.pillButtonText, font("medium")]}>Timeline</Text>
-            <ChevronRight size={12} color={COLORS.mutedForeground} />
-          </View>
+            <ChevronRight size={11} color={COLORS.mutedForeground} />
+          </TouchableOpacity>
         </View>
-      </View>
+      </TouchableOpacity>
 
       {/* Progress bar */}
       <View style={styles.progressTrack}>
@@ -180,6 +202,55 @@ export function LiveStepOverviewCard({
           ]}
         />
       </View>
+
+      {/* Expanded details: auto-expanded when running, collapsed when complete */}
+      {isExpanded && (
+        <View style={styles.expandedSection}>
+          {isRunning ? (
+            <RuntimeDottedIndicator
+              label={currentTitle}
+              subLabel={latestPart?.meta?.command || latestPart?.text || "Processing step…"}
+              size="sm"
+            />
+          ) : null}
+
+          {/* Quick steps list */}
+          <View style={styles.stepsList}>
+            {workflowParts.slice(-4).map((part, pIdx) => {
+              const partRunning = part.status === "running";
+              const partDone = part.status === "done";
+              const partErr = part.status === "error";
+              return (
+                <View key={`${part.id || pIdx}`} style={styles.stepRow}>
+                  <View
+                    style={[
+                      styles.stepDot,
+                      partRunning && styles.stepDotRunning,
+                      partDone && styles.stepDotDone,
+                      partErr && styles.stepDotErr,
+                    ]}
+                  />
+                  <Text
+                    style={[
+                      styles.stepRowText,
+                      mono("regular"),
+                      partRunning && { color: COLORS.primary, fontWeight: "600" },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {part.kind === "tool"
+                      ? displayToolName(part.toolName || "tool")
+                      : part.kind === "reasoning"
+                      ? "Reasoning"
+                      : part.text || "Step"}
+                  </Text>
+                  {partRunning && <RuntimeDottedIndicator variant="inline" />}
+                </View>
+              );
+            })}
+          </View>
+        </View>
+      )}
 
       {/* Bottom stats row — shown when complete */}
       {!isRunning && duration ? (
@@ -209,7 +280,7 @@ export function LiveStepOverviewCard({
           ) : null}
         </View>
       ) : null}
-    </TouchableOpacity>
+    </View>
   );
 }
 
@@ -301,6 +372,42 @@ const styles = StyleSheet.create({
   progressFill: {
     height: 3,
     borderRadius: 2,
+  },
+  expandedSection: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: COLORS.border,
+    gap: 6,
+  },
+  stepsList: {
+    gap: 4,
+    paddingTop: 4,
+  },
+  stepRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  stepDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: COLORS.mutedForeground,
+  },
+  stepDotRunning: {
+    backgroundColor: COLORS.primary,
+  },
+  stepDotDone: {
+    backgroundColor: COLORS.success,
+  },
+  stepDotErr: {
+    backgroundColor: COLORS.destructive,
+  },
+  stepRowText: {
+    fontSize: 11,
+    color: COLORS.mutedForeground,
+    flex: 1,
   },
   statsRow: {
     flexDirection: "row",

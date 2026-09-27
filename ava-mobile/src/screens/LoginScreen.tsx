@@ -17,7 +17,7 @@ import { COLORS } from "@/theme/colors";
 
 export function LoginScreen() {
   const { signIn } = useAva();
-  const [server, setServer] = useState<string>(APP.defaultServerUrl);
+  const [server, setServer] = useState<string>(() => (typeof window !== "undefined" && window.location && window.location.origin && !window.location.hostname.includes("localhost") ? window.location.origin : APP.defaultServerUrl));
   const [username, setUsername] = useState<string>(APP.defaultUsername);
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);

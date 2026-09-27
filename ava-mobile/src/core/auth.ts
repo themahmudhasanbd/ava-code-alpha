@@ -9,15 +9,37 @@ export interface AuthState {
   token: string; // base64(user:pass), sent as Basic auth
 }
 
+export function getDefaultServerUrl(): string {
+  if (typeof window !== "undefined" && window.location && window.location.origin && !window.location.hostname.includes("localhost")) {
+    return window.location.origin;
+  }
+  return APP.defaultServerUrl;
+}
+
 export function cleanUrl(url: string) {
-  return (url.trim() || APP.defaultServerUrl).replace(/\/+$/, "").replace(/\/api$/, "");
+  let u = (url.trim() || getDefaultServerUrl()).replace(/\/+$/, "").replace(/\/api$/, "");
+  if (typeof window !== "undefined" && window.location) {
+    if (u.includes("127.0.0.1") || u.includes("localhost") || u.startsWith("/")) {
+      u = window.location.origin;
+    }
+  }
+  if (!u.startsWith("http://") && !u.startsWith("https://")) {
+    u = `https://${u}`;
+  }
+  return u;
 }
 
 export function loadAuth(): AuthState | null {
   const raw = storage.get(KEY);
   if (!raw) return null;
   try {
-    return JSON.parse(raw) as AuthState;
+    const parsed = JSON.parse(raw) as AuthState;
+    if (typeof window !== "undefined" && window.location) {
+      if (!parsed.serverUrl || parsed.serverUrl.includes("127.0.0.1") || parsed.serverUrl.includes("localhost")) {
+        parsed.serverUrl = window.location.origin;
+      }
+    }
+    return parsed;
   } catch {
     return null;
   }

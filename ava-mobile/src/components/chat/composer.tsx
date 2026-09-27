@@ -25,18 +25,16 @@ import {
   ChevronDown,
   ChevronRight,
   Cpu,
-  FileAudio,
   FileCode,
   FileText,
   FileVideo,
   FolderOpen,
-  Image as ImageIcon,
   Mic,
+  Play,
   Plug,
   Plus,
   PlusCircle,
   Search,
-  Server,
   ShieldCheck,
   Square,
   Terminal as TerminalSquare,
@@ -72,8 +70,11 @@ interface Props {
   onChange: (v: string) => void;
   onSubmit: (text: string) => void;
   onStop: () => void;
+  onResume?: () => void;
   onClear: () => void;
   status: ChatStatus;
+  hasQueued?: boolean;
+  queuedCount?: number;
 }
 
 export interface AttachedItem {
@@ -264,9 +265,23 @@ function FloatingPopupModal({
 }
 
 export const Composer = forwardRef<TextInput, Props>(
-  ({ value, onChange, onSubmit, onStop, onClear, status }, ref) => {
-    const busy = status === "submitted" || status === "streaming" || status === "stopping";
+  (
+    {
+      value,
+      onChange,
+      onSubmit,
+      onStop,
+      onResume,
+      onClear,
+      status,
+      hasQueued = false,
+      queuedCount = 0,
+    },
+    ref
+  ) => {
+    const isLive = status === "submitted" || status === "streaming";
     const isStopping = status === "stopping";
+    const busy = isLive || isStopping;
     const navigation = useNavigation<any>();
     const {
       rpc,
@@ -489,24 +504,60 @@ export const Composer = forwardRef<TextInput, Props>(
     };
 
     // Filter models
-    const filteredModels = models.filter((m) =>
-      m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (m.description && m.description.toLowerCase().includes(searchQuery.toLowerCase()))
+    const filteredModels = models.filter(
+      (m) =>
+        m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (m.description &&
+          m.description.toLowerCase().includes(searchQuery.toLowerCase()))
     );
+
+    const hasText = Boolean(value.trim() || attachments.length > 0);
 
     return (
       <View style={styles.container}>
-        {/* Floating Model & Reasoning Depth Badge */}
-        <TouchableOpacity
-          style={styles.floatingPill}
-          onPress={() => setPanel("model")}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.floatingPillText} numberOfLines={1}>
-            {model?.name ?? "Model"} · {effort}
-          </Text>
-          <ChevronDown size={11} color={COLORS.mutedForeground} />
-        </TouchableOpacity>
+        {/* Floating Top Bar: Model pill + Agent Live/Resume Status Pills */}
+        <View style={styles.topPillRow}>
+          {/* Live Agent Pause / Stopping / Resume Indicator */}
+          {isLive ? (
+            <TouchableOpacity
+              style={styles.floatingStatusPillLive}
+              onPress={onStop}
+              activeOpacity={0.7}
+            >
+              <View style={styles.pulsingRedDot} />
+              <Text style={styles.floatingStatusTextLive}>Running · Tap to stop</Text>
+              <Square size={9} color={COLORS.destructive} fill={COLORS.destructive} />
+            </TouchableOpacity>
+          ) : isStopping ? (
+            <View style={styles.floatingStatusPillStopping}>
+              <ActivityIndicator size="small" color={COLORS.warning} style={{ transform: [{ scale: 0.7 }] }} />
+              <Text style={styles.floatingStatusTextStopping}>Stopping…</Text>
+            </View>
+          ) : hasQueued && onResume ? (
+            <TouchableOpacity
+              style={styles.floatingStatusPillResume}
+              onPress={onResume}
+              activeOpacity={0.7}
+            >
+              <Play size={10} color={COLORS.primary} fill={COLORS.primary} />
+              <Text style={styles.floatingStatusTextResume}>
+                {queuedCount > 0 ? `Resume (${queuedCount} queued)` : "Resume agent"}
+              </Text>
+            </TouchableOpacity>
+          ) : null}
+
+          {/* Model & Reasoning Depth Badge */}
+          <TouchableOpacity
+            style={styles.floatingPill}
+            onPress={() => setPanel("model")}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.floatingPillText} numberOfLines={1}>
+              {model?.name ?? "Model"} · {effort}
+            </Text>
+            <ChevronDown size={11} color={COLORS.mutedForeground} />
+          </TouchableOpacity>
+        </View>
 
         {/* Glassy Input Surface Card */}
         <View style={styles.composerCard}>
@@ -609,7 +660,11 @@ export const Composer = forwardRef<TextInput, Props>(
             <TextInput
               ref={ref}
               style={styles.input}
-              placeholder="Ask anything or request changes…"
+              placeholder={
+                isLive
+                  ? "Type follow-up to queue or steer…"
+                  : "Ask anything or request changes…"
+              }
               placeholderTextColor={COLORS.mutedForeground}
               value={value}
               onChangeText={onChange}
@@ -660,44 +715,70 @@ export const Composer = forwardRef<TextInput, Props>(
             <View style={styles.submitBtnWrapper}>
               {/* Voice Note Mic Button */}
               <TouchableOpacity
-                style={[
-                  styles.micBtn,
-                  isRecording && styles.micBtnActive,
-                ]}
+                style={[styles.micBtn, isRecording && styles.micBtnActive]}
                 onPress={toggleVoiceInput}
                 activeOpacity={0.7}
               >
                 <Mic
                   size={16}
-                  color={isRecording ? COLORS.destructive : COLORS.mutedForeground}
+                  color={
+                    isRecording ? COLORS.destructive : COLORS.mutedForeground
+                  }
                 />
               </TouchableOpacity>
 
-              {busy && !value.trim() && attachments.length === 0 ? (
-                <TouchableOpacity
-                  style={[styles.stopButton, isStopping && { opacity: 0.6 }]}
-                  onPress={onStop}
-                  disabled={isStopping}
-                  activeOpacity={0.7}
-                >
-                  {isStopping ? (
-                    <ActivityIndicator size="small" color="#FFF" />
-                  ) : (
-                    <Square size={14} color="#FFF" fill="#FFF" />
+              {/* If agent is busy, ALWAYS provide Stop/Pause button */}
+              {busy ? (
+                <View style={styles.busyActionGroup}>
+                  <TouchableOpacity
+                    style={[styles.stopButton, isStopping && { opacity: 0.6 }]}
+                    onPress={onStop}
+                    disabled={isStopping}
+                    activeOpacity={0.7}
+                  >
+                    {isStopping ? (
+                      <ActivityIndicator size="small" color="#FFF" />
+                    ) : (
+                      <Square size={13} color="#FFF" fill="#FFF" />
+                    )}
+                  </TouchableOpacity>
+
+                  {/* If user is typing while agent is busy, allow queueing/steering */}
+                  {hasText && (
+                    <TouchableOpacity
+                      style={styles.sendButton}
+                      onPress={handleSend}
+                      activeOpacity={0.7}
+                    >
+                      <ArrowUp size={16} color="#FFF" />
+                    </TouchableOpacity>
                   )}
-                </TouchableOpacity>
+                </View>
               ) : (
-                <TouchableOpacity
-                  style={[
-                    styles.sendButton,
-                    !value.trim() && attachments.length === 0 && !busy && styles.sendButtonDisabled,
-                  ]}
-                  onPress={handleSend}
-                  disabled={!value.trim() && attachments.length === 0 && !busy}
-                  activeOpacity={0.7}
-                >
-                  <ArrowUp size={16} color="#FFF" />
-                </TouchableOpacity>
+                /* Idle state */
+                <View style={styles.busyActionGroup}>
+                  {hasQueued && !hasText && onResume ? (
+                    <TouchableOpacity
+                      style={styles.resumeButton}
+                      onPress={onResume}
+                      activeOpacity={0.7}
+                    >
+                      <Play size={13} color="#FFF" fill="#FFF" />
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      style={[
+                        styles.sendButton,
+                        !hasText && styles.sendButtonDisabled,
+                      ]}
+                      onPress={handleSend}
+                      disabled={!hasText}
+                      activeOpacity={0.7}
+                    >
+                      <ArrowUp size={16} color="#FFF" />
+                    </TouchableOpacity>
+                  )}
+                </View>
               )}
             </View>
           </View>
@@ -864,7 +945,9 @@ export const Composer = forwardRef<TextInput, Props>(
               }}
             />
           ))}
-          <Text style={styles.sandboxHintText}>Applies to newly started sessions.</Text>
+          <Text style={styles.sandboxHintText}>
+            Applies to newly started sessions.
+          </Text>
         </FloatingPopupModal>
       </View>
     );
@@ -877,11 +960,82 @@ const styles = StyleSheet.create({
   container: {
     position: "relative",
   },
-  floatingPill: {
+  topPillRow: {
     position: "absolute",
-    top: -10,
-    right: 20,
+    top: -12,
+    left: 14,
+    right: 14,
     zIndex: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  floatingStatusPillLive: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    height: 24,
+    paddingHorizontal: 9,
+    borderRadius: 999,
+    backgroundColor: "rgba(254, 242, 242, 0.96)",
+    borderWidth: 1,
+    borderColor: "rgba(239, 68, 68, 0.3)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  pulsingRedDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: COLORS.destructive,
+  },
+  floatingStatusTextLive: {
+    fontSize: 10.5,
+    fontWeight: "600",
+    color: COLORS.destructive,
+  },
+  floatingStatusPillStopping: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    height: 24,
+    paddingHorizontal: 9,
+    borderRadius: 999,
+    backgroundColor: "rgba(254, 243, 199, 0.96)",
+    borderWidth: 1,
+    borderColor: "rgba(245, 158, 11, 0.3)",
+  },
+  floatingStatusTextStopping: {
+    fontSize: 10.5,
+    fontWeight: "600",
+    color: COLORS.warning,
+  },
+  floatingStatusPillResume: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    height: 24,
+    paddingHorizontal: 9,
+    borderRadius: 999,
+    backgroundColor: "rgba(238, 242, 255, 0.96)",
+    borderWidth: 1,
+    borderColor: "rgba(99, 102, 241, 0.3)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  floatingStatusTextResume: {
+    fontSize: 10.5,
+    fontWeight: "600",
+    color: COLORS.primary,
+  },
+  floatingPill: {
+    marginLeft: "auto",
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
@@ -906,7 +1060,7 @@ const styles = StyleSheet.create({
   composerCard: {
     borderRadius: 26,
     paddingHorizontal: 14,
-    paddingTop: 12,
+    paddingTop: 14,
     paddingBottom: 10,
     backgroundColor: "rgba(255, 255, 255, 0.96)",
     borderWidth: 1.2,
@@ -1100,6 +1254,11 @@ const styles = StyleSheet.create({
   micBtnActive: {
     backgroundColor: "rgba(231, 0, 11, 0.12)",
   },
+  busyActionGroup: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
   sendButton: {
     width: 32,
     height: 32,
@@ -1116,6 +1275,14 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: 16,
     backgroundColor: COLORS.destructive,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  resumeButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: COLORS.primary,
     alignItems: "center",
     justifyContent: "center",
   },

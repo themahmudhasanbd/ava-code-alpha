@@ -23,7 +23,17 @@ export class RpcClient {
   constructor(private serverUrl: string, private token: string) {}
 
   private wsUrl() {
-    const u = this.serverUrl.replace(/^http/, "ws");
+    let base = this.serverUrl;
+    if (typeof window !== "undefined" && window.location) {
+      if (!base || base.includes("127.0.0.1") || base.includes("localhost") || base.startsWith("/")) {
+        base = window.location.origin;
+      }
+    }
+    base = (base || APP.defaultServerUrl).trim().replace(/\/+$/, "");
+    if (!base.startsWith("http://") && !base.startsWith("https://") && !base.startsWith("ws://") && !base.startsWith("wss://")) {
+      base = `https://${base}`;
+    }
+    const u = base.replace(/^http:\/\//, "ws://").replace(/^https:\/\//, "wss://");
     return `${u}/ws?client=mobile&token=${encodeURIComponent(this.token)}`;
   }
 
@@ -42,8 +52,10 @@ export class RpcClient {
       if (this.token) {
         headers["Authorization"] = `Bearer ${this.token}`;
       }
-      const ws =
-        typeof WebSocket !== "undefined" && Object.keys(headers).length > 0
+      const isWeb = typeof window !== "undefined" && window.document !== undefined;
+      const ws = isWeb
+        ? new WebSocket(this.wsUrl())
+        : typeof WebSocket !== "undefined" && Object.keys(headers).length > 0
           ? new (WebSocket as any)(this.wsUrl(), undefined, { headers })
           : new WebSocket(this.wsUrl());
       this.ws = ws;

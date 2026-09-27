@@ -28,6 +28,8 @@ import {
 } from "lucide-react-native";
 import { AvaMascot } from "@/components/ui/ava-mascot";
 import { Shimmer } from "@/components/ai-elements/shimmer";
+import { RuntimeDottedIndicator } from "@/components/ai-elements/dotted-indicator";
+import { TypewriterText } from "@/components/ai-elements/typewriter-text";
 import { InlineText, RichResponse } from "./rich-response";
 import { LiveStepOverviewCard } from "./live-step-card";
 import { getToolIcon } from "./tool-icons";
@@ -243,10 +245,23 @@ function AssistantTurn({
         </View>
       ))}
 
-      {/* Clean Final Output Only — hide during live streaming (belongs in Timeline) */}
-      {finalText && !live ? (
+      {/* Response text: live typewriter animation during streaming, rich response when complete */}
+      {finalText ? (
         <View style={styles.finalOutputContainer}>
-          <RichResponse text={finalText} />
+          {live ? (
+            <TypewriterText text={finalText} isStreaming={true} />
+          ) : (
+            <RichResponse text={finalText} />
+          )}
+        </View>
+      ) : live && !hasWorkflowSteps ? (
+        <View style={styles.finalOutputContainer}>
+          <RuntimeDottedIndicator
+            variant="block"
+            size="sm"
+            label="Agent thinking…"
+            subLabel="Analyzing prompt and preparing response"
+          />
         </View>
       ) : null}
 

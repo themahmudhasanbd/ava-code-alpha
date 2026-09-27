@@ -18,6 +18,7 @@ export function AppShell({
   hideHeader = false,
   showBack = false,
   onBack,
+  onOpenDrawer,
   chatMessages,
   onCompactSession,
   onNewSession,
@@ -29,6 +30,7 @@ export function AppShell({
   hideHeader?: boolean;
   showBack?: boolean;
   onBack?: () => void;
+  onOpenDrawer?: () => void;
   chatMessages?: ChatMessage[];
   onCompactSession?: () => Promise<void>;
   onNewSession?: () => void;
@@ -55,6 +57,7 @@ export function AppShell({
               chatMessages={chatMessages}
               showBack={showBack}
               onBack={onBack}
+              onOpenDrawer={onOpenDrawer}
               onCompactSession={onCompactSession}
               onNewSession={onNewSession}
             />

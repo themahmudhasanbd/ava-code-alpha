@@ -7,7 +7,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useNavigation, DrawerActions } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
+import { openAppDrawer } from "@/navigation/drawer";
 import { ChevronDown, ChevronLeft, Menu, Zap } from "lucide-react-native";
 import { WorkspacePreferenceModal } from "@/components/modals/WorkspacePreferenceModal";
 import { ContextWindowModal } from "@/components/modals/ContextWindowModal";
@@ -57,9 +58,9 @@ export function AppHeader({
   const handleOpenDrawer = () => {
     if (onOpenDrawer) {
       onOpenDrawer();
-    } else {
-      navigation.dispatch(DrawerActions.openDrawer());
+      return;
     }
+    openAppDrawer(navigation);
   };
 
   const handleLeftAction = () => {

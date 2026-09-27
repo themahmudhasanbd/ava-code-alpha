@@ -11,7 +11,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useNavigation, DrawerActions } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
+import { openAppDrawer } from "@/navigation/drawer";
 import {
   Check,
   ChevronDown,
@@ -371,7 +372,7 @@ export function FilesScreen({ route }: { route?: { params?: { initialPath?: stri
         <>
           <View style={styles.hLeft}>
             {navigation.canGoBack() && <GlassIconButton icon={ChevronLeft} size={18} onPress={() => navigation.goBack()} />}
-            <GlassIconButton icon={Menu} size={18} onPress={() => navigation.dispatch(DrawerActions.openDrawer())} />
+            <GlassIconButton icon={Menu} size={18} onPress={() => openAppDrawer(navigation)} />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.crumbScroll}>
               <TouchableOpacity onPress={() => setRoot("/")} style={styles.crumbBtn}>
                 <Text style={[styles.crumbRoot, mono("bold")]}>/</Text>

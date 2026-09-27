@@ -27,6 +27,12 @@ import {
 
 export type { ChatStatus, QueuedPromptItem };
 
+let idCounter = 0;
+export function makeUniqueId(prefix = "id"): string {
+  idCounter = (idCounter + 1) % 1000000;
+  return `${prefix}_${Date.now()}_${idCounter}_${Math.random().toString(36).slice(2, 7)}`;
+}
+
 /** Owns the transcript for the active session: history + live streaming turn synced through chatStore. */
 export function useChat(explicitSessionId?: string | null) {
   const {
@@ -62,6 +68,7 @@ export function useChat(explicitSessionId?: string | null) {
   const statusRef = useRef<ChatStatus>(initialStore?.status ?? "ready");
   const activeAidRef = useRef<string | null>(initialStore?.activeAid ?? null);
   const currentSessionRef = useRef(currentSessionId);
+  const turnStartedAtRef = useRef<number>(0);
   const safetyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Helper to fetch server queue items
@@ -146,7 +153,6 @@ export function useChat(explicitSessionId?: string | null) {
           ...prev,
           activeTurnId: turnId,
         }));
-        // Start native foreground service to keep agent alive when backgrounded
         void startAgentForeground({ sessionId: threadId });
       },
       onQueueChanged: () => {
@@ -165,7 +171,6 @@ export function useChat(explicitSessionId?: string | null) {
           activeAid: aid,
         }));
 
-        // Update native foreground service with current action
         if (p.kind === "tool" && p.toolName) {
           void updateAgentForeground({
             currentAction: `Executing: ${p.toolName}`,
@@ -257,7 +262,7 @@ export function useChat(explicitSessionId?: string | null) {
             : [
                 ...parts,
                 {
-                  id: `n_${Date.now()}`,
+                  id: makeUniqueId("n"),
                   kind: "notice",
                   text: noticeText,
                   status: "done",
@@ -276,7 +281,7 @@ export function useChat(explicitSessionId?: string | null) {
       },
       onQuestion: (question, requestId) => {
         chatStore.patchAssistant(threadId, aid, (parts) => {
-          const qId = question.id || `q_${Date.now()}`;
+          const qId = question.id || makeUniqueId("q");
           if (parts.some((p) => p.kind === "question" && p.text === question.title)) return parts;
           return [
             ...parts,
@@ -301,7 +306,6 @@ export function useChat(explicitSessionId?: string | null) {
         activeAidRef.current = null;
         setSessionRunning(threadId, false);
 
-        // Stop native foreground service
         void stopAgentForeground({ sessionId: threadId, isSuccess: !err });
 
         chatStore.patchAssistant(threadId, aid, (parts) => {
@@ -315,7 +319,7 @@ export function useChat(explicitSessionId?: string | null) {
           return [
             ...next,
             {
-              id: `end_${Date.now()}`,
+              id: makeUniqueId("end"),
               kind: "notice" as const,
               text: note,
               status: "done" as const,
@@ -359,7 +363,7 @@ export function useChat(explicitSessionId?: string | null) {
         }
 
         // Auto-drain queue: If server has queued items, start next prompt
-        if (rpc && !err) {
+        if (rpc && !err && info !== "Stopped") {
           setTimeout(async () => {
             const currentQ = await refreshQueue(threadId);
             if (currentQ.length > 0 && !isStreamingRef.current) {
@@ -432,7 +436,7 @@ export function useChat(explicitSessionId?: string | null) {
         const lastAssMsg = [...historyMessages].reverse().find((m) => m.role === "assistant");
         const aid = serverActiveTurnId
           ? `a_${serverActiveTurnId}`
-          : lastAssMsg?.id ?? `live_${Date.now()}`;
+          : lastAssMsg?.id ?? makeUniqueId("live");
         activeAidRef.current = aid;
         offRef.current = attachToRunningTurn(
           rpc,
@@ -459,16 +463,10 @@ export function useChat(explicitSessionId?: string | null) {
     // When session hasn't changed:
     if (currentSessionId) {
       const currentStore = chatStore.getState(currentSessionId);
+      const isRecentlySubmitted = Date.now() - turnStartedAtRef.current < 15000;
 
-      // CRITICAL STUCK-STATE RECOVERY:
-      // If server history says isTurnRunning is FALSE, but client store thinks it isStreaming:
-      if (!isTurnRunning && currentStore.isStreaming) {
-        if (offRef.current) {
-          try {
-            offRef.current();
-          } catch {}
-          offRef.current = null;
-        }
+      // STUCK-STATE RECOVERY (Only trigger if genuinely idle and not recently started):
+      if (!isTurnRunning && currentStore.isStreaming && !isRecentlySubmitted && offRef.current == null) {
         isStreamingRef.current = false;
         statusRef.current = "ready";
         activeAidRef.current = null;
@@ -496,7 +494,7 @@ export function useChat(explicitSessionId?: string | null) {
         const lastAssMsg = [...historyMessages].reverse().find((m) => m.role === "assistant");
         const aid = serverActiveTurnId
           ? `a_${serverActiveTurnId}`
-          : lastAssMsg?.id ?? `live_${Date.now()}`;
+          : lastAssMsg?.id ?? makeUniqueId("live");
         activeAidRef.current = aid;
         allHistoryRef.current = historyMessages;
 
@@ -517,13 +515,21 @@ export function useChat(explicitSessionId?: string | null) {
         return;
       }
 
-      // Regular idle history update
+      // Regular idle history update: only update if not streaming or if history has more messages
       if (!currentStore.isStreaming && statusRef.current === "ready" && historyMessages.length > 0) {
         allHistoryRef.current = historyMessages;
-        chatStore.setState(currentSessionId, (prev) => ({
-          ...prev,
-          messages: historyMessages.slice(-visibleCount),
-        }));
+        chatStore.setState(currentSessionId, (prev) => {
+          const localUserMsgs = prev.messages.filter((m) => m.role === "user" && m.id.startsWith("u_"));
+          const missingInHistory = localUserMsgs.filter((lm) => !historyMessages.some((hm) => hm.id === lm.id));
+          
+          if (missingInHistory.length > 0 && historyMessages.length <= prev.messages.length) {
+            return prev;
+          }
+          return {
+            ...prev,
+            messages: historyMessages.slice(-visibleCount),
+          };
+        });
       }
     }
   }, [history.data, currentSessionId, visibleCount, rpc, createHandlers, setSessionRunning]);
@@ -565,11 +571,10 @@ export function useChat(explicitSessionId?: string | null) {
           const queued = await addPromptToQueue(rpc, threadId, text);
           if (queued) {
             await refreshQueue(threadId);
-            // Append temporary notice
-            chatStore.patchAssistant(threadId, activeAidRef.current || `live_${Date.now()}`, (parts) => [
+            chatStore.patchAssistant(threadId, activeAidRef.current || makeUniqueId("live"), (parts) => [
               ...parts,
               {
-                id: `queued_${Date.now()}`,
+                id: makeUniqueId("queued"),
                 kind: "notice",
                 text: "Prompt added to queue. It will run automatically when current task finishes.",
                 status: "done",
@@ -594,6 +599,7 @@ export function useChat(explicitSessionId?: string | null) {
       setError(null);
       isStreamingRef.current = true;
       statusRef.current = "submitted";
+      turnStartedAtRef.current = Date.now();
 
       const targetCwd = cwd || workingCwd || defaultCwd || APP.defaultCwd;
       let targetThreadId = threadId;
@@ -619,8 +625,11 @@ export function useChat(explicitSessionId?: string | null) {
         setActiveSessionId(targetThreadId);
       }
 
-      const aid = `live_${Date.now()}`;
+      const aid = makeUniqueId("live");
       activeAidRef.current = aid;
+
+      const userMsgId = makeUniqueId("u");
+      const userPartId = makeUniqueId("u_part");
 
       chatStore.setState(targetThreadId, (prev) => ({
         ...prev,
@@ -632,9 +641,9 @@ export function useChat(explicitSessionId?: string | null) {
         messages: [
           ...prev.messages,
           {
-            id: `u_${Date.now()}`,
+            id: userMsgId,
             role: "user",
-            parts: [{ id: `u_part_${Date.now()}`, kind: "text", text, status: "done" }],
+            parts: [{ id: userPartId, kind: "text", text, status: "done" }],
           },
           { id: aid, role: "assistant", parts: [], stats: { startedAt: Date.now() } },
         ],
@@ -671,7 +680,6 @@ export function useChat(explicitSessionId?: string | null) {
     const currentStore = chatStore.getState(currentSessionId);
     const turnId = currentStore.activeTurnId || history.data?.activeTurnId;
 
-    // Immediately mark stopping in UI so user gets instant visual feedback
     chatStore.setState(currentSessionId, (prev) => ({
       ...prev,
       status: "stopping",
@@ -685,7 +693,6 @@ export function useChat(explicitSessionId?: string | null) {
       console.warn("[stop] interrupt failed:", e);
     }
 
-    // Safety timeout: If server event does not arrive within 3.5s, force sync
     if (safetyTimeoutRef.current) clearTimeout(safetyTimeoutRef.current);
     safetyTimeoutRef.current = setTimeout(async () => {
       if (offRef.current) {
@@ -718,7 +725,6 @@ export function useChat(explicitSessionId?: string | null) {
       await rpc.call("thread/resume", { threadId: currentSessionId });
     } catch {}
 
-    // Check if there are queued prompts waiting to run
     const queued = await refreshQueue(currentSessionId);
     if (queued.length > 0) {
       const nextTurnId = await startQueuedPrompt(rpc, currentSessionId);
@@ -727,6 +733,7 @@ export function useChat(explicitSessionId?: string | null) {
         activeAidRef.current = nextAid;
         isStreamingRef.current = true;
         statusRef.current = "streaming";
+        turnStartedAtRef.current = Date.now();
         setSessionRunning(currentSessionId, true);
         chatStore.setState(currentSessionId, (prev) => ({
           ...prev,
@@ -742,9 +749,10 @@ export function useChat(explicitSessionId?: string | null) {
         );
       }
     } else {
-      void history.refetch();
+      // If no queued prompts exist, continue the task/session
+      await send("Continue");
     }
-  }, [rpc, currentSessionId, refreshQueue, setSessionRunning, createHandlers, history]);
+  }, [rpc, currentSessionId, refreshQueue, setSessionRunning, createHandlers, send]);
 
   const removeQueued = useCallback(
     async (queuedId: string) => {

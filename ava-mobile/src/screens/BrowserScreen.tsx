@@ -9,7 +9,8 @@ import {
   View,
 } from "react-native";
 import { WebView } from "react-native-webview";
-import { useNavigation, DrawerActions } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
+import { openAppDrawer } from "@/navigation/drawer";
 import {
   AlertCircle,
   ArrowRight,
@@ -132,7 +133,7 @@ export function BrowserScreen({ route }: BrowserScreenProps = {}) {
         <GlassIconButton
           icon={Menu}
           size={18}
-          onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+          onPress={() => openAppDrawer(navigation)}
         />
         <View style={styles.omnibarBox}>
           <Globe size={14} color={COLORS.primary} />

@@ -13,7 +13,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useNavigation, DrawerActions } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
+import { openAppDrawer } from "@/navigation/drawer";
 import {
   ChevronLeft,
   ChevronDown,
@@ -188,7 +189,7 @@ export function TerminalScreen({ route }: { route?: { params?: { initialCwd?: st
     <Surface style={styles.header}>
       <View style={styles.hLeft}>
         {navigation.canGoBack() && <GlassIconButton icon={ChevronLeft} size={18} onPress={() => navigation.goBack()} />}
-        <GlassIconButton icon={Menu} size={18} onPress={() => navigation.dispatch(DrawerActions.openDrawer())} />
+        <GlassIconButton icon={Menu} size={18} onPress={() => openAppDrawer(navigation)} />
         <View style={styles.badge}>
           <TerminalSquare size={13} color={COLORS.primary} />
           <Text style={[styles.badgeText, mono("bold")]}>bash</Text>

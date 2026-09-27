@@ -18,7 +18,7 @@ import { useSessions } from "@/state/queries";
 import { useChat } from "@/state/use-chat";
 import { ChatMessageView } from "@/components/chat/message-parts";
 import { Composer } from "@/components/chat/composer";
-import { Clock, Play, X } from "lucide-react-native";
+import { ArrowDown, Clock, Play, X } from "lucide-react-native";
 import { COLORS } from "@/theme/colors";
 
 export function SessionScreen({
@@ -119,19 +119,37 @@ export function SessionScreen({
     }
   }, [initialPrompt, sessionId, send]);
 
-  // Scroll to bottom only when a NEW message is appended (not on every re-render)
+  const isNearBottomRef = useRef(true);
+  const [showScrollBottomBtn, setShowScrollBottomBtn] = useState(false);
   const prevLengthRef = useRef(messages.length);
+
+  // Auto-scroll when messages arrive or stream live tokens
+  const isStreaming = status === "submitted" || status === "streaming";
+  const lastMsg = messages.length > 0 ? messages[messages.length - 1] : null;
+  const lastMsgTokenCount = lastMsg?.parts?.reduce((acc, p) => acc + (p.text?.length || 0), 0) || 0;
+
   useEffect(() => {
-    if (messages.length > prevLengthRef.current) {
-      prevLengthRef.current = messages.length;
-      // requestAnimationFrame avoids blocking the JS thread mid-render
+    if (isNearBottomRef.current) {
       requestAnimationFrame(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
       });
-    } else {
-      prevLengthRef.current = messages.length;
     }
-  }, [messages.length]);
+  }, [messages.length, lastMsgTokenCount, isStreaming]);
+
+  const handleScroll = useCallback((event: any) => {
+    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+    const paddingToBottom = 120;
+    const isBottom =
+      layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
+    isNearBottomRef.current = isBottom;
+    setShowScrollBottomBtn(!isBottom && contentOffset.y > 150);
+  }, []);
+
+  const scrollToBottom = useCallback(() => {
+    isNearBottomRef.current = true;
+    flatListRef.current?.scrollToEnd({ animated: true });
+    setShowScrollBottomBtn(false);
+  }, []);
 
   const activeSession = sessions?.find((s) => s.id === sessionId);
   const title = activeSession?.title ?? "Session";
@@ -163,6 +181,8 @@ export function SessionScreen({
         <FlatList
           ref={flatListRef}
           data={messages}
+          onScroll={handleScroll}
+          scrollEventThrottle={32}
           keyExtractor={(item) => item.id}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
@@ -229,6 +249,19 @@ export function SessionScreen({
             ) : null
           }
         />
+
+        {showScrollBottomBtn && (
+          <TouchableOpacity
+            style={styles.floatingScrollBtn}
+            onPress={scrollToBottom}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Scroll to latest messages"
+          >
+            <ArrowDown size={14} color="#FFF" />
+            <Text style={styles.floatingScrollText}>Latest</Text>
+          </TouchableOpacity>
+        )}
 
         {error ? (
           <View style={styles.errorContainer}>
@@ -430,5 +463,28 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.warning,
     fontWeight: "500",
+  },
+  floatingScrollBtn: {
+    position: "absolute",
+    bottom: 14,
+    right: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 4,
+    zIndex: 99,
+  },
+  floatingScrollText: {
+    fontSize: 11.5,
+    fontWeight: "600",
+    color: "#FFF",
   },
 });

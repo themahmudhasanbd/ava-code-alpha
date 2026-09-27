@@ -9,7 +9,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useNavigation, DrawerActions } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
+import { openAppDrawer } from "@/navigation/drawer";
 import { Camera, Keyboard, Menu, Monitor, RefreshCw } from "lucide-react-native";
 import { AppShell } from "@/components/layout/AppShell";
 import {
@@ -70,7 +71,7 @@ export function DesktopScreen() {
         <GlassIconButton
           icon={Menu}
           size={18}
-          onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+          onPress={() => openAppDrawer(navigation)}
         />
         <View style={styles.headerTextGroup}>
           <View style={styles.headerTitleRow}>

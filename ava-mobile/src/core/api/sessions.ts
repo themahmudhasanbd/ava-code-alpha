@@ -8,6 +8,12 @@ export { itemToPart };
 type Raw = any;
 const str = (v: unknown, d = "") => (v == null ? d : String(v));
 
+let counter = 0;
+function makeId(prefix = "id"): string {
+  counter = (counter + 1) % 1000000;
+  return `${prefix}_${Date.now()}_${counter}_${Math.random().toString(36).slice(2, 6)}`;
+}
+
 export interface SessionHistoryResult {
   messages: ChatMessage[];
   isTurnRunning: boolean;
@@ -91,7 +97,9 @@ export async function readSession(rpc: RpcClient, id: string): Promise<SessionHi
         } else if (it.text) {
           text = str(it.text);
         }
-        if (text) out.push({ id: str(it.id || `u_${Date.now()}`), role: "user", parts: [{ id: str(it.id || `u_p_${Date.now()}`), kind: "text", text, status: "done" }] });
+        const uId = str(it.id) || makeId("u");
+        const uPartId = str(it.id ? `${it.id}_p` : makeId("u_p"));
+        if (text) out.push({ id: uId, role: "user", parts: [{ id: uPartId, kind: "text", text, status: "done" }] });
       } else {
         const itemStatus = isTurnInProgress && (!it.status || it.status === "inProgress" || it.status === "running") ? "running" : "done";
         const p = itemToPart(it, itemStatus);
@@ -99,8 +107,9 @@ export async function readSession(rpc: RpcClient, id: string): Promise<SessionHi
       }
     }
     if (parts.length) {
+      const turnIdStr = str(turn.id) || `${i}`;
       out.push({
-        id: `a_${str(turn.id)}`,
+        id: `a_${turnIdStr}`,
         role: "assistant",
         parts,
         stats: { durationMs: typeof turn.durationMs === "number" ? turn.durationMs : undefined },

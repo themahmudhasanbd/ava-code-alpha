@@ -5,6 +5,7 @@ import { formatCoreError } from "../errors";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Raw = any;
+const str = (v: unknown, d = "") => (v == null ? d : String(v));
 
 export interface TurnHandlers {
   onPart: (part: MessagePart) => void;
@@ -69,6 +70,8 @@ export async function runTurn(
         break;
       case "item/commandExecution/outputDelta":
       case "command/exec/outputDelta":
+      case "item/fileChange/outputDelta":
+      case "item/mcpToolCall/progress":
         h.onDelta(String(params?.itemId ?? params?.processId ?? params?.id ?? ""), String(params?.delta ?? params?.chunk ?? params?.output ?? ""), "output");
         break;
       case "turn/plan/updated":
@@ -101,6 +104,30 @@ export async function runTurn(
         const msg = formatCoreError(params, "Warning");
         // Known harmless server noise for custom model combos.
         if (!/^Model metadata for .* not found/.test(msg)) h.onNotice(msg, "warning");
+        break;
+      }
+      case "thread/environment/connected":
+        h.onNotice("Environment connected", "info");
+        break;
+      case "thread/environment/disconnected":
+        h.onNotice("Environment disconnected", "warning");
+        break;
+      case "mcpServer/startupStatus/updated": {
+        const mcpName = str(params?.name ?? params?.server ?? "MCP server");
+        const mcpStatus = str(params?.status ?? "");
+        if (mcpStatus === "ready") {
+          h.onNotice(`${mcpName} connected`, "info");
+        } else if (mcpStatus === "failed") {
+          h.onNotice(`${mcpName} failed to start`, "warning");
+        }
+        break;
+      }
+      case "item/commandExecution/terminalInteraction": {
+        const interactionData = params?.interaction ?? params;
+        const stdinText = str(interactionData?.input ?? interactionData?.data ?? "");
+        if (stdinText) {
+          h.onDelta(String(params?.itemId ?? params?.id ?? ""), stdinText, "output");
+        }
         break;
       }
       case "error": {
@@ -223,6 +250,8 @@ export function attachToRunningTurn(
         break;
       case "item/commandExecution/outputDelta":
       case "command/exec/outputDelta":
+      case "item/fileChange/outputDelta":
+      case "item/mcpToolCall/progress":
         h.onDelta(String(params?.itemId ?? params?.processId ?? params?.id ?? ""), String(params?.delta ?? params?.chunk ?? params?.output ?? ""), "output");
         break;
       case "turn/plan/updated":
@@ -254,6 +283,30 @@ export function attachToRunningTurn(
       case "warning": {
         const msg = formatCoreError(params, "Warning");
         if (!/^Model metadata for .* not found/.test(msg)) h.onNotice(msg, "warning");
+        break;
+      }
+      case "thread/environment/connected":
+        h.onNotice("Environment connected", "info");
+        break;
+      case "thread/environment/disconnected":
+        h.onNotice("Environment disconnected", "warning");
+        break;
+      case "mcpServer/startupStatus/updated": {
+        const mcpName = str(params?.name ?? params?.server ?? "MCP server");
+        const mcpStatus = str(params?.status ?? "");
+        if (mcpStatus === "ready") {
+          h.onNotice(`${mcpName} connected`, "info");
+        } else if (mcpStatus === "failed") {
+          h.onNotice(`${mcpName} failed to start`, "warning");
+        }
+        break;
+      }
+      case "item/commandExecution/terminalInteraction": {
+        const interactionData = params?.interaction ?? params;
+        const stdinText = str(interactionData?.input ?? interactionData?.data ?? "");
+        if (stdinText) {
+          h.onDelta(String(params?.itemId ?? params?.id ?? ""), stdinText, "output");
+        }
         break;
       }
       case "error": {

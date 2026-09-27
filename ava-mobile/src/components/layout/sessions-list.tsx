@@ -4,10 +4,7 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  ActivityIndicator,
   LayoutAnimation,
-  Platform,
-  UIManager,
 } from "react-native";
 import {
   Plus,
@@ -19,14 +16,12 @@ import {
   PinOff,
 } from "lucide-react-native";
 import { Button } from "@/components/ui/button";
-import { SkeletonRows } from "@/components/kit";
+import { GlassCapsule, SkeletonRows } from "@/components/kit";
 import { storage } from "@/core/storage";
 import { useAva } from "@/state/ava-provider";
 import { useSessions, useDeleteSession } from "@/state/queries";
 import type { Session } from "@/core/types";
 import { COLORS } from "@/theme/colors";
-
-
 
 const PIN_KEY = "ava.workspace.pins";
 
@@ -47,8 +42,13 @@ export function SessionsList({
 }: {
   onPick?: (sessionId: string | null) => void;
 }) {
-  const { activeSessionId, setActiveSessionId, runningSessions, workingSessionId, status } =
-    useAva();
+  const {
+    activeSessionId,
+    setActiveSessionId,
+    runningSessions,
+    workingSessionId,
+    status,
+  } = useAva();
   const { data: sessions = [], isLoading, error } = useSessions();
   const del = useDeleteSession();
   const [pins, setPins] = useState<string[]>([]);
@@ -63,7 +63,9 @@ export function SessionsList({
 
   const activeDirectory = useMemo(() => {
     const active = sessions.find((s) => s.id === activeSessionId);
-    return active?.directory ?? (sessions.length > 0 ? sessions[0].directory : "/");
+    return (
+      active?.directory ?? (sessions.length > 0 ? sessions[0].directory : "/")
+    );
   }, [sessions, activeSessionId]);
 
   useEffect(() => {
@@ -83,7 +85,8 @@ export function SessionsList({
       if (!aIsActive && bIsActive) return 1;
       const aPin = pins.indexOf(a);
       const bPin = pins.indexOf(b);
-      if (aPin >= 0 || bPin >= 0) return aPin < 0 ? 1 : bPin < 0 ? -1 : aPin - bPin;
+      if (aPin >= 0 || bPin >= 0)
+        return aPin < 0 ? 1 : bPin < 0 ? -1 : aPin - bPin;
       return projectName(a).localeCompare(projectName(b));
     });
   }, [sessions, pins, activeDirectory]);
@@ -131,9 +134,7 @@ export function SessionsList({
 
       {isLoading && <SkeletonRows count={3} />}
 
-      {error && (
-        <Text style={styles.errorText}>Could not load sessions.</Text>
-      )}
+      {error && <Text style={styles.errorText}>Could not load sessions.</Text>}
 
       {sessions.length === 0 && !isLoading && (
         <Text style={styles.infoText}>No sessions yet.</Text>
@@ -198,17 +199,20 @@ export function SessionsList({
                       {projectName(dir)}
                     </Text>
                     {isActiveWorkspace && (
-                      <View style={styles.activeWorkspaceBadge}>
-                        <Text style={styles.activeWorkspaceBadgeText}>
-                          Workspace
-                        </Text>
-                      </View>
+                      <GlassCapsule
+                        label="Active"
+                        variant="primary"
+                        size="xs"
+                        active
+                      />
                     )}
                     {isPinned && !isActiveWorkspace && (
-                      <View style={styles.pinnedBadge}>
-                        <Pin size={10} color={COLORS.primary} />
-                        <Text style={styles.pinnedBadgeText}>Pinned</Text>
-                      </View>
+                      <GlassCapsule
+                        icon={Pin}
+                        label="Pinned"
+                        variant="secondary"
+                        size="xs"
+                      />
                     )}
                   </View>
                   <Text style={styles.pathTag} numberOfLines={1}>
@@ -216,7 +220,11 @@ export function SessionsList({
                   </Text>
                 </View>
 
-                <Text style={styles.badgeCount}>{dirSessions.length}</Text>
+                <GlassCapsule
+                  label={`${dirSessions.length}`}
+                  variant="default"
+                  size="xs"
+                />
 
                 <TouchableOpacity
                   style={styles.pinBtn}
@@ -264,14 +272,13 @@ export function SessionsList({
                             {session.title || "Untitled Session"}
                           </Text>
                           {isRunning ? (
-                            <View style={styles.runningBadge}>
-                              <ActivityIndicator
-                                size="small"
-                                color={COLORS.primary}
-                                style={{ transform: [{ scale: 0.7 }] }}
-                              />
-                              <Text style={styles.runningText}>Running</Text>
-                            </View>
+                            <GlassCapsule
+                              label="Running"
+                              variant="primary"
+                              size="xs"
+                              active
+                              statusDot="busy"
+                            />
                           ) : null}
                         </TouchableOpacity>
                         <TouchableOpacity
@@ -331,7 +338,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   groupCard: {
-    borderRadius: 12,
+    borderRadius: 14,
     overflow: "hidden",
     borderWidth: 1,
     borderColor: "transparent",
@@ -368,40 +375,10 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontWeight: "700",
   },
-  activeWorkspaceBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 1.5,
-    borderRadius: 6,
-    backgroundColor: "rgba(66, 64, 225, 0.12)",
-  },
-  activeWorkspaceBadgeText: {
-    fontSize: 9.5,
-    fontWeight: "700",
-    color: COLORS.primary,
-  },
-  pinnedBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 3,
-    paddingHorizontal: 5,
-    paddingVertical: 1.5,
-    borderRadius: 6,
-    backgroundColor: COLORS.secondary,
-  },
-  pinnedBadgeText: {
-    fontSize: 9.5,
-    fontWeight: "600",
-    color: COLORS.primary,
-  },
   pathTag: {
     fontSize: 10.5,
     color: COLORS.mutedForeground,
     marginTop: 1,
-  },
-  badgeCount: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: COLORS.mutedForeground,
   },
   pinBtn: {
     padding: 4,
@@ -447,20 +424,6 @@ const styles = StyleSheet.create({
   activeSessionTitle: {
     color: COLORS.foreground,
     fontWeight: "600",
-  },
-  runningBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 2,
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    borderRadius: 4,
-    backgroundColor: "rgba(66, 64, 225, 0.1)",
-  },
-  runningText: {
-    fontSize: 9.5,
-    fontWeight: "600",
-    color: COLORS.primary,
   },
   deleteButton: {
     padding: 6,

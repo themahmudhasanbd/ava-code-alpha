@@ -144,8 +144,14 @@ export function itemToPart(item: Raw, fallback: MessagePart["status"] = "done"):
     }
     case "commandExecution": {
       const command = prettyCommand(item.command);
+      const actions: Raw[] = Array.isArray(item.commandActions) ? item.commandActions : [];
+      const primary = actions.find((a: Raw) => a.type && a.type !== "unknown") ?? actions[0];
+      let toolName = "Terminal";
+      if (primary?.type === "read") toolName = "File Read";
+      else if (primary?.type === "listFiles") toolName = "List Files";
+      else if (primary?.type === "search") toolName = "Search";
       return {
-        id, kind: "tool", text: "", toolName: "Terminal", input: command, status,
+        id, kind: "tool", text: "", toolName, input: command, status,
         output: str(item.aggregatedOutput ?? item.output ?? ""),
         meta: { command, cwd: str(item.cwd) || undefined, exitCode: num(item.exitCode), durationMs: num(item.durationMs) },
       };
@@ -195,6 +201,120 @@ export function itemToPart(item: Raw, fallback: MessagePart["status"] = "done"):
       return { id, kind: "notice", text: "Context compacted to keep the conversation going", status, meta: { tone: "info" } };
     case "error":
       return { id, kind: "notice", text: str(item.message, "Error"), status: "error", meta: { tone: "error" } };
+    case "imageGeneration": {
+      const url = str(item.result ?? item.savedPath ?? "");
+      const media: MediaItem[] | undefined = url
+        ? [{ type: "image", url, name: item.revisedPrompt ? str(item.revisedPrompt).slice(0, 60) : "Generated image" }]
+        : undefined;
+      return {
+        id, kind: "tool", text: str(item.revisedPrompt ?? ""), toolName: "Image Generation",
+        input: item.revisedPrompt || undefined, status,
+        meta: { media, durationMs: num(item.durationMs) },
+      };
+    }
+    case "imageView": {
+      const path = str(item.path ?? "");
+      const media: MediaItem[] | undefined = path
+        ? [{ type: "image", url: path, name: "Viewed image" }]
+        : undefined;
+      return { id, kind: "tool", text: "", toolName: "View Image", input: path, status, meta: { media } };
+    }
+    case "dynamicToolCall": {
+      const out = typeof item.output === "string" ? item.output : str(item.result ?? "");
+      return {
+        id, kind: "tool", text: "", toolName: str(item.tool ?? item.name ?? "Dynamic Tool"),
+        input: item.arguments, output: out, status,
+        meta: { durationMs: num(item.durationMs) },
+      };
+    }
+    case "collabAgentToolCall": {
+      const raw = str(item.tool ?? "agentAction");
+      const label = raw.replace(/([A-Z])/g, " $1").replace(/^./, (c: string) => c.toUpperCase());
+      return {
+        id, kind: "tool", text: str(item.prompt ?? ""), toolName: `Agent · ${label}`,
+        input: item.prompt || item.arguments || undefined, status,
+        meta: { durationMs: num(item.durationMs) },
+      };
+    }
+    case "subAgentActivity": {
+      const k = str(item.kind ?? "activity");
+      const agentPath = str(item.agentPath ?? item.agentThreadId ?? "");
+      return {
+        id, kind: "notice",
+        text: agentPath ? `Sub-agent ${k}: ${agentPath}` : `Sub-agent ${k}`,
+        status,
+        meta: { tone: k === "interrupted" ? "warning" : k === "errored" ? "error" : "info" },
+      };
+    }
+    case "enteredReviewMode":
+      return {
+        id, kind: "notice",
+        text: `Entered review mode${item.review ? `: ${str(item.review)}` : ""}`,
+        status, meta: { tone: "info" },
+      };
+    case "exitedReviewMode":
+      return {
+        id, kind: "notice",
+        text: `Exited review mode${item.review ? `: ${str(item.review)}` : ""}`,
+        status, meta: { tone: "info" },
+      };
+    case "extension": {
+      const extKind = str(item.kind ?? "");
+      if (extKind === "clock.sleep") {
+        const dur = num(item.durationMs);
+        return {
+          id, kind: "notice",
+          text: dur != null ? `Waiting ${(dur / 1000).toFixed(dur >= 60000 ? 0 : 1)}s` : "Sleeping…",
+          status, meta: { tone: "info", durationMs: dur },
+        };
+      }
+      if (extKind.includes("image") || extKind.includes("generation")) {
+        const url = str(item.result ?? item.savedPath ?? "");
+        const media: MediaItem[] | undefined = url
+          ? [{ type: "image", url, name: "Generated image" }]
+          : undefined;
+        return {
+          id, kind: "tool", text: str(item.revisedPrompt ?? ""),
+          toolName: "Image Generation", input: item.revisedPrompt || undefined, status,
+          meta: { media, durationMs: num(item.durationMs) },
+        };
+      }
+      if (extKind.includes("web") || extKind.includes("search")) {
+        return {
+          id, kind: "tool", text: "", toolName: "Web Search",
+          input: str(item.query ?? item.action?.query ?? ""), status,
+          meta: { command: str(item.query ?? "") },
+        };
+      }
+      return {
+        id, kind: "tool", text: "", toolName: str(extKind || "Extension"),
+        input: item.arguments ?? item, status,
+      };
+    }
+    case "hookPrompt":
+      return { id, kind: "notice", text: "Hook executed", status, meta: { tone: "info" } };
+    case "functionCallOutput": {
+      let out = "";
+      if (typeof item.output === "string") {
+        out = item.output;
+      } else if (Array.isArray(item.output)) {
+        out = item.output
+          .filter((c: Raw) => c.type === "input_text" || c.type === "text")
+          .map((c: Raw) => str(c.text ?? ""))
+          .filter(Boolean)
+          .join("\n");
+      }
+      const name = str(item.name ?? item.tool ?? item.namespace ?? "Function");
+      return { id, kind: "tool", text: "", toolName: name, output: out, status };
+    }
+    case "sleep": {
+      const dur = num(item.durationMs);
+      return {
+        id, kind: "notice",
+        text: dur != null ? `Waiting ${(dur / 1000).toFixed(dur >= 60000 ? 0 : 1)}s` : "Sleeping…",
+        status, meta: { tone: "info", durationMs: dur },
+      };
+    }
     default: {
       const out = str(item.output ?? item.result ?? "");
       const media = extractMediaFromText(out);

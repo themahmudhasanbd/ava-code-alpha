@@ -17,13 +17,9 @@ import {
   ChevronDown,
   ChevronRight,
   ChevronUp,
-  Circle,
-  CircleDot,
   Copy,
-  FileCode,
   Globe,
   Info,
-  ListChecks,
   Plug,
   Terminal as TerminalSquare,
   Wrench,
@@ -40,6 +36,8 @@ import type { ChatMessage, MessagePart } from "@/core/types";
 import { COLORS } from "@/theme/colors";
 import { formatDuration as fmtDuration, formatTokens as fmtTokens } from "@/lib/format";
 import { font, FONTS, mono } from "@/theme/fonts";
+import { useAva } from "@/state/ava-provider";
+import { answerQuestion } from "@/core/api/chat";
 
 export const formatDuration = fmtDuration;
 const formatTokens = fmtTokens;
@@ -96,6 +94,7 @@ function AssistantTurn({
   sessionId?: string;
   onOpenTimeline?: (messageId?: string) => void;
 }) {
+  const { rpc } = useAva();
   const elapsed = useElapsed(message.stats?.startedAt, live);
   const steps = message.parts.filter((p) => p.kind === "tool").length;
   const workflowParts = message.parts.filter((p) => p.kind !== "text");
@@ -113,6 +112,7 @@ function AssistantTurn({
   );
 
   const [copied, setCopied] = useState(false);
+  const [answeredQuestions, setAnsweredQuestions] = useState<Set<string>>(new Set());
   const duration = message.stats?.durationMs ?? (live ? elapsed : undefined);
   const hasError = message.parts.some(
     (part) => part.status === "error" || part.meta?.tone === "error"
@@ -131,6 +131,21 @@ function AssistantTurn({
       await Clipboard.setStringAsync(finalText);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleQuestionAnswer = async (questionId: string | undefined, answer: string, requestId?: number | string) => {
+    if (!rpc || !sessionId || !questionId) return;
+    setAnsweredQuestions((prev) => new Set(prev).add(questionId));
+    try {
+      await answerQuestion(rpc, sessionId, answer, requestId);
+    } catch (e) {
+      console.warn("[Question] Failed to send answer:", e);
+      setAnsweredQuestions((prev) => {
+        const next = new Set(prev);
+        next.delete(questionId);
+        return next;
+      });
     }
   };
 
@@ -193,16 +208,43 @@ function AssistantTurn({
       {questionParts.map((q) => (
         <View key={q.id} style={styles.questionCard}>
           <Text style={[styles.questionTitle, font("semibold", q.text)]}>{q.text}</Text>
-          {q.meta?.questions?.[0]?.options?.map((opt, idx) => (
-            <View key={idx} style={styles.questionOptionPill}>
-              <Text style={[styles.questionOptionText, font("medium", opt)]}>{opt}</Text>
+          {q.meta?.questions?.map((question, qIdx) => (
+            <View key={qIdx} style={{ gap: 6 }}>
+              {qIdx > 0 && (
+                <Text style={[styles.questionTitle, font("semibold", question.title)]}>
+                  {question.title}
+                </Text>
+              )}
+              {question.options?.map((opt, idx) => {
+                const isAnswered = answeredQuestions.has(question.id ?? "");
+                return (
+                  <TouchableOpacity
+                    key={idx}
+                    style={[
+                      styles.questionOptionPill,
+                      isAnswered && styles.questionOptionPillAnswered,
+                    ]}
+                    onPress={() => handleQuestionAnswer(question.id, opt, question.requestId)}
+                    disabled={isAnswered}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.questionOptionText, font("medium", opt)]}>{opt}</Text>
+                    {isAnswered && <Check size={13} color={COLORS.success} />}
+                  </TouchableOpacity>
+                );
+              })}
+              {!question.options?.length && !answeredQuestions.has(question.id ?? "") && (
+                <Text style={[styles.questionHint, font("regular")]}>
+                  Type your answer in the composer below
+                </Text>
+              )}
             </View>
           ))}
         </View>
       ))}
 
-      {/* Clean Final Output Only */}
-      {finalText ? (
+      {/* Clean Final Output Only — hide during live streaming (belongs in Timeline) */}
+      {finalText && !live ? (
         <View style={styles.finalOutputContainer}>
           <RichResponse text={finalText} />
         </View>
@@ -404,10 +446,24 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: COLORS.border,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  questionOptionPillAnswered: {
+    opacity: 0.5,
+    borderColor: COLORS.success,
   },
   questionOptionText: {
     fontSize: 12.5,
     color: COLORS.foreground,
+    flex: 1,
+  },
+  questionHint: {
+    fontSize: 11.5,
+    color: COLORS.mutedForeground,
+    fontStyle: "italic",
+    paddingVertical: 2,
   },
   noticeBox: {
     flexDirection: "row",

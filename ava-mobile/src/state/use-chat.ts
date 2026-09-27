@@ -19,6 +19,11 @@ import { keys, useSessionHistory } from "./queries";
 import { APP } from "@/config/app";
 import { chatStore, type ChatStatus, type QueuedPromptItem } from "./chat-store";
 import { backgroundSync } from "@/core/background-sync";
+import {
+  startAgentForeground,
+  updateAgentForeground,
+  stopAgentForeground,
+} from "@/core/notifications";
 
 export type { ChatStatus, QueuedPromptItem };
 
@@ -102,6 +107,16 @@ export function useChat(explicitSessionId?: string | null) {
     };
   }, [currentSessionId, rpc, rpcStatus, refreshQueue]);
 
+  // Cleanup safety timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (safetyTimeoutRef.current) {
+        clearTimeout(safetyTimeoutRef.current);
+        safetyTimeoutRef.current = null;
+      }
+    };
+  }, []);
+
   // Register background sync handler to refresh caches on foreground
   useEffect(() => {
     const unsubSync = backgroundSync.registerSyncListener((sessionIds) => {
@@ -131,6 +146,8 @@ export function useChat(explicitSessionId?: string | null) {
           ...prev,
           activeTurnId: turnId,
         }));
+        // Start native foreground service to keep agent alive when backgrounded
+        void startAgentForeground({ sessionId: threadId });
       },
       onQueueChanged: () => {
         void refreshQueue(threadId);
@@ -147,6 +164,16 @@ export function useChat(explicitSessionId?: string | null) {
           isStopping: false,
           activeAid: aid,
         }));
+
+        // Update native foreground service with current action
+        if (p.kind === "tool" && p.toolName) {
+          void updateAgentForeground({
+            currentAction: `Executing: ${p.toolName}`,
+            toolName: p.toolName,
+          });
+        } else if (p.kind === "reasoning") {
+          void updateAgentForeground({ currentAction: "Thinking..." });
+        }
 
         chatStore.patchAssistant(threadId, aid, (parts) => {
           const i = parts.findIndex(
@@ -247,6 +274,22 @@ export function useChat(explicitSessionId?: string | null) {
           ),
         }));
       },
+      onQuestion: (question, requestId) => {
+        chatStore.patchAssistant(threadId, aid, (parts) => {
+          const qId = question.id || `q_${Date.now()}`;
+          if (parts.some((p) => p.kind === "question" && p.text === question.title)) return parts;
+          return [
+            ...parts,
+            {
+              id: qId,
+              kind: "question" as const,
+              text: question.title,
+              status: "done" as const,
+              meta: { questions: [{ ...question, id: qId, requestId }] },
+            },
+          ];
+        });
+      },
       onDone: (err, info) => {
         if (safetyTimeoutRef.current) {
           clearTimeout(safetyTimeoutRef.current);
@@ -257,6 +300,9 @@ export function useChat(explicitSessionId?: string | null) {
         statusRef.current = err ? "error" : "ready";
         activeAidRef.current = null;
         setSessionRunning(threadId, false);
+
+        // Stop native foreground service
+        void stopAgentForeground({ sessionId: threadId, isSuccess: !err });
 
         chatStore.patchAssistant(threadId, aid, (parts) => {
           const next = parts.map((p) =>
@@ -484,7 +530,7 @@ export function useChat(explicitSessionId?: string | null) {
 
   // Periodic Watchdog: If streaming state has had no updates for > 15s, poll history to prevent stuck state
   useEffect(() => {
-    if (!currentSessionId || !isStreamingRef.current) return;
+    if (!currentSessionId || (status !== "streaming" && status !== "submitted")) return;
     const interval = setInterval(() => {
       const store = chatStore.getState(currentSessionId);
       if (store.isStreaming && Date.now() - store.lastUpdated > 12000) {
@@ -492,7 +538,7 @@ export function useChat(explicitSessionId?: string | null) {
       }
     }, 5000);
     return () => clearInterval(interval);
-  }, [currentSessionId, history]);
+  }, [currentSessionId, history, status]);
 
   const loadOlder = useCallback(() => {
     if (!currentSessionId) return;

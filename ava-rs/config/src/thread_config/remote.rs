@@ -190,7 +190,10 @@ fn model_provider_from_proto(
         request_max_retries: provider.request_max_retries,
         stream_max_retries: provider.stream_max_retries,
         stream_idle_timeout_ms: provider.stream_idle_timeout_ms,
+        connect_timeout_ms: None,
+        request_timeout_ms: None,
         websocket_connect_timeout_ms: provider.websocket_connect_timeout_ms,
+        models: None,
         requires_openai_auth: provider.requires_openai_auth,
         supports_websockets: provider.supports_websockets,
         supports_standalone_web_search: provider.supports_standalone_web_search,
@@ -224,6 +227,9 @@ fn model_provider_to_proto(
         requires_openai_auth,
         supports_websockets,
         supports_standalone_web_search,
+        connect_timeout_ms: _,
+        request_timeout_ms: _,
+        models: _,
     } = provider;
 
     proto::ModelProvider {
@@ -579,6 +585,9 @@ mod tests {
             supports_standalone_web_search: true,
             gateway_oauth: None,
             aws: None,
+            connect_timeout_ms: None,
+            request_timeout_ms: None,
+            models: None,
         }
     }
 

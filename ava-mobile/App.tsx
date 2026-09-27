@@ -1,9 +1,13 @@
 import "@/polyfills";
 import "react-native-gesture-handler";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, LogBox, StyleSheet, View } from "react-native";
-import { NavigationContainer } from "@react-navigation/native";
+import {
+  NavigationContainer,
+  DefaultTheme,
+  DarkTheme,
+} from "@react-navigation/native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StatusBar } from "expo-status-bar";
@@ -29,7 +33,7 @@ import {
 import { AvaProvider } from "@/state/ava-provider";
 import { RootNavigator } from "@/navigation/RootNavigator";
 import { initStorage } from "@/core/storage";
-import { COLORS } from "@/theme/colors";
+import { COLORS, ThemeProvider, useTheme } from "@/theme/colors";
 
 LogBox.ignoreLogs([
   "Cannot connect to Expo CLI",
@@ -46,6 +50,34 @@ const queryClient = new QueryClient({
     queries: { retry: 1, staleTime: 5000 },
   },
 });
+
+function AppContent() {
+  const { isDark, colors } = useTheme();
+
+  const navTheme = useMemo(() => {
+    const base = isDark ? DarkTheme : DefaultTheme;
+    return {
+      ...base,
+      dark: isDark,
+      colors: {
+        ...base.colors,
+        primary: colors.primary,
+        background: colors.background,
+        card: colors.card,
+        text: colors.foreground,
+        border: colors.border,
+        notification: colors.primary,
+      },
+    };
+  }, [isDark, colors]);
+
+  return (
+    <NavigationContainer theme={navTheme}>
+      <StatusBar style={isDark ? "light" : "dark"} />
+      <RootNavigator />
+    </NavigationContainer>
+  );
+}
 
 export default function App() {
   const [ready, setReady] = useState(false);
@@ -91,12 +123,11 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
-          <AvaProvider>
-            <NavigationContainer>
-              <StatusBar style="dark" />
-              <RootNavigator />
-            </NavigationContainer>
-          </AvaProvider>
+          <ThemeProvider>
+            <AvaProvider>
+              <AppContent />
+            </AvaProvider>
+          </ThemeProvider>
         </QueryClientProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

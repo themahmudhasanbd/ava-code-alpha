@@ -51,10 +51,25 @@ export async function listMcpServers(rpc: RpcClient): Promise<McpServer[]> {
     const tools = (s.tools && typeof s.tools === "object" ? s.tools : {}) as Record<string, Raw>;
     return {
       name: String(s.name ?? ""),
-      status: String(s.authStatus ?? s.status ?? "connected"),
+      status: String(s.runtimeStatus ?? s.status ?? "connected"),
+      authStatus: s.authStatus ? String(s.authStatus) : undefined,
       tools: Object.entries(tools).map(([name, t]) => ({ name, description: String(t?.description ?? "") })),
     };
   }).filter((s) => s.name);
 }
 
 export const reloadMcpServers = (rpc: RpcClient) => rpc.call("config/mcpServer/reload", {});
+
+/** Initiate OAuth login for an MCP server. Returns the authorization URL to open. */
+export async function mcpOAuthLogin(rpc: RpcClient, serverName: string): Promise<{ authorizationUrl: string } | null> {
+  try {
+    const res = await rpc.call<{ authorizationUrl?: string }>("mcpServer/oauth/login", { name: serverName });
+    if (res?.authorizationUrl) {
+      return { authorizationUrl: res.authorizationUrl };
+    }
+    return null;
+  } catch (e) {
+    console.warn("[MCP] OAuth login failed:", e);
+    return null;
+  }
+}

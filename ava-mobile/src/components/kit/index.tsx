@@ -8,8 +8,9 @@ import {
   type StyleProp,
 } from "react-native";
 import type { LucideIcon } from "lucide-react-native";
-import { COLORS } from "@/theme/colors";
+import { COLORS, useTheme } from "@/theme/colors";
 import type { ConnectionStatus } from "@/core/types";
+import { Skeleton, SkeletonCapsule, SkeletonText, SkeletonCard } from "@/components/ui/skeleton";
 
 // Re-export canonical UI primitives
 export { Button, type ButtonProps } from "@/components/ui/button";
@@ -17,13 +18,31 @@ export { Input, type InputProps } from "@/components/ui/input";
 export { Label, type LabelProps } from "@/components/ui/label";
 export { Badge, type BadgeProps } from "@/components/ui/badge";
 export { AvaMascot, type AvaMascotState } from "@/components/ui/ava-mascot";
-export { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
+export {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card";
 export { Separator } from "@/components/ui/separator";
-export { Skeleton } from "@/components/ui/skeleton";
+export {
+  Skeleton,
+  SkeletonCapsule,
+  SkeletonText,
+  SkeletonCard,
+  type SkeletonProps,
+} from "@/components/ui/skeleton";
+export {
+  GlassCapsule,
+  type GlassCapsuleProps,
+  type GlassCapsuleVariant,
+  type GlassCapsuleSize,
+} from "@/components/ui/glass-capsule";
 export { Switch, type SwitchProps } from "@/components/ui/switch";
 export { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
-/**
 /**
  * AppGlow - Clean background container matching web v2 background.
  */
@@ -34,8 +53,9 @@ export function AppGlow({
   children?: ReactNode;
   style?: StyleProp<ViewStyle>;
 }) {
+  const { colors } = useTheme();
   return (
-    <View style={[styles.glowContainer, style]}>
+    <View style={[styles.glowContainer, { backgroundColor: colors.background }, style]}>
       {children}
     </View>
   );
@@ -51,7 +71,22 @@ export function Surface({
   children?: ReactNode;
   style?: StyleProp<ViewStyle>;
 }) {
-  return <View style={[styles.surface, style]}>{children}</View>;
+  const { colors } = useTheme();
+  return (
+    <View
+      style={[
+        styles.surface,
+        {
+          backgroundColor: colors.glassBg,
+          borderColor: colors.glassBorder,
+          shadowColor: colors.glassShadow,
+        },
+        style,
+      ]}
+    >
+      {children}
+    </View>
+  );
 }
 
 /**
@@ -60,7 +95,7 @@ export function Surface({
 export function GlassIconButton({
   icon: Icon,
   size = 18,
-  color = COLORS.foreground,
+  color,
   onPress,
   style,
   disabled = false,
@@ -74,15 +109,25 @@ export function GlassIconButton({
   disabled?: boolean;
   label?: string;
 }) {
+  const { colors } = useTheme();
   return (
     <TouchableOpacity
       accessibilityLabel={label}
       onPress={onPress}
       disabled={disabled}
       activeOpacity={0.7}
-      style={[styles.glassIconButton, disabled && { opacity: 0.4 }, style]}
+      style={[
+        styles.glassIconButton,
+        {
+          backgroundColor: colors.glassBg,
+          borderColor: colors.glassBorder,
+          shadowColor: colors.glassShadow,
+        },
+        disabled && { opacity: 0.4 },
+        style,
+      ]}
     >
-      <Icon size={size} color={color} />
+      <Icon size={size} color={color || colors.foreground} />
     </TouchableOpacity>
   );
 }
@@ -97,12 +142,13 @@ export function StatusDot({
   status: ConnectionStatus;
   size?: number;
 }) {
+  const { colors } = useTheme();
   const color =
     status === "online"
-      ? COLORS.success
+      ? colors.success
       : status === "connecting"
-      ? COLORS.warning
-      : COLORS.destructive;
+      ? colors.warning
+      : colors.destructive;
 
   return (
     <View
@@ -131,12 +177,13 @@ export function PageIntro({
   description?: string;
   action?: ReactNode;
 }) {
+  const { colors } = useTheme();
   return (
     <View style={styles.pageIntroRow}>
       <View style={styles.pageIntroTextCol}>
-        <Text style={styles.pageIntroTitle}>{title}</Text>
+        <Text style={[styles.pageIntroTitle, { color: colors.foreground }]}>{title}</Text>
         {description ? (
-          <Text style={styles.pageIntroDesc}>{description}</Text>
+          <Text style={[styles.pageIntroDesc, { color: colors.mutedForeground }]}>{description}</Text>
         ) : null}
       </View>
       {action}
@@ -158,14 +205,15 @@ export function EmptyState({
   description?: string;
   action?: ReactNode;
 }) {
+  const { colors } = useTheme();
   return (
     <Surface style={styles.emptyStateContainer}>
-      <View style={styles.emptyStateIconWrapper}>
-        <Icon size={20} color={COLORS.secondaryForeground} />
+      <View style={[styles.emptyStateIconWrapper, { backgroundColor: colors.secondary }]}>
+        <Icon size={20} color={colors.secondaryForeground} />
       </View>
-      <Text style={styles.emptyStateTitle}>{title}</Text>
+      <Text style={[styles.emptyStateTitle, { color: colors.foreground }]}>{title}</Text>
       {description ? (
-        <Text style={styles.emptyStateDesc}>{description}</Text>
+        <Text style={[styles.emptyStateDesc, { color: colors.mutedForeground }]}>{description}</Text>
       ) : null}
       {action ? <View style={{ marginTop: 12 }}>{action}</View> : null}
     </Surface>
@@ -188,6 +236,7 @@ export function ListRow({
   trailing?: ReactNode;
   onClick?: () => void;
 }) {
+  const { colors } = useTheme();
   return (
     <TouchableOpacity
       style={styles.listRow}
@@ -196,16 +245,16 @@ export function ListRow({
       activeOpacity={0.7}
     >
       {Icon ? (
-        <View style={styles.listRowIconBox}>
-          <Icon size={16} color={COLORS.secondaryForeground} />
+        <View style={[styles.listRowIconBox, { backgroundColor: colors.secondary }]}>
+          <Icon size={16} color={colors.secondaryForeground} />
         </View>
       ) : null}
       <View style={styles.listRowContent}>
-        <Text style={styles.listRowTitle} numberOfLines={1}>
+        <Text style={[styles.listRowTitle, { color: colors.foreground }]} numberOfLines={1}>
           {title}
         </Text>
         {subtitle ? (
-          <Text style={styles.listRowSubtitle} numberOfLines={1}>
+          <Text style={[styles.listRowSubtitle, { color: colors.mutedForeground }]} numberOfLines={1}>
             {subtitle}
           </Text>
         ) : null}
@@ -216,13 +265,36 @@ export function ListRow({
 }
 
 /**
- * SkeletonRows - Placeholder skeleton bars for loading state.
+ * SkeletonRows - Dynamic animated skeleton rows for loading lists across the app.
  */
 export function SkeletonRows({ count = 4 }: { count?: number }) {
+  const { colors } = useTheme();
   return (
     <View style={{ gap: 8 }}>
       {Array.from({ length: count }).map((_, i) => (
-        <View key={i} style={styles.skeletonBar} />
+        <View
+          key={i}
+          style={[
+            styles.skeletonRow,
+            { backgroundColor: colors.glassBg, borderColor: colors.glassBorder },
+          ]}
+        >
+          <Skeleton style={styles.skeletonIcon} />
+          <View style={styles.skeletonTextCol}>
+            <Skeleton
+              style={[
+                styles.skeletonLineTitle,
+                { width: `${55 + ((i * 17) % 35)}%` },
+              ]}
+            />
+            <Skeleton
+              style={[
+                styles.skeletonLineSub,
+                { width: `${35 + ((i * 23) % 40)}%` },
+              ]}
+            />
+          </View>
+        </View>
       ))}
     </View>
   );
@@ -231,16 +303,12 @@ export function SkeletonRows({ count = 4 }: { count?: number }) {
 const styles = StyleSheet.create({
   glowContainer: {
     flex: 1,
-    backgroundColor: COLORS.background,
     position: "relative",
     overflow: "hidden",
   },
   surface: {
-    backgroundColor: COLORS.glassBg,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: COLORS.glassBorder,
-    shadowColor: COLORS.glassShadow,
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.12,
     shadowRadius: 20,
@@ -252,10 +320,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: COLORS.glassBg,
     borderWidth: 1,
-    borderColor: COLORS.glassBorder,
-    shadowColor: COLORS.glassShadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 6,
@@ -278,11 +343,9 @@ const styles = StyleSheet.create({
   pageIntroTitle: {
     fontSize: 20,
     fontWeight: "600",
-    color: COLORS.foreground,
   },
   pageIntroDesc: {
     fontSize: 14,
-    color: COLORS.mutedForeground,
     marginTop: 3,
     lineHeight: 20,
   },
@@ -296,7 +359,6 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 12,
-    backgroundColor: COLORS.secondary,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 12,
@@ -304,11 +366,9 @@ const styles = StyleSheet.create({
   emptyStateTitle: {
     fontSize: 15,
     fontWeight: "600",
-    color: COLORS.foreground,
   },
   emptyStateDesc: {
     fontSize: 13,
-    color: COLORS.mutedForeground,
     textAlign: "center",
     marginTop: 4,
     maxWidth: 260,
@@ -325,7 +385,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 8,
-    backgroundColor: COLORS.secondary,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -335,17 +394,34 @@ const styles = StyleSheet.create({
   listRowTitle: {
     fontSize: 14,
     fontWeight: "500",
-    color: COLORS.foreground,
   },
   listRowSubtitle: {
     fontSize: 12,
-    color: COLORS.mutedForeground,
     marginTop: 2,
   },
-  skeletonBar: {
-    height: 52,
-    borderRadius: 12,
-    backgroundColor: COLORS.muted,
-    opacity: 0.6,
+  skeletonRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  skeletonIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+  },
+  skeletonTextCol: {
+    flex: 1,
+    gap: 8,
+  },
+  skeletonLineTitle: {
+    height: 14,
+    borderRadius: 7,
+  },
+  skeletonLineSub: {
+    height: 10,
+    borderRadius: 5,
   },
 });

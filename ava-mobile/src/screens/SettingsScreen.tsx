@@ -1,125 +1,114 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   Alert,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  Check,
+  Bell,
   ChevronRight,
   Cpu,
-  Folder,
+  Database,
   FolderGit2,
-  HardDrive,
-  Info,
-  Radio,
-  RotateCcw,
-  Save,
+  Paintbrush,
   Server,
-  Settings,
-  ShieldCheck,
+  Shield,
   Trash2,
-  Zap,
+  User,
+  type LucideIcon,
 } from "lucide-react-native";
 import { AppShell } from "@/components/layout/AppShell";
-import { EmptyState, PageIntro, SkeletonRows, Surface } from "@/components/kit";
+import { PageIntro, Surface } from "@/components/kit";
 import { APP } from "@/config/app";
 import { useAva } from "@/state/ava-provider";
-import { useServerConfig } from "@/state/queries";
-import { COLORS } from "@/theme/colors";
+import { useTheme } from "@/theme/colors";
 import { font, mono } from "@/theme/fonts";
 
-const SHORTCUTS = [
-  { label: "ava-code", path: "/var/www/ava-code" },
-  { label: "shared-media", path: "/root/shared-media" },
-  { label: "/var/www", path: "/var/www" },
-  { label: "/root", path: "/root" },
-  { label: "Root /", path: "/" },
-];
+function NavTile({
+  icon: Icon,
+  iconColor,
+  title,
+  subtitle,
+  onPress,
+}: {
+  icon: LucideIcon;
+  iconColor?: string;
+  title: string;
+  subtitle: string;
+  onPress: () => void;
+}) {
+  const { colors } = useTheme();
+  const tint = iconColor || colors.primary;
 
-function SettingRow({
+  return (
+    <TouchableOpacity
+      style={[styles.tile, { borderBottomColor: colors.border }]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <View style={[styles.tileIcon, { backgroundColor: `${tint}15` }]}>
+        <Icon size={18} color={tint} />
+      </View>
+      <View style={styles.tileContent}>
+        <Text style={[styles.tileTitle, { color: colors.foreground }, font("medium")]}>
+          {title}
+        </Text>
+        <Text
+          style={[styles.tileSubtitle, { color: colors.mutedForeground }, font("regular")]}
+          numberOfLines={1}
+        >
+          {subtitle}
+        </Text>
+      </View>
+      <ChevronRight size={16} color={colors.mutedForeground} />
+    </TouchableOpacity>
+  );
+}
+
+function QuickRow({
   label,
   value,
-  subvalue,
-  monoValue = false,
-  highlight = false,
-  onPress,
+  monoValue,
 }: {
   label: string;
   value: string;
-  subvalue?: string;
   monoValue?: boolean;
-  highlight?: boolean;
-  onPress?: () => void;
 }) {
-  const content = (
-    <View style={styles.settingRow}>
-      <View style={{ flex: 1, paddingRight: 8 }}>
-        <Text style={[styles.settingLabel, font("regular")]}>{label}</Text>
-        {subvalue ? (
-          <Text style={[styles.settingSubtext, font("regular")]}>{subvalue}</Text>
-        ) : null}
-      </View>
-      <View style={styles.settingValueContainer}>
-        <Text
-          style={[
-            styles.settingValue,
-            monoValue ? mono("medium") : font("medium"),
-            highlight && styles.settingValueHighlight,
-          ]}
-          numberOfLines={1}
-        >
-          {value}
-        </Text>
-        {onPress ? <ChevronRight size={14} color={COLORS.mutedForeground} /> : null}
-      </View>
+  const { colors } = useTheme();
+  return (
+    <View style={styles.quickRow}>
+      <Text style={[styles.quickLabel, { color: colors.mutedForeground }, font("regular")]}>
+        {label}
+      </Text>
+      <Text
+        style={[
+          styles.quickValue,
+          { color: colors.foreground },
+          monoValue ? mono("medium") : font("medium"),
+        ]}
+        numberOfLines={1}
+      >
+        {value}
+      </Text>
     </View>
   );
-
-  if (onPress) {
-    return (
-      <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
-        {content}
-      </TouchableOpacity>
-    );
-  }
-
-  return content;
 }
 
 export function SettingsScreen() {
   const navigation = useNavigation<any>();
   const qc = useQueryClient();
-  const { auth, modelId, defaultCwd, workingCwd, setDefaultCwd, setWorkingCwd } = useAva();
-  const { data, isLoading, error } = useServerConfig();
-
-  const [inputCwd, setInputCwd] = useState(defaultCwd || APP.defaultCwd);
-  const [savedSuccess, setSavedSuccess] = useState(false);
-  const [cacheCleared, setCacheCleared] = useState(false);
-
-  const handleSaveCwd = (pathToSave?: string) => {
-    const finalPath = (pathToSave ?? inputCwd).trim().replace(/\/+$/, "") || "/";
-    setDefaultCwd(finalPath);
-    setWorkingCwd(finalPath);
-    setInputCwd(finalPath);
-    setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 2200);
-  };
-
-  const handleResetCwd = () => {
-    handleSaveCwd(APP.defaultCwd);
-  };
+  const { auth, modelId } = useAva();
+  const { colors, theme, resolvedTheme } = useTheme();
 
   const handleClearCache = () => {
     Alert.alert(
       "Clear Local Cache",
-      "This will invalidate client-side cache for sessions, files, models, and diagnostics.",
+      "Invalidate client-side cache for sessions, files, and server queries.",
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -127,13 +116,19 @@ export function SettingsScreen() {
           style: "destructive",
           onPress: () => {
             qc.clear();
-            setCacheCleared(true);
-            setTimeout(() => setCacheCleared(false), 2200);
+            Alert.alert("Cleared", "Local query cache emptied.");
           },
         },
       ]
     );
   };
+
+  const themeLabel =
+    theme === "system"
+      ? `System Match (${resolvedTheme})`
+      : theme === "dark"
+      ? "Obsidian Dark"
+      : "Alabaster Light";
 
   return (
     <AppShell title="Settings">
@@ -143,200 +138,136 @@ export function SettingsScreen() {
         showsVerticalScrollIndicator={false}
       >
         <PageIntro
-          title="Settings & Workspace"
-          description="Configure your workspace roots, server connection, and AI defaults."
+          title="Settings"
+          description="Configure AvA Code, models, appearance, workspace, and native integrations."
         />
 
-        {/* ── 1. Default Workspace Path ── */}
+        {/* ── Quick Info Card ── */}
+        <Surface style={[styles.quickCard, { borderColor: colors.glassBorder }]}>
+          <QuickRow
+            label="Server"
+            value={auth?.serverUrl?.replace(/^https?:\/\//, "") || "127.0.0.1:4096"}
+          />
+          <QuickRow label="Active Model" value={modelId || "Server Default"} monoValue />
+          <QuickRow label="Appearance" value={themeLabel} />
+          <QuickRow label="Client" value={`${APP.name} Mobile v${APP.version}`} />
+        </Surface>
+
+        {/* ── Appearance & UI ── */}
         <View style={styles.section}>
-          <View style={styles.sectionHeaderRow}>
-            <FolderGit2 size={15} color={COLORS.primary} />
-            <Text style={[styles.sectionTitle, font("semibold")]}>Default Workspace Path</Text>
-          </View>
-          <Surface style={styles.workspaceCard}>
-            <Text style={[styles.workspaceHelpText, font("regular")]}>
-              Base directory used when launching new agent coding sessions, terminal windows, and file explorer.
-            </Text>
-
-            {/* Quick Shortcut Chips */}
-            <View style={styles.shortcutRow}>
-              {SHORTCUTS.map((sc) => {
-                const isSelected = inputCwd === sc.path;
-                return (
-                  <TouchableOpacity
-                    key={sc.path}
-                    style={[styles.shortcutChip, isSelected && styles.shortcutChipSelected]}
-                    onPress={() => {
-                      setInputCwd(sc.path);
-                      handleSaveCwd(sc.path);
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <Folder
-                      size={12}
-                      color={isSelected ? COLORS.primary : COLORS.mutedForeground}
-                    />
-                    <Text
-                      style={[
-                        styles.shortcutChipText,
-                        font("medium", sc.label),
-                        isSelected && styles.shortcutChipTextSelected,
-                      ]}
-                    >
-                      {sc.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-
-            {/* Path Input Field */}
-            <View style={styles.inputContainer}>
-              <TextInput
-                style={[styles.pathInput, mono("regular")]}
-                value={inputCwd}
-                onChangeText={setInputCwd}
-                placeholder="/var/www/ava-code"
-                placeholderTextColor={COLORS.mutedForeground}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-            </View>
-
-            {/* Actions Row */}
-            <View style={styles.workspaceActionsRow}>
-              <TouchableOpacity
-                style={styles.resetBtn}
-                onPress={handleResetCwd}
-                activeOpacity={0.7}
-              >
-                <RotateCcw size={13} color={COLORS.mutedForeground} />
-                <Text style={[styles.resetBtnText, font("medium")]}>Reset to Default</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.saveBtn, savedSuccess && styles.saveBtnSuccess]}
-                onPress={() => handleSaveCwd()}
-                activeOpacity={0.8}
-              >
-                {savedSuccess ? (
-                  <>
-                    <Check size={14} color="#FFFFFF" />
-                    <Text style={[styles.saveBtnText, font("semibold")]}>Saved Path!</Text>
-                  </>
-                ) : (
-                  <>
-                    <Save size={14} color="#FFFFFF" />
-                    <Text style={[styles.saveBtnText, font("semibold")]}>Save Workspace</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            </View>
-          </Surface>
-        </View>
-
-        {/* ── 2. Agent & Model Configuration ── */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeaderRow}>
-            <Cpu size={15} color={COLORS.primary} />
-            <Text style={[styles.sectionTitle, font("semibold")]}>Agent Runtime Configuration</Text>
-          </View>
-          {isLoading && <SkeletonRows count={3} />}
-          {error && (
-            <EmptyState
-              icon={Settings}
-              title="Could not read settings"
-              description={(error as Error).message}
+          <Text style={[styles.sectionLabel, { color: colors.mutedForeground }, font("semibold")]}>
+            APPEARANCE & UI
+          </Text>
+          <Surface style={[styles.tileGroup, { borderColor: colors.glassBorder }]}>
+            <NavTile
+              icon={Paintbrush}
+              iconColor={colors.primary}
+              title="Appearance & Theme"
+              subtitle={`Active: ${themeLabel}`}
+              onPress={() => navigation.navigate("AppearanceSettings")}
             />
-          )}
-          {data && (
-            <Surface style={styles.card}>
-              <SettingRow
-                label="Active Model"
-                value={modelId || data.model || "—"}
-                monoValue
-                highlight
-                subvalue="Tap to change active model or view catalog"
-                onPress={() => navigation.navigate("Models")}
-              />
-              <SettingRow label="Model Provider" value={data.provider ?? "OmniRoute Gateway"} />
-              <SettingRow
-                label="Reasoning Effort"
-                value={data.reasoningEffort ? data.reasoningEffort.toUpperCase() : "MAX"}
-              />
-              <SettingRow
-                label="Approval Policy"
-                value={data.approvalPolicy ? data.approvalPolicy.toUpperCase() : "NEVER"}
-              />
-              <SettingRow
-                label="Sandbox Mode"
-                value={data.sandboxMode ?? "danger-full-access"}
-                monoValue
-              />
-              <SettingRow
-                label="Context Window"
-                value={data.contextWindow ? `${data.contextWindow.toLocaleString()} tokens` : "1,048,576 tokens"}
-                monoValue
-              />
-            </Surface>
-          )}
-        </View>
-
-        {/* ── 3. Connection & Client Information ── */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeaderRow}>
-            <Radio size={15} color={COLORS.primary} />
-            <Text style={[styles.sectionTitle, font("semibold")]}>Server Connection</Text>
-          </View>
-          <Surface style={styles.card}>
-            <SettingRow label="Daemon URL" value={auth?.serverUrl || "ws://127.0.0.1:4096"} monoValue />
-            <SettingRow label="Authenticated As" value={auth?.username || "root"} />
-            <SettingRow label="Client Application" value={`${APP.name} v${APP.version}`} />
-            <SettingRow label="Protocol Interface" value={APP.clientName} />
           </Surface>
         </View>
 
-        {/* ── 4. App Maintenance & Storage ── */}
+        {/* ── AI & Workspace ── */}
         <View style={styles.section}>
-          <View style={styles.sectionHeaderRow}>
-            <HardDrive size={15} color={COLORS.primary} />
-            <Text style={[styles.sectionTitle, font("semibold")]}>App Storage & Cache</Text>
-          </View>
-          <Surface style={styles.card}>
-            <View style={styles.settingRow}>
-              <View style={{ flex: 1, paddingRight: 8 }}>
-                <Text style={[styles.settingLabel, font("medium")]}>Local Query Cache</Text>
-                <Text style={[styles.settingSubtext, font("regular")]}>
-                  Invalidate cached responses, directory trees, and model catalog.
-                </Text>
-              </View>
-              <TouchableOpacity
-                style={[styles.clearCacheBtn, cacheCleared && styles.clearCacheBtnSuccess]}
-                onPress={handleClearCache}
-                activeOpacity={0.8}
-              >
-                {cacheCleared ? (
-                  <>
-                    <Check size={13} color="#FFFFFF" />
-                    <Text style={[styles.clearCacheBtnText, font("semibold")]}>Cleared</Text>
-                  </>
-                ) : (
-                  <>
-                    <Trash2 size={13} color={COLORS.destructive} />
-                    <Text style={[styles.clearCacheBtnText, { color: COLORS.destructive }, font("semibold")]}>
-                      Clear Cache
-                    </Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            </View>
+          <Text style={[styles.sectionLabel, { color: colors.mutedForeground }, font("semibold")]}>
+            CONFIGURATION
+          </Text>
+          <Surface style={[styles.tileGroup, { borderColor: colors.glassBorder }]}>
+            <NavTile
+              icon={Cpu}
+              iconColor={colors.primary}
+              title="Models & Reasoning"
+              subtitle="Active LLM, reasoning effort, context window"
+              onPress={() => navigation.navigate("Models")}
+            />
+            <NavTile
+              icon={FolderGit2}
+              iconColor="#10B981"
+              title="Workspace"
+              subtitle="Default directory, path shortcuts, context docs"
+              onPress={() => navigation.navigate("WorkspaceSettings")}
+            />
+            <NavTile
+              icon={Server}
+              iconColor="#0EA5E9"
+              title="Server & Protocol"
+              subtitle="Daemon status, RSS memory, RPC telemetry"
+              onPress={() => navigation.navigate("ServerSettings")}
+            />
           </Surface>
         </View>
 
-        {/* ── 5. Footer ── */}
+        {/* ── System & Permissions ── */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionLabel, { color: colors.mutedForeground }, font("semibold")]}>
+            SYSTEM & POLICIES
+          </Text>
+          <Surface style={[styles.tileGroup, { borderColor: colors.glassBorder }]}>
+            <NavTile
+              icon={Bell}
+              iconColor="#8B5CF6"
+              title="Notifications"
+              subtitle="Foreground service, push alerts, native channels"
+              onPress={() => navigation.navigate("NotificationSettings")}
+            />
+            <NavTile
+              icon={Shield}
+              iconColor="#F59E0B"
+              title="Permissions & Security"
+              subtitle="Approval policy, sandbox boundaries, hardware"
+              onPress={() => navigation.navigate("PermissionsSettings")}
+            />
+            <NavTile
+              icon={Database}
+              iconColor={colors.primary}
+              title="Storage & Cache"
+              subtitle="Inspect local keys, clear offline queries, reset"
+              onPress={() => navigation.navigate("StorageSettings")}
+            />
+          </Surface>
+        </View>
+
+        {/* ── Account ── */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionLabel, { color: colors.mutedForeground }, font("semibold")]}>
+            ACCOUNT
+          </Text>
+          <Surface style={[styles.tileGroup, { borderColor: colors.glassBorder }]}>
+            <NavTile
+              icon={User}
+              iconColor={colors.primary}
+              title="Profile & Preferences"
+              subtitle="Account identity, agent parameters, session tokens"
+              onPress={() => navigation.navigate("Profile")}
+            />
+          </Surface>
+        </View>
+
+        {/* ── Quick Actions ── */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionLabel, { color: colors.mutedForeground }, font("semibold")]}>
+            QUICK ACTIONS
+          </Text>
+          <Surface style={[styles.tileGroup, { borderColor: colors.glassBorder }]}>
+            <TouchableOpacity
+              style={styles.actionRow}
+              onPress={handleClearCache}
+              activeOpacity={0.7}
+            >
+              <Trash2 size={16} color={colors.destructive} />
+              <Text style={[styles.actionText, { color: colors.destructive }, font("medium")]}>
+                Clear Local Query Cache
+              </Text>
+            </TouchableOpacity>
+          </Surface>
+        </View>
+
+        {/* ── Footer ── */}
         <View style={styles.footer}>
-          <Text style={[styles.footerText, font("regular")]}>
-            {APP.name} Mobile v{APP.version} · Thunder Nexus VPS Ecosystem
+          <Text style={[styles.footerText, { color: colors.mutedForeground }, font("regular")]}>
+            {APP.name} Mobile v{APP.version}
           </Text>
         </View>
       </ScrollView>
@@ -345,177 +276,60 @@ export function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    padding: 16,
-    paddingBottom: 40,
-    gap: 16,
-  },
-  section: {
-    gap: 8,
-  },
-  sectionHeaderRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
+  container: { flex: 1 },
+  content: { padding: 16, paddingBottom: 40, gap: 16 },
+  section: { gap: 6 },
+  sectionLabel: {
+    fontSize: 10.5,
+    letterSpacing: 0.6,
     paddingHorizontal: 4,
+    textTransform: "uppercase",
   },
-  sectionTitle: {
-    fontSize: 13.5,
-    color: COLORS.foreground,
-  },
-  workspaceCard: {
-    borderRadius: 18,
-    padding: 14,
-    gap: 12,
-    borderWidth: 1,
-    borderColor: COLORS.glassBorder,
-  },
-  workspaceHelpText: {
-    fontSize: 12,
-    color: COLORS.mutedForeground,
-    lineHeight: 17,
-  },
-  shortcutRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+  quickCard: {
+    borderRadius: 16,
+    padding: 12,
     gap: 6,
-  },
-  shortcutChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: COLORS.secondary,
     borderWidth: 1,
-    borderColor: COLORS.border,
   },
-  shortcutChipSelected: {
-    backgroundColor: "rgba(66, 64, 225, 0.12)",
-    borderColor: COLORS.primary,
-  },
-  shortcutChipText: {
-    fontSize: 11.5,
-    color: COLORS.foreground,
-  },
-  shortcutChipTextSelected: {
-    color: COLORS.primary,
-  },
-  inputContainer: {
-    backgroundColor: COLORS.secondary,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  pathInput: {
-    fontSize: 13,
-    color: COLORS.foreground,
-    padding: 0,
-  },
-  workspaceActionsRow: {
+  quickRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: 10,
-    marginTop: 2,
-  },
-  resetBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: COLORS.secondary,
-  },
-  resetBtnText: {
-    fontSize: 12,
-    color: COLORS.mutedForeground,
-  },
-  saveBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 16,
-    paddingVertical: 9,
-    borderRadius: 10,
-  },
-  saveBtnSuccess: {
-    backgroundColor: COLORS.success,
-  },
-  saveBtnText: {
-    fontSize: 12.5,
-    color: "#FFFFFF",
-  },
-  card: {
-    borderRadius: 18,
-    paddingHorizontal: 4,
     paddingVertical: 4,
-    borderWidth: 1,
-    borderColor: COLORS.glassBorder,
   },
-  settingRow: {
+  quickLabel: { fontSize: 12 },
+  quickValue: { fontSize: 12, maxWidth: "60%" },
+  tileGroup: {
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: "hidden",
+  },
+  tile: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 12,
-    paddingVertical: 11,
+    gap: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(255, 255, 255, 0.05)",
   },
-  settingLabel: {
-    fontSize: 13,
-    color: COLORS.foreground,
+  tileIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  settingSubtext: {
-    fontSize: 11,
-    color: COLORS.mutedForeground,
-    marginTop: 2,
-  },
-  settingValueContainer: {
+  tileContent: { flex: 1, gap: 2 },
+  tileTitle: { fontSize: 13.5 },
+  tileSubtitle: { fontSize: 11.5 },
+  actionRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    maxWidth: "55%",
+    gap: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
   },
-  settingValue: {
-    fontSize: 12.5,
-    color: COLORS.mutedForeground,
-  },
-  settingValueHighlight: {
-    color: COLORS.primary,
-  },
-  clearCacheBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 8,
-    backgroundColor: "rgba(231, 0, 11, 0.08)",
-    borderWidth: 1,
-    borderColor: "rgba(231, 0, 11, 0.20)",
-  },
-  clearCacheBtnSuccess: {
-    backgroundColor: COLORS.success,
-    borderColor: COLORS.success,
-  },
-  clearCacheBtnText: {
-    fontSize: 12,
-  },
-  footer: {
-    alignItems: "center",
-    paddingVertical: 12,
-  },
-  footerText: {
-    fontSize: 11,
-    color: COLORS.mutedForeground,
-  },
+  actionText: { fontSize: 13 },
+  footer: { alignItems: "center", paddingVertical: 12 },
+  footerText: { fontSize: 11 },
 });

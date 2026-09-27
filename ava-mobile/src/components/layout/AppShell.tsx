@@ -8,6 +8,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AppGlow } from "@/components/kit";
 import { AppHeader } from "@/components/layout/AppHeader";
+import { useTheme } from "@/theme/colors";
 import type { ChatMessage } from "@/core/types";
 
 export function AppShell({
@@ -33,11 +34,13 @@ export function AppShell({
   onNewSession?: () => void;
   children: ReactNode;
 }) {
+  const { isDark } = useTheme();
+
   return (
     <AppGlow style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
         <StatusBar
-          barStyle="dark-content"
+          barStyle={isDark ? "light-content" : "dark-content"}
           backgroundColor="transparent"
           translucent
         />

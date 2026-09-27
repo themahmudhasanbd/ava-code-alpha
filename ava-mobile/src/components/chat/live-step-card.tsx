@@ -10,11 +10,11 @@ import { useNavigation } from "@react-navigation/native";
 import {
   Brain,
   ChevronRight,
-  Terminal,
-  Wrench,
   CheckCircle2,
   ListChecks,
   AlertTriangle,
+  Zap,
+  type LucideIcon,
 } from "lucide-react-native";
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { formatDuration } from "@/lib/format";
@@ -50,24 +50,22 @@ export function LiveStepOverviewCard({
   const latestPart: MessagePart | undefined = workflowParts[workflowParts.length - 1];
   const isRunning = live && (latestPart?.status === "running" || latestPart == null);
 
-  // Derive step title
+  // Derive step title and icon
   let currentTitle = "Analyzing request…";
-  let serverName = "agent";
+  let StepIcon: LucideIcon = Zap;
 
   if (latestPart) {
     if (latestPart.kind === "reasoning") {
-      currentTitle = isRunning ? "Thinking…" : "Thought process";
-      serverName = "reasoning";
+      StepIcon = Brain;
+      currentTitle = isRunning ? "Thinking…" : "Reasoning complete";
     } else if (latestPart.kind === "tool") {
-      const isMcp = isMcpTool(latestPart.toolName, latestPart.meta);
-      serverName = isMcp ? "mcp" : latestPart.meta?.server ? latestPart.meta.server : "tool";
+      StepIcon = getToolIcon(latestPart.toolName, latestPart.meta);
       currentTitle = displayToolName(latestPart.toolName || latestPart.meta?.command || "execute_command");
     } else if (latestPart.kind === "plan") {
-      serverName = "plan";
+      StepIcon = ListChecks;
       currentTitle = latestPart.text || "Execution plan";
     } else if (latestPart.kind === "notice") {
-      currentTitle = latestPart.text || "Agent notice";
-      serverName = "notice";
+      currentTitle = latestPart.text || "System notice";
     }
   }
 
@@ -78,6 +76,7 @@ export function LiveStepOverviewCard({
   const plan = [...workflowParts].reverse().find((s) => s.kind === "plan");
   const planSteps = plan?.meta?.steps ?? [];
   const donePlanSteps = planSteps.filter((s) => s.status === "done").length;
+  const progressPercent = Math.round((completedCount / Math.max(1, workflowParts.length)) * 100);
 
   const handlePress = () => {
     if (onOpenTimeline) {
@@ -90,32 +89,43 @@ export function LiveStepOverviewCard({
     }
   };
 
-  const IconComponent = latestPart?.kind === "reasoning"
-    ? Brain
-    : latestPart?.kind === "plan"
-    ? ListChecks
-    : getToolIcon(latestPart?.toolName, latestPart?.meta);
+  // Completion state
+  const isComplete = !isRunning && !hasError;
+  const isFailed = !isRunning && hasError;
 
   return (
     <TouchableOpacity
-      style={[styles.container, isRunning && styles.containerRunning]}
+      style={[
+        styles.container,
+        isRunning && styles.containerRunning,
+        isComplete && styles.containerComplete,
+        isFailed && styles.containerFailed,
+      ]}
       onPress={handlePress}
       activeOpacity={0.8}
     >
+      {/* Top row: Icon + Info + Action */}
       <View style={styles.cardHeader}>
-        {/* Step Icon */}
-        <View style={[styles.iconWrapper, isRunning && styles.iconWrapperRunning, serverName === "mcp" && { backgroundColor: "#059669" }]}>
-          <IconComponent
-            size={14}
-            color={COLORS.primaryForeground}
-            strokeWidth={2.2}
+        {/* Step Icon — clean, no background */}
+        <View style={styles.iconWrapper}>
+          <StepIcon
+            size={16}
+            color={
+              isRunning
+                ? COLORS.primary
+                : isFailed
+                ? COLORS.destructive
+                : isComplete
+                ? COLORS.success
+                : COLORS.mutedForeground
+            }
+            strokeWidth={2}
           />
         </View>
 
         {/* Step info */}
         <View style={styles.centerInfo}>
           <View style={styles.titleRow}>
-            <Text style={[styles.serverTag, mono("bold"), serverName === "mcp" && { color: "#059669" }]}>{serverName}</Text>
             {isRunning ? (
               <Shimmer style={[styles.stepTitleLive, mono("bold")]}>
                 {currentTitle}
@@ -130,7 +140,11 @@ export function LiveStepOverviewCard({
           <Text style={[styles.summaryText, font("regular")]}>
             {isRunning
               ? `${workflowParts.length} step${workflowParts.length === 1 ? "" : "s"} · working now`
-              : `${completedCount}/${workflowParts.length} complete · ${toolCount} tool${toolCount === 1 ? "" : "s"}${duration ? ` · ${formatDuration(duration)}` : ""}`}
+              : isComplete
+              ? `${completedCount} steps · ${toolCount} tool${toolCount === 1 ? "" : "s"}${duration ? ` · ${formatDuration(duration)}` : ""}`
+              : isFailed
+              ? `${completedCount}/${workflowParts.length} completed · error encountered`
+              : `${completedCount}/${workflowParts.length} complete`}
           </Text>
         </View>
 
@@ -138,33 +152,63 @@ export function LiveStepOverviewCard({
         <View style={styles.rightAction}>
           {isRunning ? (
             <ActivityIndicator size="small" color={COLORS.primary} />
-          ) : hasError ? (
-            <AlertTriangle size={15} color={COLORS.destructive} />
-          ) : (
-            <CheckCircle2 size={15} color={COLORS.success} />
-          )}
+          ) : isFailed ? (
+            <AlertTriangle size={16} color={COLORS.destructive} />
+          ) : isComplete ? (
+            <CheckCircle2 size={16} color={COLORS.success} />
+          ) : null}
           <View style={styles.pillButton}>
-            <Text style={[styles.pillButtonText, font("medium")]}>Workflow</Text>
-            <ChevronRight size={13} color={COLORS.mutedForeground} />
+            <Text style={[styles.pillButtonText, font("medium")]}>Timeline</Text>
+            <ChevronRight size={12} color={COLORS.mutedForeground} />
           </View>
         </View>
       </View>
 
-      {planSteps.length > 0 && (
-        <View style={styles.progressTrack}>
-          <View
-            style={[
-              styles.progressFill,
-              {
-                width: `${Math.max(
-                  5,
-                  Math.round((donePlanSteps / planSteps.length) * 100)
-                )}%`,
-              },
-            ]}
-          />
+      {/* Progress bar */}
+      <View style={styles.progressTrack}>
+        <View
+          style={[
+            styles.progressFill,
+            {
+              width: `${Math.max(4, isComplete ? 100 : progressPercent)}%`,
+              backgroundColor: isFailed
+                ? COLORS.destructive
+                : isComplete
+                ? COLORS.success
+                : COLORS.primary,
+            },
+          ]}
+        />
+      </View>
+
+      {/* Bottom stats row — shown when complete */}
+      {!isRunning && duration ? (
+        <View style={styles.statsRow}>
+          <Text style={[styles.statItem, mono("regular")]}>
+            {formatDuration(duration)}
+          </Text>
+          <View style={styles.statDot} />
+          <Text style={[styles.statItem, mono("regular")]}>
+            {toolCount} tool{toolCount === 1 ? "" : "s"}
+          </Text>
+          {planSteps.length > 0 && (
+            <>
+              <View style={styles.statDot} />
+              <Text style={[styles.statItem, mono("regular")]}>
+                {donePlanSteps}/{planSteps.length} plan
+              </Text>
+            </>
+          )}
+          {message.stats?.totalTokens ? (
+            <>
+              <View style={styles.statDot} />
+              <Text style={[styles.statItem, mono("regular")]}>
+                {(message.stats.totalTokens / 1000).toFixed(1)}k tok
+              </Text>
+            </>
+          ) : null}
         </View>
-      )}
+      ) : null}
     </TouchableOpacity>
   );
 }
@@ -177,15 +221,16 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     padding: 10,
     marginVertical: 6,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
   },
   containerRunning: {
     borderColor: COLORS.primary,
     backgroundColor: "rgba(66, 64, 225, 0.03)",
+  },
+  containerComplete: {
+    borderColor: "rgba(59, 179, 96, 0.25)",
+  },
+  containerFailed: {
+    borderColor: "rgba(231, 0, 11, 0.2)",
   },
   cardHeader: {
     flexDirection: "row",
@@ -193,15 +238,14 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   iconWrapper: {
-    width: 28,
-    height: 28,
+    width: 30,
+    height: 30,
     borderRadius: 8,
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.secondary,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     alignItems: "center",
     justifyContent: "center",
-  },
-  iconWrapperRunning: {
-    backgroundColor: COLORS.primary,
   },
   centerInfo: {
     flex: 1,
@@ -212,19 +256,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
   },
-  serverTag: {
-    fontSize: 10.5,
-    color: COLORS.primary,
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
-  },
   stepTitle: {
-    fontSize: 12,
+    fontSize: 12.5,
     color: COLORS.foreground,
     flex: 1,
+    fontWeight: "600",
   },
   stepTitleLive: {
-    fontSize: 12,
+    fontSize: 12.5,
     color: COLORS.primary,
     flex: 1,
   },
@@ -244,9 +283,13 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.secondary,
     paddingHorizontal: 7,
     paddingVertical: 3,
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: COLORS.border,
+  },
+  pillButtonText: {
+    fontSize: 11,
+    color: COLORS.secondaryForeground,
   },
   progressTrack: {
     height: 3,
@@ -257,10 +300,25 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: 3,
-    backgroundColor: COLORS.primary,
+    borderRadius: 2,
   },
-  pillButtonText: {
-    fontSize: 11,
-    color: COLORS.secondaryForeground,
+  statsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 6,
+    paddingTop: 6,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: COLORS.border,
+  },
+  statItem: {
+    fontSize: 10.5,
+    color: COLORS.mutedForeground,
+  },
+  statDot: {
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: COLORS.border,
   },
 });

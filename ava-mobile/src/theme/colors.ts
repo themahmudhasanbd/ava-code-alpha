@@ -23,7 +23,7 @@ export const THEME = {
     input: "#D4D7E0",
     inputBg: "rgba(255, 255, 255, 0.85)",
     ring: "#5C6BE3",
-    glassBg: "rgba(255, 255, 255, 0.65)",
+    glassBg: "rgba(255, 255, 255, 0.75)",
     glassBorder: "rgba(255, 255, 255, 0.85)",
     glassShadow: "rgba(20, 23, 32, 0.08)",
     sidebar: "#F5F7FB",
@@ -47,49 +47,97 @@ export const THEME = {
     codeBorder: "#2B2E32",
   },
   dark: {
-    background: "#020618",
-    foreground: "#F8FAFC",
-    card: "#0F172B",
+    background: "#080C16",
+    foreground: "#F1F5F9",
+    card: "#101626",
     cardForeground: "#F8FAFC",
-    popover: "#0F172B",
+    popover: "#101626",
     popoverForeground: "#F8FAFC",
-    primary: "#E2E8F0",
-    primaryForeground: "#0F172B",
-    secondary: "#1D293D",
-    secondaryForeground: "#F8FAFC",
-    muted: "#1D293D",
-    mutedForeground: "#90A1B9",
-    accent: "#1D293D",
+    primary: "#6366F1",
+    primaryForeground: "#FFFFFF",
+    secondary: "#1A2234",
+    secondaryForeground: "#E2E8F0",
+    muted: "#151D2D",
+    mutedForeground: "#94A3B8",
+    accent: "#1E273C",
     accentForeground: "#F8FAFC",
-    destructive: "#FF6467",
-    destructiveForeground: "#F8FAFC",
+    destructive: "#EF4444",
+    destructiveForeground: "#FFFFFF",
     border: "rgba(255, 255, 255, 0.10)",
     input: "rgba(255, 255, 255, 0.15)",
-    inputBg: "rgba(15, 23, 43, 0.70)",
-    ring: "#6A7282",
-    glassBg: "rgba(15, 23, 43, 0.65)",
+    inputBg: "rgba(16, 22, 38, 0.75)",
+    ring: "#6366F1",
+    glassBg: "rgba(16, 22, 38, 0.75)",
     glassBorder: "rgba(255, 255, 255, 0.12)",
-    glassShadow: "rgba(0, 0, 0, 0.40)",
-    sidebar: "#0F172B",
-    sidebarForeground: "#F8FAFC",
-    sidebarPrimary: "#1447E6",
-    sidebarPrimaryForeground: "#F8FAFC",
-    sidebarAccent: "#1D293D",
+    glassShadow: "rgba(0, 0, 0, 0.45)",
+    sidebar: "#0C111F",
+    sidebarForeground: "#F1F5F9",
+    sidebarPrimary: "#6366F1",
+    sidebarPrimaryForeground: "#FFFFFF",
+    sidebarAccent: "#1A2234",
     sidebarAccentForeground: "#F8FAFC",
     sidebarBorder: "rgba(255, 255, 255, 0.10)",
-    success: "#4AC06C",
-    warning: "#F0B135",
-    glow1: "rgba(66, 64, 225, 0.20)",
-    glow2: "rgba(6, 182, 212, 0.15)",
-    mascot: "#7C7FFF",
+    success: "#22C55E",
+    warning: "#F59E0B",
+    glow1: "rgba(99, 102, 241, 0.22)",
+    glow2: "rgba(56, 189, 248, 0.15)",
+    mascot: "#818CF8",
     mascotForeground: "#FFFFFF",
-    mascotRing: "rgba(124, 127, 255, 0.25)",
-    codeBg: "#080A0E",
-    codeForeground: "#E2E5E9",
-    codeMuted: "#8A9097",
-    codeActive: "#15171B",
-    codeBorder: "#2B2E32",
+    mascotRing: "rgba(129, 140, 248, 0.25)",
+    codeBg: "#070A10",
+    codeForeground: "#E2E8F0",
+    codeMuted: "#8892B0",
+    codeActive: "#141C2E",
+    codeBorder: "rgba(255, 255, 255, 0.10)",
   },
-} as const;
+};
 
-export const COLORS = THEME.light;
+export type ColorTokens = {
+  background: string;
+  foreground: string;
+  card: string;
+  cardForeground: string;
+  popover: string;
+  popoverForeground: string;
+  primary: string;
+  primaryForeground: string;
+  secondary: string;
+  secondaryForeground: string;
+  muted: string;
+  mutedForeground: string;
+  accent: string;
+  accentForeground: string;
+  destructive: string;
+  destructiveForeground: string;
+  border: string;
+  input: string;
+  inputBg: string;
+  ring: string;
+  glassBg: string;
+  glassBorder: string;
+  glassShadow: string;
+  sidebar: string;
+  sidebarForeground: string;
+  sidebarPrimary: string;
+  sidebarPrimaryForeground: string;
+  sidebarAccent: string;
+  sidebarAccentForeground: string;
+  sidebarBorder: string;
+  success: string;
+  warning: string;
+  glow1: string;
+  glow2: string;
+  mascot: string;
+  mascotForeground: string;
+  mascotRing: string;
+  codeBg: string;
+  codeForeground: string;
+  codeMuted: string;
+  codeActive: string;
+  codeBorder: string;
+};
+
+// Export mutable singleton COLORS for backwards compatibility across older imports
+export const COLORS: ColorTokens = { ...THEME.light };
+
+export { ThemeProvider, useTheme, type ThemeMode, type ThemeContextValue } from "./theme-context";

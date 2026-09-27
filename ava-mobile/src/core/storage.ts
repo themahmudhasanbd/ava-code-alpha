@@ -5,6 +5,8 @@ export interface KeyValueStore {
   get(key: string): string | null;
   set(key: string, value: string): void;
   remove(key: string): void;
+  delete(key: string): void;
+  clear(): Promise<void>;
 }
 
 const memory = new Map<string, string>();
@@ -58,5 +60,19 @@ export const storage: KeyValueStore = {
       SecureStore.deleteItemAsync(k).catch(() => {});
     }
     AsyncStorage.removeItem(k).catch(() => {});
+  },
+  delete: (k: string) => {
+    storage.remove(k);
+  },
+  clear: async () => {
+    memory.clear();
+    for (const key of SECURE_KEYS) {
+      try {
+        await SecureStore.deleteItemAsync(key);
+      } catch {}
+    }
+    try {
+      await AsyncStorage.clear();
+    } catch {}
   },
 };

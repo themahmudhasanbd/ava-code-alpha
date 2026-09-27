@@ -98,6 +98,7 @@ export interface McpTool {
 export interface McpServer {
   name: string;
   status: string;
+  authStatus?: string;
   tools: McpTool[];
 }
 
@@ -137,4 +138,7 @@ export interface ServerConfig {
   approvalPolicy?: string | undefined;
   sandboxMode?: string | undefined;
   contextWindow?: number | undefined;
+  projectDocMaxBytes?: number | undefined;
+  hideAgentReasoning?: boolean | undefined;
+  webSearch?: string | undefined;
 }

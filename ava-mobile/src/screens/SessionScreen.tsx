@@ -4,7 +4,6 @@ import {
   FlatList,
   KeyboardAvoidingView,
   ActivityIndicator,
-  PanResponder,
   Platform,
   StyleSheet,
   Text,
@@ -101,28 +100,8 @@ export function SessionScreen({
     }
   }, [scrollToMessageId, messages]);
 
-  // Refined directional pan responder: only intentional horizontal gestures
-  const panResponder = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: (_, gestureState) => {
-        return (
-          Math.abs(gestureState.dx) > 60 &&
-          Math.abs(gestureState.dx) > Math.abs(gestureState.dy) * 2.5 &&
-          Math.abs(gestureState.vx) > 0.35
-        );
-      },
-      onPanResponderRelease: (_, gestureState) => {
-        // Swipe left -> open Timeline workflow
-        if (gestureState.dx < -70 && gestureState.vx < -0.3) {
-          navigation?.navigate("Timeline", { sessionId });
-        }
-        // Swipe right -> go back
-        else if (gestureState.dx > 70 && gestureState.vx > 0.3) {
-          handleBack();
-        }
-      },
-    })
-  ).current;
+  // Swipe left → open Timeline (lightweight, no back-swipe interference)
+  const lastSwipeStart = useRef<{ x: number; time: number } | null>(null);
 
   useEffect(() => {
     if (sessionId) {
@@ -140,13 +119,15 @@ export function SessionScreen({
     }
   }, [initialPrompt, sessionId, send]);
 
+  // Scroll to bottom only when a NEW message is appended (not on every re-render)
   const prevLengthRef = useRef(messages.length);
   useEffect(() => {
     if (messages.length > prevLengthRef.current) {
       prevLengthRef.current = messages.length;
-      setTimeout(() => {
+      // requestAnimationFrame avoids blocking the JS thread mid-render
+      requestAnimationFrame(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
-      }, 100);
+      });
     } else {
       prevLengthRef.current = messages.length;
     }
@@ -158,146 +139,166 @@ export function SessionScreen({
   const handleSubmit = (text: string) => {
     setDraft("");
     send(text);
-    setTimeout(() => {
+    requestAnimationFrame(() => {
       flatListRef.current?.scrollToEnd({ animated: true });
-    }, 100);
+    });
   };
 
   return (
     <AppShell
       title={title}
+      showBack
       chatMessages={messages}
+      onBack={handleBack}
       onNewSession={() => {
         setActiveSessionId(null);
         navigation?.navigate("Chat");
       }}
     >
-      <View style={{ flex: 1 }} {...panResponder.panHandlers}>
-        <KeyboardAvoidingView
-          style={styles.container}
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-          keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
-        >
-          <FlatList
-            ref={flatListRef}
-            data={messages}
-            keyExtractor={(item) => item.id}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="on-drag"
-            onScrollToIndexFailed={(info) => {
-              setTimeout(() => {
-                flatListRef.current?.scrollToIndex({
-                  index: info.index,
-                  animated: true,
-                  viewPosition: 0.3,
-                });
-              }, 300);
-            }}
-            renderItem={({ item, index }) => (
-              <ChatMessageView
-                message={item}
-                sessionId={sessionId}
-                onOpenTimeline={(msgId) =>
-                  navigation?.navigate("Timeline", {
-                    sessionId,
-                    messageId: msgId,
-                  })
-                }
-                live={
-                  (status === "submitted" || status === "streaming") &&
-                  index === messages.length - 1 &&
-                  item.role === "assistant"
-                }
-              />
-            )}
-            contentContainerStyle={styles.listContent}
-            ListHeaderComponent={
-              loadingHistory ? (
-                <View style={styles.historyLoader}>
-                  <Shimmer style={styles.historyLoaderText}>
-                    Loading session…
-                  </Shimmer>
-                </View>
-              ) : hasOlder ? (
-                <TouchableOpacity
-                  style={styles.loadOlderBtn}
-                  onPress={loadOlder}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.loadOlderText}>
-                    Load earlier messages
-                  </Text>
-                </TouchableOpacity>
-              ) : null
-            }
-          />
-
-          {error ? (
-            <View style={styles.errorContainer}>
-              <Text style={styles.errorBannerText}>{error}</Text>
-            </View>
-          ) : null}
-
-          {/* Queued items banner */}
-          {queuedPrompts && queuedPrompts.length > 0 ? (
-            <View style={styles.queueContainer}>
-              <View style={styles.queueHeader}>
-                <View style={styles.queueHeaderLeft}>
-                  <Clock size={13} color={COLORS.primary} />
-                  <Text style={styles.queueTitle}>
-                    {queuedPrompts.length} queued {queuedPrompts.length === 1 ? "prompt" : "prompts"}
-                  </Text>
-                </View>
-                {status === "ready" ? (
-                  <TouchableOpacity
-                    onPress={resume}
-                    style={styles.queueRunNowBtn}
-                    activeOpacity={0.7}
-                  >
-                    <Play size={11} color="#FFF" fill="#FFF" />
-                    <Text style={styles.queueRunNowText}>Start next</Text>
-                  </TouchableOpacity>
-                ) : null}
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
+      >
+        <FlatList
+          ref={flatListRef}
+          data={messages}
+          keyExtractor={(item) => item.id}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          ListEmptyComponent={
+            loadingHistory ? null : (
+              <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingVertical: 80, gap: 12 }}>
+                <Text style={{ fontSize: 15, fontWeight: "600", color: COLORS.foreground }}>
+                  {status === "submitted" || status === "streaming" ? "Agent is processing…" : "Start a conversation"}
+                </Text>
+                <Text style={{ fontSize: 13, color: COLORS.mutedForeground, textAlign: "center", paddingHorizontal: 40 }}>
+                  {status === "submitted" || status === "streaming"
+                    ? "Your prompt has been sent. The agent's response will appear here."
+                    : "Type a message below to begin coding with AvA."}
+                </Text>
               </View>
-              {queuedPrompts.map((q) => (
-                <View key={q.id} style={styles.queueItem}>
-                  <Text style={styles.queueItemText} numberOfLines={1}>
-                    {q.text}
-                  </Text>
-                  <TouchableOpacity
-                    onPress={() => removeQueued(q.id)}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  >
-                    <X size={13} color={COLORS.mutedForeground} />
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </View>
-          ) : null}
-
-          {/* Stopping indicator banner */}
-          {status === "stopping" ? (
-            <View style={styles.stoppingContainer}>
-              <ActivityIndicator size="small" color={COLORS.primary} />
-              <Text style={styles.stoppingText}>Stopping agent…</Text>
-            </View>
-          ) : null}
-
-          <View style={styles.composerWrapper}>
-            <Composer
-              value={draft}
-              onChange={setDraft}
-              onSubmit={handleSubmit}
-              onStop={stop}
-              onClear={clear}
-              status={status}
+            )
+          }
+          onScrollToIndexFailed={(info) => {
+            setTimeout(() => {
+              flatListRef.current?.scrollToIndex({
+                index: info.index,
+                animated: true,
+                viewPosition: 0.3,
+              });
+            }, 300);
+          }}
+          renderItem={({ item, index }) => (
+            <ChatMessageView
+              message={item}
+              sessionId={sessionId}
+              onOpenTimeline={(msgId) =>
+                navigation?.navigate("Timeline", {
+                  sessionId,
+                  messageId: msgId,
+                })
+              }
+              live={
+                (status === "submitted" || status === "streaming") &&
+                index === messages.length - 1 &&
+                item.role === "assistant"
+              }
             />
-            <Text style={styles.disclaimerText}>
-              {APP.name} can make mistakes. Review generated code before using it.
-            </Text>
+          )}
+          contentContainerStyle={styles.listContent}
+          ListHeaderComponent={
+            loadingHistory ? (
+              <View style={styles.historyLoader}>
+                <Shimmer style={styles.historyLoaderText}>
+                  Loading session…
+                </Shimmer>
+              </View>
+            ) : hasOlder ? (
+              <TouchableOpacity
+                style={styles.loadOlderBtn}
+                onPress={loadOlder}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Load earlier messages"
+              >
+                <Text style={styles.loadOlderText}>
+                  Load earlier messages
+                </Text>
+              </TouchableOpacity>
+            ) : null
+          }
+        />
+
+        {error ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorBannerText}>{error}</Text>
           </View>
-        </KeyboardAvoidingView>
-      </View>
+        ) : null}
+
+        {/* Queued items banner */}
+        {queuedPrompts && queuedPrompts.length > 0 ? (
+          <View style={styles.queueContainer}>
+            <View style={styles.queueHeader}>
+              <View style={styles.queueHeaderLeft}>
+                <Clock size={13} color={COLORS.primary} />
+                <Text style={styles.queueTitle}>
+                  {queuedPrompts.length} queued {queuedPrompts.length === 1 ? "prompt" : "prompts"}
+                </Text>
+              </View>
+              {status === "ready" ? (
+                <TouchableOpacity
+                  onPress={resume}
+                  style={styles.queueRunNowBtn}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel="Start next queued prompt"
+                >
+                  <Play size={11} color="#FFF" fill="#FFF" />
+                  <Text style={styles.queueRunNowText}>Start next</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+            {queuedPrompts.map((q) => (
+              <View key={q.id} style={styles.queueItem}>
+                <Text style={styles.queueItemText} numberOfLines={1}>
+                  {q.text}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => removeQueued(q.id)}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Remove queued prompt"
+                >
+                  <X size={13} color={COLORS.mutedForeground} />
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+        ) : null}
+
+        {/* Stopping indicator banner */}
+        {status === "stopping" ? (
+          <View style={styles.stoppingContainer}>
+            <ActivityIndicator size="small" color={COLORS.warning} />
+            <Text style={styles.stoppingText}>Stopping agent…</Text>
+          </View>
+        ) : null}
+
+        <View style={styles.composerWrapper}>
+          <Composer
+            value={draft}
+            onChange={setDraft}
+            onSubmit={handleSubmit}
+            onStop={stop}
+            onClear={clear}
+            status={status}
+          />
+          <Text style={styles.disclaimerText}>
+            {APP.name} can make mistakes. Review generated code before using it.
+          </Text>
+        </View>
+      </KeyboardAvoidingView>
     </AppShell>
   );
 }
@@ -321,11 +322,13 @@ const styles = StyleSheet.create({
   },
   loadOlderBtn: {
     alignSelf: "center",
-    paddingVertical: 6,
+    paddingVertical: 8,
     paddingHorizontal: 14,
     borderRadius: 999,
     backgroundColor: COLORS.secondary,
     marginBottom: 8,
+    minHeight: 36,
+    justifyContent: "center",
   },
   loadOlderText: {
     fontSize: 12,
@@ -387,13 +390,14 @@ const styles = StyleSheet.create({
     gap: 4,
     backgroundColor: COLORS.primary,
     paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingVertical: 4,
     borderRadius: 6,
+    minHeight: 28,
   },
   queueRunNowText: {
     fontSize: 11,
     fontWeight: "600",
-    color: "#FFF",
+    color: COLORS.primaryForeground,
   },
   queueItem: {
     flexDirection: "row",
@@ -401,7 +405,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     backgroundColor: COLORS.secondary,
     paddingHorizontal: 8,
-    paddingVertical: 5,
+    paddingVertical: 6,
     borderRadius: 6,
   },
   queueItemText: {
@@ -424,7 +428,7 @@ const styles = StyleSheet.create({
   },
   stoppingText: {
     fontSize: 12,
-    color: "#F59E0B",
+    color: COLORS.warning,
     fontWeight: "500",
   },
 });

@@ -1298,16 +1298,10 @@ impl Session {
 
     pub(crate) async fn maybe_emit_model_warnings_for_turn(&self, tc: &TurnContext) {
         if tc.model_info().used_fallback_model_metadata {
-            self.send_event(
-                tc,
-                EventMsg::Warning(WarningEvent {
-                    message: format!(
-                        "Model metadata for `{}` not found. Defaulting to fallback metadata; this can degrade performance and cause issues.",
-                        tc.model_info().slug
-                    ),
-                }),
-            )
-            .await;
+            tracing::debug!(
+                "Model metadata for `{}` not found. Defaulting to fallback metadata",
+                tc.model_info().slug
+            );
         }
 
         if !tc.code_mode_available

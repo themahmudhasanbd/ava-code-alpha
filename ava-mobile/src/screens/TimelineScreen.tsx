@@ -1,7 +1,8 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   BackHandler,
+  Image,
   LayoutAnimation,
   Platform,
   ScrollView,
@@ -12,6 +13,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { PanGestureHandler, type PanGestureHandlerGestureEvent } from "react-native-gesture-handler";
+import Animated from "react-native-reanimated";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -26,13 +29,9 @@ import {
   Copy,
   FileCode,
   FileDiff,
-  Flame,
-  Globe,
   Info,
   Layers,
   ListChecks,
-  MessageSquare,
-  Plug,
   Sparkles,
   Terminal,
   Wrench,
@@ -50,6 +49,7 @@ import type { ChatMessage, MessagePart, PlanStep } from "@/core/types";
 import { font, mono } from "@/theme/fonts";
 import { displayToolName, getToolIcon, isMcpTool } from "@/components/chat/tool-icons";
 import { COLORS } from "@/theme/colors";
+import { Tabs, TabsList, TabsTrigger } from "@/components/kit";
 
 interface Props {
   route?: {
@@ -60,6 +60,58 @@ interface Props {
   };
   navigation?: any;
 }
+
+/** Tree branch connector for sub-items inside expanded timeline nodes. */
+function SubTree({ label, isLast, children }: { label?: string; isLast?: boolean; children: React.ReactNode }) {
+  return (
+    <View style={subTreeStyles.row}>
+      <View style={subTreeStyles.lineCol}>
+        <Text style={[subTreeStyles.prefix, mono("regular")]}>{isLast ? "└─" : "├─"}</Text>
+      </View>
+      <View style={subTreeStyles.body}>
+        {label ? (
+          <View style={subTreeStyles.labelRow}>
+            <Text style={[subTreeStyles.label, mono("bold")]}>{label}</Text>
+          </View>
+        ) : null}
+        {children}
+      </View>
+    </View>
+  );
+}
+
+const subTreeStyles = StyleSheet.create({
+  row: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+  },
+  lineCol: {
+    width: 22,
+    paddingTop: 1,
+    alignItems: "flex-end",
+    paddingRight: 4,
+  },
+  prefix: {
+    fontSize: 11,
+    color: COLORS.mutedForeground,
+    opacity: 0.45,
+    lineHeight: 16,
+  },
+  body: {
+    flex: 1,
+  },
+  labelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 4,
+  },
+  label: {
+    fontSize: 10,
+    color: COLORS.mutedForeground,
+    letterSpacing: 0.5,
+  },
+});
 
 export function TimelineScreen({ route, navigation }: Props) {
   const { activeSessionId } = useAva();
@@ -262,9 +314,22 @@ export function TimelineScreen({ route, navigation }: Props) {
   const activeCount = allParts.filter((part) => part.status === "running").length;
   const errorCount = allParts.filter((part) => part.status === "error").length;
 
+  // Swipe left → navigate back to session
+  const onHandlerStateChange = useCallback((e: any) => {
+    if (e.nativeEvent.state === 5) { // ENDED
+      const { translationX, velocityX } = e.nativeEvent;
+      if (translationX < -80 && Math.abs(velocityX) > 200) {
+        handleBack();
+      }
+    }
+  }, [handleBack]);
+
   return (
     <SafeAreaView style={styles.screen} edges={["top", "bottom"]}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
+
+      <PanGestureHandler onHandlerStateChange={onHandlerStateChange} activeOffsetX={[-20, 20]}>
+        <Animated.View style={{ flex: 1 }}>
 
       {/* ── Top Navigation Header ── */}
       <View style={styles.navHeader}>
@@ -276,47 +341,28 @@ export function TimelineScreen({ route, navigation }: Props) {
           <ArrowLeft size={19} color={COLORS.foreground} />
         </TouchableOpacity>
 
-        {/* Segmented Control Tabs */}
-        <View style={styles.segmentedControl}>
-          <TouchableOpacity
-            style={[styles.segmentTab, activeTab === "timeline" && styles.segmentTabActive]}
-            onPress={() => setActiveTab("timeline")}
-            activeOpacity={0.8}
-          >
-            <Layers size={14} color={activeTab === "timeline" ? COLORS.primary : COLORS.mutedForeground} />
-            <Text
-              style={[
-                styles.segmentTabText,
-                font("medium"),
-                activeTab === "timeline" && styles.segmentTabTextActive,
-              ]}
-            >
-              Workflow & Steps
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.segmentTab, activeTab === "changes" && styles.segmentTabActive]}
-            onPress={() => setActiveTab("changes")}
-            activeOpacity={0.8}
-          >
-            <FileDiff size={14} color={activeTab === "changes" ? COLORS.primary : COLORS.mutedForeground} />
-            <Text
-              style={[
-                styles.segmentTabText,
-                font("medium"),
-                activeTab === "changes" && styles.segmentTabTextActive,
-              ]}
-            >
-              Changes
-            </Text>
-            {changedFiles.length > 0 && (
-              <View style={styles.badgeCount}>
-                <Text style={[styles.badgeCountText, mono("bold")]}>{changedFiles.length}</Text>
+        {/* Reusable Tabs */}
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "timeline" | "changes")}>
+          <TabsList>
+            <TabsTrigger value="timeline">
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+                <Layers size={13} color={activeTab === "timeline" ? COLORS.foreground : COLORS.mutedForeground} />
+                <Text style={[styles.segmentTabText, activeTab === "timeline" && styles.segmentTabTextActive]}>Steps</Text>
               </View>
-            )}
-          </TouchableOpacity>
-        </View>
+            </TabsTrigger>
+            <TabsTrigger value="changes">
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+                <FileDiff size={13} color={activeTab === "changes" ? COLORS.foreground : COLORS.mutedForeground} />
+                <Text style={[styles.segmentTabText, activeTab === "changes" && styles.segmentTabTextActive]}>Changes</Text>
+                {changedFiles.length > 0 && (
+                  <View style={styles.badgeCount}>
+                    <Text style={[styles.badgeCountText, mono("bold")]}>{changedFiles.length}</Text>
+                  </View>
+                )}
+              </View>
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
 
         <View style={{ width: 36 }} />
       </View>
@@ -482,13 +528,13 @@ export function TimelineScreen({ route, navigation }: Props) {
 
                 // Determine Icon and Style per node type
                 let NodeIcon: LucideIcon = Wrench;
-                let iconBg: string = COLORS.primary;
+                let iconColor: string = COLORS.mutedForeground;
                 let badgeLabel = "";
                 let headerTitle = "";
 
                 if (part.nodeType === "thought") {
                   NodeIcon = Brain;
-                  iconBg = "#7C3AED"; // Purple for thoughts
+                  iconColor = "#7C3AED";
                   badgeLabel = "Thought";
                   headerTitle = isRunning
                     ? "Thinking in progress…"
@@ -497,34 +543,34 @@ export function TimelineScreen({ route, navigation }: Props) {
                     : "Thought process";
                 } else if (part.nodeType === "decision") {
                   NodeIcon = Compass;
-                  iconBg = "#0284C7"; // Blue for decisions
+                  iconColor = "#0284C7";
                   badgeLabel = "Decision";
                   headerTitle = "Strategic Decision";
                 } else if (part.nodeType === "tool") {
                   const isMcp = isMcpTool(part.toolName, part.meta);
                   NodeIcon = getToolIcon(part.toolName, part.meta);
                   if (isMcp) {
-                    iconBg = "#059669";
+                    iconColor = "#059669";
                     badgeLabel = "MCP";
                     headerTitle = displayToolName(part.toolName || "MCP Tool");
                   } else {
-                    iconBg = COLORS.primary;
+                    iconColor = COLORS.primary;
                     badgeLabel = "Tool";
                     headerTitle = displayToolName(part.toolName || "execute_command");
                   }
                 } else if (part.nodeType === "plan") {
                   NodeIcon = ListChecks;
-                  iconBg = "#059669"; // Green for plan
+                  iconColor = "#059669";
                   badgeLabel = "Plan";
                   headerTitle = part.text || "Execution Plan";
                 } else if (part.nodeType === "notice") {
                   NodeIcon = Info;
-                  iconBg = isError ? COLORS.destructive : "#D97706";
+                  iconColor = isError ? COLORS.destructive : "#D97706";
                   badgeLabel = "Notice";
                   headerTitle = part.text || "System Notice";
                 } else if (part.nodeType === "text") {
                   NodeIcon = Sparkles;
-                  iconBg = COLORS.primary;
+                  iconColor = COLORS.primary;
                   badgeLabel = isRunning ? "Live" : "Text";
                   headerTitle = isRunning
                     ? "Streaming response…"
@@ -546,11 +592,10 @@ export function TimelineScreen({ route, navigation }: Props) {
                       <View
                         style={[
                           styles.unifiedIconBox,
-                          { backgroundColor: iconBg },
                           isRunning && styles.unifiedIconBoxRunning,
                         ]}
                       >
-                        <NodeIcon size={13} color="#FFFFFF" strokeWidth={2.2} />
+                        <NodeIcon size={14} color={iconColor} strokeWidth={2} />
                       </View>
                     </View>
 
@@ -569,10 +614,7 @@ export function TimelineScreen({ route, navigation }: Props) {
                             style={[
                               styles.typePill,
                               {
-                                backgroundColor:
-                                  badgeLabel === "MCP"
-                                    ? "rgba(5, 150, 105, 0.12)"
-                                    : "rgba(66, 64, 225, 0.08)",
+                                backgroundColor: `${iconColor}12`,
                               },
                             ]}
                           >
@@ -580,7 +622,7 @@ export function TimelineScreen({ route, navigation }: Props) {
                               style={[
                                 styles.typePillText,
                                 mono("bold"),
-                                { color: iconBg },
+                                { color: iconColor },
                               ]}
                             >
                               {badgeLabel}
@@ -642,123 +684,146 @@ export function TimelineScreen({ route, navigation }: Props) {
                         <View style={styles.nodeExpandedCard}>
                           {/* Thought & Decision: Render Rich Markdown */}
                           {(part.nodeType === "thought" || part.nodeType === "decision") && (
-                            <View style={styles.markdownWrapper}>
-                              <RichResponse text={part.text || "No details provided."} />
-                            </View>
+                            <SubTree label={part.nodeType === "decision" ? "DECISION" : "THOUGHT"}>
+                              <View style={styles.markdownWrapper}>
+                                <RichResponse text={part.text || "No details provided."} />
+                              </View>
+                            </SubTree>
                           )}
 
                           {/* Intermediate & Streaming Text Part: Render Rich Markdown */}
                           {part.nodeType === "text" && (
-                            <View style={styles.markdownWrapper}>
-                              <RichResponse text={part.text || (isRunning ? "Streaming output…" : "")} />
-                              {!!part.text && (
-                                <View style={{ alignItems: "flex-end", marginTop: 6 }}>
-                                  <TouchableOpacity
-                                    onPress={() => handleCopy(part.id, part.text || "")}
-                                    style={styles.directCopyBtn}
-                                    activeOpacity={0.7}
-                                  >
-                                    {copiedId === part.id ? (
-                                      <Check size={11} color={COLORS.success} />
-                                    ) : (
-                                      <Copy size={11} color={COLORS.mutedForeground} />
-                                    )}
-                                    <Text style={[styles.directCopyBtnText, font("medium")]}>
-                                      {copiedId === part.id ? "Copied" : "Copy"}
-                                    </Text>
-                                  </TouchableOpacity>
-                                </View>
-                              )}
-                            </View>
+                            <SubTree label="RESPONSE" isLast>
+                              <View style={styles.markdownWrapper}>
+                                <RichResponse text={part.text || (isRunning ? "Streaming output…" : "")} />
+                                {!!part.text && (
+                                  <View style={{ alignItems: "flex-end", marginTop: 6 }}>
+                                    <TouchableOpacity
+                                      onPress={() => handleCopy(part.id, part.text || "")}
+                                      style={styles.directCopyBtn}
+                                      activeOpacity={0.7}
+                                    >
+                                      {copiedId === part.id ? (
+                                        <Check size={11} color={COLORS.success} />
+                                      ) : (
+                                        <Copy size={11} color={COLORS.mutedForeground} />
+                                      )}
+                                      <Text style={[styles.directCopyBtnText, font("medium")]}>
+                                        {copiedId === part.id ? "Copied" : "Copy"}
+                                      </Text>
+                                    </TouchableOpacity>
+                                  </View>
+                                )}
+                              </View>
+                            </SubTree>
                           )}
 
                           {/* Tool Input / Parameters */}
                           {part.nodeType === "tool" && commandString ? (
-                            <View style={styles.expandedSection}>
-                              <View style={styles.expandedSectionHeader}>
-                                <Text style={[styles.sectionHeadingText, mono("bold")]}>
-                                  INPUT / COMMAND
-                                </Text>
-                                <TouchableOpacity
-                                  onPress={() => handleCopy(part.id + "-in", commandString)}
-                                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                                >
-                                  <Text style={[styles.copyBtnText, mono("medium")]}>
-                                    {copiedId === part.id + "-in" ? "Copied" : "Copy"}
-                                  </Text>
-                                </TouchableOpacity>
+                            <SubTree label="INPUT / COMMAND">
+                              <View style={styles.expandedSection}>
+                                <View style={styles.expandedSectionHeader}>
+                                  <View />
+                                  <TouchableOpacity
+                                    onPress={() => handleCopy(part.id + "-in", commandString)}
+                                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                  >
+                                    <Text style={[styles.copyBtnText, mono("medium")]}>
+                                      {copiedId === part.id + "-in" ? "Copied" : "Copy"}
+                                    </Text>
+                                  </TouchableOpacity>
+                                </View>
+                                <CodeBlock
+                                  code={commandString}
+                                  language={part.meta?.command ? "bash" : "json"}
+                                />
                               </View>
-                              <CodeBlock
-                                code={commandString}
-                                language={part.meta?.command ? "bash" : "json"}
-                              />
-                            </View>
+                            </SubTree>
                           ) : null}
 
                           {/* Working Directory */}
                           {part.meta?.cwd ? (
-                            <View style={styles.cwdRow}>
-                              <Text style={[styles.cwdLabel, mono("regular")]}>cwd:</Text>
-                              <Text style={[styles.cwdPath, mono("regular")]} numberOfLines={1}>
-                                {part.meta.cwd}
-                              </Text>
-                            </View>
+                            <SubTree label="cwd">
+                              <View style={styles.cwdRow}>
+                                <Text style={[styles.cwdPath, mono("regular")]} numberOfLines={1}>
+                                  {part.meta.cwd}
+                                </Text>
+                              </View>
+                            </SubTree>
+                          ) : null}
+
+                          {/* Media / Images */}
+                          {part.nodeType === "tool" && part.meta?.media?.length ? (
+                            <SubTree label="MEDIA">
+                              <View style={styles.expandedSection}>
+                                {part.meta.media.filter((m) => m.type === "image").map((m, idx) => (
+                                  <Image
+                                    key={idx}
+                                    source={{ uri: m.url }}
+                                    style={styles.mediaImage}
+                                    resizeMode="contain"
+                                  />
+                                ))}
+                              </View>
+                            </SubTree>
                           ) : null}
 
                           {/* Tool Output / Result */}
                           {part.nodeType === "tool" && part.output ? (
-                            <View style={styles.expandedSection}>
-                              <View style={styles.expandedSectionHeader}>
-                                <Text style={[styles.sectionHeadingText, mono("bold")]}>
-                                  OUTPUT {part.meta?.exitCode != null ? `(exit ${part.meta.exitCode})` : ""}
-                                </Text>
-                                <TouchableOpacity
-                                  onPress={() => handleCopy(part.id + "-out", part.output || "")}
-                                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                                >
-                                  <Text style={[styles.copyBtnText, mono("medium")]}>
-                                    {copiedId === part.id + "-out" ? "Copied" : "Copy"}
-                                  </Text>
-                                </TouchableOpacity>
+                            <SubTree label={`OUTPUT ${part.meta?.exitCode != null ? `(exit ${part.meta.exitCode})` : ""}`} isLast>
+                              <View style={styles.expandedSection}>
+                                <View style={styles.expandedSectionHeader}>
+                                  <View />
+                                  <TouchableOpacity
+                                    onPress={() => handleCopy(part.id + "-out", part.output || "")}
+                                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                  >
+                                    <Text style={[styles.copyBtnText, mono("medium")]}>
+                                      {copiedId === part.id + "-out" ? "Copied" : "Copy"}
+                                    </Text>
+                                  </TouchableOpacity>
+                                </View>
+                                <CodeBlock
+                                  code={part.output.trim()}
+                                  language={
+                                    part.output.trim().startsWith("{") || part.output.trim().startsWith("[")
+                                      ? "json"
+                                      : "text"
+                                  }
+                                  showLineNumbers={part.output.split("\n").length > 2}
+                                />
                               </View>
-                              <CodeBlock
-                                code={part.output.trim()}
-                                language={
-                                  part.output.trim().startsWith("{") || part.output.trim().startsWith("[")
-                                    ? "json"
-                                    : "text"
-                                }
-                                showLineNumbers={part.output.split("\n").length > 2}
-                              />
-                            </View>
+                            </SubTree>
                           ) : null}
 
                           {/* Plan Checklist */}
                           {part.nodeType === "plan" && (
-                            <View style={styles.planStepsBox}>
-                              {(part.meta?.steps ?? []).map((st: PlanStep, idx: number) => (
-                                <View key={idx} style={styles.planStepItem}>
-                                  {st.status === "done" ? (
-                                    <Check size={12} color={COLORS.success} />
-                                  ) : st.status === "active" ? (
-                                    <ActivityIndicator size="small" color={COLORS.primary} />
-                                  ) : st.status === "cancelled" ? (
-                                    <X size={12} color={COLORS.mutedForeground} />
-                                  ) : (
-                                    <View style={styles.planStepDot} />
-                                  )}
-                                  <View style={{ flex: 1 }}>
-                                    <InlineText
-                                      text={st.text}
-                                      style={[
-                                        styles.planStepText,
-                                        (st.status === "done" || st.status === "cancelled") && styles.planStepDoneText,
-                                      ]}
-                                    />
+                            <SubTree label="PLAN STEPS" isLast>
+                              <View style={styles.planStepsBox}>
+                                {(part.meta?.steps ?? []).map((st: PlanStep, idx: number) => (
+                                  <View key={idx} style={styles.planStepItem}>
+                                    {st.status === "done" ? (
+                                      <Check size={12} color={COLORS.success} />
+                                    ) : st.status === "active" ? (
+                                      <ActivityIndicator size="small" color={COLORS.primary} />
+                                    ) : st.status === "cancelled" ? (
+                                      <X size={12} color={COLORS.mutedForeground} />
+                                    ) : (
+                                      <View style={styles.planStepDot} />
+                                    )}
+                                    <View style={{ flex: 1 }}>
+                                      <InlineText
+                                        text={st.text}
+                                        style={[
+                                          styles.planStepText,
+                                          (st.status === "done" || st.status === "cancelled") && styles.planStepDoneText,
+                                        ]}
+                                      />
+                                    </View>
                                   </View>
-                                </View>
-                              ))}
-                            </View>
+                                ))}
+                              </View>
+                            </SubTree>
                           )}
                         </View>
                       )}
@@ -881,6 +946,9 @@ export function TimelineScreen({ route, navigation }: Props) {
           <CheckCircle2 size={15} color={COLORS.success} />
         )}
       </View>
+
+        </Animated.View>
+      </PanGestureHandler>
     </SafeAreaView>
   );
 }
@@ -907,36 +975,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  segmentedControl: {
-    flexDirection: "row",
-    backgroundColor: COLORS.secondary,
-    borderRadius: 10,
-    padding: 3,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  segmentTab: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  segmentTabActive: {
-    backgroundColor: COLORS.card,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
   segmentTabText: {
     fontSize: 12.5,
     color: COLORS.mutedForeground,
+    fontWeight: "500",
   },
   segmentTabTextActive: {
-    color: COLORS.primary,
+    color: COLORS.foreground,
+    fontWeight: "600",
   },
   badgeCount: {
     backgroundColor: COLORS.primary,
@@ -1114,20 +1160,18 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   unifiedIconBox: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
+    width: 26,
+    height: 26,
+    borderRadius: 7,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
-    elevation: 2,
+    backgroundColor: COLORS.secondary,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   unifiedIconBoxRunning: {
-    borderWidth: 1.5,
     borderColor: COLORS.primary,
+    backgroundColor: "rgba(66, 64, 225, 0.06)",
   },
   nodeContentCol: {
     flex: 1,
@@ -1192,8 +1236,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
     borderTopWidth: 0,
-    padding: 10,
-    gap: 8,
+    paddingTop: 8,
+    paddingBottom: 10,
+    paddingHorizontal: 8,
+    gap: 4,
+    borderLeftWidth: 2,
+    borderLeftColor: COLORS.border,
   },
   markdownWrapper: {
     paddingVertical: 2,
@@ -1267,6 +1315,12 @@ const styles = StyleSheet.create({
   planStepDoneText: {
     color: COLORS.mutedForeground,
     textDecorationLine: "line-through",
+  },
+  mediaImage: {
+    width: "100%",
+    height: 200,
+    borderRadius: 8,
+    backgroundColor: COLORS.secondary,
   },
   directOutputSection: {
     marginTop: 16,

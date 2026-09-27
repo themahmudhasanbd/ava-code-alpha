@@ -187,6 +187,7 @@ export function getToolIcon(toolName?: string, meta?: MessagePart["meta"]): Luci
     name === "get_file_contents" ||
     name === "get_file_content" ||
     name.includes("read file") ||
+    name.includes("file read") ||
     name.includes("cat")
   ) {
     return FileText;
@@ -207,9 +208,12 @@ export function getToolIcon(toolName?: string, meta?: MessagePart["meta"]): Luci
     name === "search_files" ||
     name === "list_directory" ||
     name === "list_files" ||
+    name === "search" ||
     name.includes("grep") ||
     name.includes("search code") ||
-    name.includes("find")
+    name.includes("find") ||
+    name.includes("list files") ||
+    name.includes("list dir")
   ) {
     return FolderSearch;
   }
@@ -285,8 +289,8 @@ export function getToolIcon(toolName?: string, meta?: MessagePart["meta"]): Luci
     return Timer;
   }
 
-  // MCP generic tools
-  if (name.includes("mcp") || meta?.server) {
+  // MCP generic tools & extensions
+  if (name.includes("mcp") || name.includes("extension") || meta?.server) {
     return Plug;
   }
 

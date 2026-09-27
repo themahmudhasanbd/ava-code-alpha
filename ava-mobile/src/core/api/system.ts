@@ -18,6 +18,7 @@ export async function readServerConfig(rpc: RpcClient): Promise<ServerConfig> {
   const c = res.config ?? {};
   const str = (k: string) => (typeof c[k] === "string" ? (c[k] as string) : undefined);
   const num = (k: string) => (typeof c[k] === "number" ? (c[k] as number) : undefined);
+  const bool = (k: string) => (typeof c[k] === "boolean" ? (c[k] as boolean) : undefined);
   return {
     model: str("model"),
     provider: str("model_provider"),
@@ -25,5 +26,48 @@ export async function readServerConfig(rpc: RpcClient): Promise<ServerConfig> {
     approvalPolicy: str("approval_policy"),
     sandboxMode: str("sandbox_mode"),
     contextWindow: num("model_context_window"),
+    projectDocMaxBytes: num("project_doc_max_bytes"),
+    hideAgentReasoning: bool("hide_agent_reasoning"),
+    webSearch: typeof c["web_search"] === "object" ? JSON.stringify(c["web_search"]) : str("web_search"),
   };
+}
+
+/** Write config fields to the server. Supports ava-rs batchWrite, value/write, and fallback config/write. */
+export async function writeServerConfig(
+  rpc: RpcClient,
+  fields: Record<string, unknown>
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    // 1. Try ava-rs protocol v2 standard config/batchWrite
+    const edits = Object.entries(fields).map(([key_path, value]) => ({
+      key_path,
+      value,
+      merge_strategy: "replace",
+    }));
+    await rpc.call("config/batchWrite", { edits, reload_user_config: true });
+    return { success: true };
+  } catch (e1: any) {
+    // 2. Try single config/value/write per key
+    try {
+      for (const [key_path, value] of Object.entries(fields)) {
+        await rpc.call("config/value/write", {
+          key_path,
+          value,
+          merge_strategy: "replace",
+        });
+      }
+      return { success: true };
+    } catch (e2: any) {
+      // 3. Fallback to config/write
+      try {
+        await rpc.call("config/write", { config: fields });
+        return { success: true };
+      } catch (e3: any) {
+        return {
+          success: false,
+          error: e1?.message || e2?.message || e3?.message || "Failed to write server config",
+        };
+      }
+    }
+  }
 }

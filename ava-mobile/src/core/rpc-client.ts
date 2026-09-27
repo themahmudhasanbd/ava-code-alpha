@@ -74,7 +74,11 @@ export class RpcClient {
         this.opening = null;
         this.ws = null;
         this.setStatus("offline");
-        this.pending.forEach((p) => p.reject(new Error("Connection closed")));
+        // Clear ALL pending timers before rejecting — prevents leaked setTimeout loops on reconnect
+        this.pending.forEach((p) => {
+          clearTimeout(p.timer);
+          p.reject(new Error("Connection closed"));
+        });
         this.pending.clear();
         if (!this.closed) {
           // Exponential backoff: 1s, 2s, 4s … capped at 15s.

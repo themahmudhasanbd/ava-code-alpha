@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { listMcpServers, listModels, reloadMcpServers } from "@/core/api/catalog";
+import { listMcpServers, listModels, reloadMcpServers, mcpOAuthLogin } from "@/core/api/catalog";
 import { getMetadata, readDirectory, readTextFile } from "@/core/api/files";
 import { deleteSession, listSessions, readSession, renameSession, startSession } from "@/core/api/sessions";
-import { readDiagnostics, readServerConfig } from "@/core/api/system";
+import { readDiagnostics, readServerConfig, writeServerConfig } from "@/core/api/system";
 import { runCommand } from "@/core/api/terminal";
 import { useAva } from "./ava-provider";
 
@@ -52,6 +52,17 @@ export function useServerConfig() {
   return useQuery({ queryKey: keys.serverConfig, queryFn: () => readServerConfig(rpc!), enabled: !!rpc && status === "online" });
 }
 
+export function useWriteConfig() {
+  const { rpc } = useAva();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (fields: Record<string, unknown>) => writeServerConfig(rpc!, fields),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: keys.serverConfig });
+    },
+  });
+}
+
 export function useSessions() {
   const { rpc, status } = useAva();
   return useQuery({
@@ -88,6 +99,13 @@ export function useReloadMcp() {
   const { rpc } = useAva();
   const qc = useQueryClient();
   return useMutation({ mutationFn: () => reloadMcpServers(rpc!), onSuccess: () => qc.invalidateQueries({ queryKey: keys.mcp }) });
+}
+
+export function useMcpOAuth() {
+  const { rpc } = useAva();
+  return useMutation({
+    mutationFn: (serverName: string) => mcpOAuthLogin(rpc!, serverName),
+  });
 }
 
 export function useStartSession() {

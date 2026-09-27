@@ -68,3 +68,23 @@ export async function getMetadata(rpc: RpcClient, path: string): Promise<FileMet
     modifiedAt: res.modifiedAtMs,
   };
 }
+
+/** Create a directory (recursive). */
+export async function createDirectory(rpc: RpcClient, path: string): Promise<void> {
+  await rpc.call("fs/createDirectory", { path });
+}
+
+/** Delete a file or directory (recursive). */
+export async function deletePath(rpc: RpcClient, path: string): Promise<void> {
+  await rpc.call("fs/remove", { path, recursive: true, force: true });
+}
+
+/** Check if a path exists. */
+export async function pathExists(rpc: RpcClient, path: string): Promise<boolean> {
+  try {
+    await rpc.call("fs/getMetadata", { path });
+    return true;
+  } catch {
+    return false;
+  }
+}

@@ -964,7 +964,7 @@ pub fn create_oss_provider(default_provider_port: u16, wire_api: WireApi) -> Mod
     // These AVA_OSS_ environment variables are experimental: we may
     // switch to reading values from config.toml instead.
     let default_ava_oss_base_url = format!(
-        "http://localhost:{codex_oss_port}/v1",
+        "http://localhost:{ava_oss_port}/v1",
         ava_oss_port = std::env::var("AVA_OSS_PORT")
             .ok()
             .filter(|value| !value.trim().is_empty())

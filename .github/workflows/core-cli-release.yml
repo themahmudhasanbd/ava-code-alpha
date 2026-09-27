@@ -1,4 +1,4 @@
-name: AvA Core & CLI Multiplatform Build
+name: AvA App Server Linux Quick Build
 
 on:
   push:
@@ -17,25 +17,9 @@ permissions:
   contents: write
 
 jobs:
-  build-core:
-    name: Build Core & CLI (${{ matrix.target }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - target: x86_64-unknown-linux-gnu
-            os: ubuntu-22.04
-            bin_suffix: ""
-          - target: x86_64-pc-windows-msvc
-            os: windows-latest
-            bin_suffix: ".exe"
-          - target: x86_64-apple-darwin
-            os: macos-13
-            bin_suffix: ""
-          - target: aarch64-apple-darwin
-            os: macos-latest
-            bin_suffix: ""
+  build-app-server:
+    name: Build App Server (x86_64-unknown-linux-gnu)
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout repository
@@ -44,30 +28,28 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.target }}
+          targets: x86_64-unknown-linux-gnu
 
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: ava-rs -> ava-rs/target
 
-      - name: Build Core Binary
+      - name: Build App Server Binary
         run: |
           cd ava-rs
-          cargo build --release --target ${{ matrix.target }} -p ava-app-server --bin ava-app-server -p ava-cli --bin ava --bin ava-cli || cargo build --release --target ${{ matrix.target }}
+          cargo build --release --target x86_64-unknown-linux-gnu -p ava-app-server --bin ava-app-server
 
-      - name: Package Binaries
+      - name: Package Binary
         shell: bash
         run: |
           mkdir -p dist
-          find ava-rs/target/${{ matrix.target }}/release -maxdepth 1 -type f -executable -exec cp {} dist/ \; || true
-          tar -czf "ava-core-${{ matrix.target }}.tar.gz" -C dist . || zip -r "ava-core-${{ matrix.target }}.zip" dist/
+          cp ava-rs/target/x86_64-unknown-linux-gnu/release/ava-app-server dist/
+          tar -czf "ava-core-x86_64-unknown-linux-gnu.tar.gz" -C dist .
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ava-core-${{ matrix.target }}
-          path: |
-            ava-core-${{ matrix.target }}.tar.gz
-            ava-core-${{ matrix.target }}.zip
-          if-no-files-found: warn
+          name: ava-core-x86_64-unknown-linux-gnu
+          path: ava-core-x86_64-unknown-linux-gnu.tar.gz
+          if-no-files-found: error

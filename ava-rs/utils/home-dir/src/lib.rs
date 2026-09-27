@@ -17,7 +17,7 @@ pub fn find_ava_home() -> std::io::Result<AbsolutePathBuf> {
     find_ava_home_from_env(home_env.as_deref())
 }
 
-pub fn find_ava_home() -> std::io::Result<AbsolutePathBuf> {
+pub fn find_codex_home() -> std::io::Result<AbsolutePathBuf> {
     find_ava_home()
 }
 

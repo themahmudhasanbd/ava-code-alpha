@@ -105,7 +105,7 @@ jobs:
           path: dist-deb
 
       - name: Create GitHub Release & Attach DEB
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.event.inputs.release_tag || github.ref_name }}
           name: AvA Code Alpha ${{ github.event.inputs.release_tag || github.ref_name }}
